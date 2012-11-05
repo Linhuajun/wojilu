@@ -73,8 +73,12 @@ namespace wojilu.Web.Controller.Forum {
 
             if (strUtil.HasText( board.Logo )) return sys.Path.GetPhotoOriginal( board.Logo );
 
-            if (board.TodayPosts > 0) return strUtil.Join( sys.Path.Skin, "apps/forum/normalNew.gif" );
-            return strUtil.Join( sys.Path.Skin, "apps/forum/normal.gif" );
+            //if (board.TodayPosts > 0) return strUtil.Join( sys.Path.Skin, "apps/forum/normalNew.gif" );
+            //return strUtil.Join( sys.Path.Skin, "apps/forum/normal.gif" );
+
+            if (board.TodayPosts > 0) return strUtil.Join( sys.Path.Skin, "site/new/board-new.png" );
+            return strUtil.Join( sys.Path.Skin, "site/new/board.png" );
+
         }
 
         private String getDescription( ForumBoard board ) {
@@ -106,15 +110,15 @@ namespace wojilu.Web.Controller.Forum {
             String lnkPost = "";
 
             if (info.PostType.Equals( typeof( ForumTopic ).Name ))
-                lnkPost = Link.To( new TopicController().Show, info.PostId );
+                lnkPost = to( new TopicController().Show, info.PostId );
             else if (info.PostType.Equals( typeof( ForumPost ).Name ))
-                lnkPost = Link.To( new PostController().Show, info.PostId );
+                lnkPost = to( new PostController().Show, info.PostId );
 
             return string.Format( "<div class=\"fblastTitle\"><a href='{0}'>{1}</a></div><div class=\"fblastTime\">by <a href='{3}'>{2}</a> at {4}</div>",
                 lnkPost,
                 strUtil.CutString( info.PostTitle, 30 ),
                 info.CreatorName,
-                Link.ToUser( info.CreatorUrl ),
+                toUser( info.CreatorUrl ),
                 info.UpdateTime.ToShortDateString()
                 );
 
