@@ -17,7 +17,7 @@ namespace wojilu.Apps.Content.Service {
 
     public class RowService {
 
-        public void DeleteRow( ContentApp app,  int rowId ) {
+        public virtual void DeleteRow( ContentApp app,  int rowId ) {
 
             int lastRowId = moveRowToEnd( app, rowId );
             deleteRowPrivate( app, lastRowId );
@@ -50,7 +50,7 @@ moveRow( 'up', 7 )=>4,5,6,7*
 
             if (rowId <= 0) return;
 
-            int appId = app.Id;
+            long appId = app.Id;
             List<string> list = new List<string>();
             string[] rowList = app.RowList;
 
@@ -76,7 +76,7 @@ moveRow( 'up', 7 )=>4,5,6,7*
 
         //---------------------------------------------------------------------------------------------
 
-        public MoveRowInfo MoveRow( string strRow, string action, int rowId ) {
+        public virtual MoveRowInfo MoveRow( string strRow, string action, int rowId ) {
 
             string[] arrRow = strRow.Split( '/' );
 
@@ -136,7 +136,7 @@ moveRow( 'up', 7 )=>4,5,6,7*
             return false;
         }
         
-        public void UpdateRow( ContentApp app, MoveRowInfo mr ) {
+        public virtual void UpdateRow( ContentApp app, MoveRowInfo mr ) {
 
             app.Layout = mr.RowString;
             app.Style = updateStyle( app.Style, mr );

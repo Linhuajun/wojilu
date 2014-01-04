@@ -52,7 +52,7 @@ namespace wojilu.ORM.Caching {
             addList( CacheKey.getQuery( t, sql, parameters ), objList );
         }
 
-        public void AddPage( Type t, String condition, ObjectPage pager, IList list ) {
+        public void AddPage( Type t, String condition, PageHelper pager, IList list ) {
             String key = CacheKey.getPageList( t, condition, pager.getSize(), pager.getCurrent() );
             addList( key, list );
         }
@@ -93,7 +93,7 @@ namespace wojilu.ORM.Caching {
 
 
 
-        public IEntity FindOne( Type t, int id ) {
+        public IEntity FindOne( Type t, long id ) {
             String key = CacheKey.getObject( t, id );
             return getFromContext( key ) as IEntity;
         }
@@ -111,7 +111,7 @@ namespace wojilu.ORM.Caching {
             return getListFromCache( CacheKey.getQuery( type, _queryString, _namedParameters ), type );
         }
 
-        public IPageList FindPage( Type t, String condition, ObjectPage pager ) {
+        public IPageList FindPage( Type t, String condition, PageHelper pager ) {
             return null;
         }
 
@@ -149,7 +149,7 @@ namespace wojilu.ORM.Caching {
             return getFromContext( queryKey ) as IList;
         }
 
-        public void Delete( Type t, int id ) {
+        public void Delete( Type t, long id ) {
 
             ContextCache.Remove( t.FullName, id );
         }

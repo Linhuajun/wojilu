@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -33,7 +33,7 @@ namespace wojilu.Web.Controller.Common.Admin {
         public virtual IMenuService menuService { get; set; }
 
         public virtual void log( String msg, IMenu menu ) {
-            // ”…◊”¿‡ºÃ≥–»• µœ÷
+            // Áî±Â≠êÁ±ªÁªßÊâøÂéªÂÆûÁé∞
         }
 
         private Tree<IMenu> _tree;
@@ -43,6 +43,10 @@ namespace wojilu.Web.Controller.Common.Admin {
             return _tree;
         }
 
+        public virtual String GetCommonLink() {
+            return null;
+        }
+
         //-----------------------------------------------------------------------------------------------------
 
         public override void Layout() {
@@ -50,22 +54,22 @@ namespace wojilu.Web.Controller.Common.Admin {
             set( "listLink", to( Index ) );
         }
 
-        public void Index() {
+        public virtual void Index() {
         //    set( "addLink", to( AddMenu ) );
         //    set( "listLink", to( List ) );
         //    load( "list", List );
         //}
 
-        //public void List() {
+        //public virtual void List() {
             set( "sortAction", to( SortMenu ) );
             List<IMenu> menus = getTree().GetAllOrdered();
             bindMenus( menus );
         }
 
         [HttpPost, DbTransaction]
-        public void SortMenu() {
+        public virtual void SortMenu() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             IMenu menu = menuService.FindById( ctx.owner.Id, id );
@@ -102,10 +106,18 @@ namespace wojilu.Web.Controller.Common.Admin {
             set( "url", url );
             set( "name", ctx.Get( "name" ) );
             set( "furl", ctx.Get( "furl" ) );
+
+            String commonLink = this.GetCommonLink();
+            IBlock lnkBlock = getBlock( "commonLink" );
+            if (strUtil.HasText( commonLink )) {
+                lnkBlock.Set( "lnkAddLink", commonLink );
+                lnkBlock.Next();
+            }
+
         }
 
 
-        public void AddSubMenu( int id ) {
+        public virtual void AddSubMenu( long id ) {
 
             target( SaveSubMenu, id );
 
@@ -120,7 +132,7 @@ namespace wojilu.Web.Controller.Common.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             IMenu menu = validateMenu( menuService.New() );
 
@@ -144,7 +156,7 @@ namespace wojilu.Web.Controller.Common.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void SaveSubMenu( int id ) {
+        public virtual void SaveSubMenu( long id ) {
 
             IMenu menu = validateMenu( menuService.New() );
 
@@ -169,7 +181,7 @@ namespace wojilu.Web.Controller.Common.Admin {
         }
 
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             IMenu menu = menuService.FindById( ctx.owner.Id, id );
             if (menu == null) {
@@ -196,7 +208,7 @@ namespace wojilu.Web.Controller.Common.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public virtual void Update( int id ) {
+        public virtual void Update( long id ) {
 
             IMenu menu = menuService.FindById( ctx.owner.Id, id );
             if (menu == null) {
@@ -227,7 +239,7 @@ namespace wojilu.Web.Controller.Common.Admin {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             IMenu menu = menuService.FindById( ctx.owner.Id, id );
             if (menu == null) {
                 echoRedirect( lang( "exDataNotFound" ) );

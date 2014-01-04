@@ -258,10 +258,14 @@ namespace wojilu.Web.Context {
 
             DbContext.closeConnectionAll();
 
-            if (ctx.utils.isAjax)
-                logger.Info( "------------------ ajax end(" + ctx.web.PathAbsolute + ") ------------------" );
-            else
-                logger.Info( "------------------- output end(" + ctx.web.PathAbsolute + ") ---------------------" );
+            String strMock = ctx.IsMock ? " [mocked]" : "";
+
+            if (ctx.utils.isAjax) {
+                logger.Info( "------------------ ajax end" + strMock + "(" + ctx.web.PathAbsolute + ") ------------------" );
+            }
+            else {
+                logger.Info( "------------------- output end" + strMock + "(" + ctx.web.PathAbsolute + ")  ---------------------" );
+            }
 
             LogManager.Flush();
         }
@@ -269,10 +273,10 @@ namespace wojilu.Web.Context {
 
         public void setPageMeta( PageMeta p ) {
 
-            ctx.GetPageMeta().Title = p.Title;
-            ctx.GetPageMeta().Description = p.Description;
-            ctx.GetPageMeta().Keywords = p.Keywords;
-            ctx.GetPageMeta().RssLink = p.RssLink;
+            ctx.Page.Title = p.Title;
+            ctx.Page.Description = p.Description;
+            ctx.Page.Keywords = p.Keywords;
+            ctx.Page.RssLink = p.RssLink;
 
         }
 
@@ -282,7 +286,7 @@ namespace wojilu.Web.Context {
         /// <param name="msg"></param>
         /// <param name="httpStatusCode">可以为null</param>
         public void endMsg( String msg, String httpStatusCode ) {
-            if (httpStatusCode != null) {
+            if (strUtil.HasText( httpStatusCode )) {
                 this.ctx.web.ResponseStatus( httpStatusCode );
             }
 
@@ -304,11 +308,26 @@ namespace wojilu.Web.Context {
         }
 
         /// <summary>
+        /// 显示信息(不带模板)，然后结束下面的流程。并发出 http 状态码(可选)
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="httpStatusCode"></param>
+        public void endMsgByText( String msg, String httpStatusCode ) {
+
+            if (strUtil.HasText( httpStatusCode )) {
+                this.ctx.web.ResponseStatus( httpStatusCode );
+            }
+
+            this.setCurrentOutputString( msg );
+            this.end();
+        }
+
+        /// <summary>
         /// 显示信息(带模板)，然后结束下面的流程
         /// </summary>
         /// <param name="msg"></param>
         public void endMsgByView( String msg ) {
-            endMsgByView( msg, MvcConfig.Instance.GetMsgTemplatePath() );
+            endMsgByView( msg, MvcConfig.Instance.GetMsgTemplateFile() );
         }
 
         /// <summary>
@@ -316,7 +335,7 @@ namespace wojilu.Web.Context {
         /// </summary>
         /// <param name="msg"></param>
         public void endMsgBox( String msg ) {
-            endMsgByView( msg, MvcConfig.Instance.GetMsgBoxTemplatePath() );
+            endMsgByView( msg, MvcConfig.Instance.GetMsgBoxTemplateFile() );
         }
 
         /// <summary>
@@ -324,32 +343,37 @@ namespace wojilu.Web.Context {
         /// </summary>
         /// <param name="msg"></param>
         public void endMsgForward( String msg ) {
-            endMsgByView( msg, MvcConfig.Instance.GetForwardTemplatePath() );
+            endMsgByView( msg, MvcConfig.Instance.GetForwardTemplateFile() );
         }
 
         /// <summary>
         /// 根据指定模板显示信息，然后结束下面的流程
         /// </summary>
         /// <param name="msg"></param>
-        /// <param name="templatePath">模板路径</param>
-        public void endMsgByView( String msg, String templatePath ) {
+        /// <param name="templateFileName">模板路径</param>
+        public void endMsgByView( String msg, String templateFileName ) {
 
-            ITemplate msgView = getMsgTemplate( msg, templatePath );
+            ITemplate msgView = getMsgTemplate( msg, templateFileName );
             this.setCurrentOutputString( msgView.ToString() );
             this.end();
         }
 
-        public ITemplate getMsgTemplate( String msg, String templatePath ) {
+        public ITemplate getMsgTemplate( String msg, String templateFileName ) {
 
-            String viewsPath = PathHelper.Map( templatePath );
+            Template msgView = getTemplate( templateFileName );
 
-            Template msgView = new Template( viewsPath );
             msgView.Set( "siteName", config.Instance.Site.SiteName );
             msgView.Set( "siteUrl", SystemInfo.SiteRoot );
             msgView.Set( "msg", msg );
             this.setGlobalVariable( msgView );
 
             return msgView;
+        }
+
+        private Template getTemplate( String templateFileName ) {
+            MvcViews v = new MvcViews();
+            v.setController( _currentController );
+            return v.getTemplateByFileName( templateFileName );
         }
 
 
@@ -367,12 +391,22 @@ namespace wojilu.Web.Context {
             tpl.Set( "jsVersion", MvcConfig.Instance.JsVersion );
             tpl.Set( "cssVersion", MvcConfig.Instance.CssVersion );
 
+            // ~/
             tpl.Set( "path", sys.Path.Root );
+
             tpl.Set( "path.img", sys.Path.Img );
             tpl.Set( "path.css", sys.Path.Css );
             tpl.Set( "path.js", sys.Path.Js );
             tpl.Set( "path.static", sys.Path.Static );
             tpl.Set( "path.skin", sys.Path.Skin );
+
+            tpl.Set( "patha.img", sys.Path.Img );
+            tpl.Set( "patha.css", sys.Path.Css );
+            tpl.Set( "patha.js", sys.Path.Js );
+            tpl.Set( "patha.static", sys.Path.Static );
+            tpl.Set( "patha.skin", sys.Path.Skin );
+
+            tpl.Bind( "__ctx", ctx );
         }
 
 

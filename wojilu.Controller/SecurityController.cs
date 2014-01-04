@@ -57,7 +57,7 @@ namespace wojilu.Web.Controller {
                 checkGroupPermission();
         }
 
-        public void CanAppAdmin( int appId ) {
+        public virtual void CanAppAdmin( long appId ) {
 
             if (ctx.viewer.IsLogin == false) {
                 echoText( "no" );
@@ -65,6 +65,11 @@ namespace wojilu.Web.Controller {
             }
 
             if (ctx.viewer.IsAdministrator()) {
+                echoAjaxOk();
+                return;
+            }
+
+            if (ctx.viewer.IsOwnerAdministrator( ctx.owner.obj )) {
                 echoAjaxOk();
                 return;
             }
@@ -78,7 +83,7 @@ namespace wojilu.Web.Controller {
 
             Type t = ObjectContext.Instance.TypeList[appType];
 
-            if (AppAdminRole.CanAppAdmin( ctx.viewer.obj, t, appId )) {
+            if (AppAdminRole.CanAppAdmin( ctx.viewer.obj, ctx.owner.obj, t, appId )) {
                 echoAjaxOk();
             }
             else {
@@ -194,7 +199,7 @@ namespace wojilu.Web.Controller {
 
         //--------------------------------------------------------- 空间 -------------------------------------------------------------------------
 
-        public void checkSpacePermission() {
+        public virtual void checkSpacePermission() {
 
             User owner = ctx.owner.obj as User;
             if (owner == null) {

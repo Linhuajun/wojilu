@@ -23,8 +23,8 @@ namespace wojilu.Web.Controller.Admin {
 
     public class SiteSkinController : ControllerBase {
 
-        public ISiteSkinService skinService { get; set; }
-        public IAdminLogService<SiteLog> logService { get; set; }
+        public virtual ISiteSkinService skinService { get; set; }
+        public virtual IAdminLogService<SiteLog> logService { get; set; }
 
         public SiteSkinController() {
             skinService = new SiteSkinService();
@@ -45,23 +45,23 @@ namespace wojilu.Web.Controller.Admin {
 
         }
 
-        public void ResourceList( int typeId ) {
+        public virtual void ResourceList(long typeId) {
 
             target( ResourceSave, typeId );
 
-            set( "resourceTypeName", ResourceType.GetTypeName( typeId ) );
+            set( "resourceTypeName", ResourceType.GetTypeName( (int)typeId ) );
 
-            DataPage<Resource> list = Resource.GetPage( typeId, 50 );
+            DataPage<Resource> list = Resource.GetPage( (int)typeId, 50 );
             bindList( "list", "r", list.Results, bindLink );
             set( "page", list.PageBar );
         }
 
-        private void bindLink( IBlock block, int id ) {
+        private void bindLink( IBlock block, long id ) {
             block.Set( "r.DeleteLink", to( ResourceDelete, id ) );
         }
 
         [HttpDelete, DbTransaction]
-        public void ResourceDelete( int id ) {
+        public virtual void ResourceDelete( long id ) {
 
             Resource r = Resource.findById( id );
             if (r == null) {
@@ -69,13 +69,13 @@ namespace wojilu.Web.Controller.Admin {
                 return;
             }
 
-            r.delete();
+            Resource.Delete( r );
 
-            redirect( ResourceList, r.TypeId );
+            redirect( typeId => ResourceList(typeId), r.TypeId );
         }
 
         [HttpPost, DbTransaction]
-        public void ResourceSave( int typeId ) {
+        public virtual void ResourceSave( long typeId ) {
 
             HttpFile postedFile = ctx.GetFileSingle();
             Result result = Uploader.SaveImg( postedFile );
@@ -85,7 +85,7 @@ namespace wojilu.Web.Controller.Admin {
             }
 
             Resource r = new Resource();
-            r.TypeId = typeId;
+            r.TypeId = (int)typeId;
             r.Url = result.Info.ToString();
 
             String name = ctx.Post( "Name" );
@@ -94,11 +94,11 @@ namespace wojilu.Web.Controller.Admin {
 
             r.insert();
 
-            redirect( ResourceList, typeId );
+            redirect( typeId1 => ResourceList(typeId1), typeId );
         }
 
         //------------------------------------------------------------------------------------------------
-        public void CustomBg() {
+        public virtual void CustomBg() {
             bindLayout();
         }
 
@@ -117,7 +117,7 @@ namespace wojilu.Web.Controller.Admin {
             load( "autoSaveScript", script );
         }
 
-        public void SaveBg() {
+        public virtual void SaveBg() {
 
             String ele = ctx.Post( "ele" );
             String kvItem = ctx.Post( "kv" );
@@ -126,26 +126,26 @@ namespace wojilu.Web.Controller.Admin {
             echoAjaxOk();
         }
 
-        public void CustomHeader() {
+        public virtual void CustomHeader() {
             bindLayout();
         }
 
-        public void CustomMain() {
+        public virtual void CustomMain() {
             bindLayout();
         }
 
-        public void CustomFooter() {
+        public virtual void CustomFooter() {
             bindLayout();
         }
 
-        public void CustomNav() {
+        public virtual void CustomNav() {
             bindLayout();
         }
 
-        public void script() {
+        public virtual void script() {
         }
 
-        public void MyPics() {
+        public virtual void MyPics() {
 
             DataPage<Resource> list = Resource.GetPage( ResourceType.Texture, 8 );
             
@@ -159,14 +159,14 @@ namespace wojilu.Web.Controller.Admin {
         }
 
 
-        public void AddPicUrl() {
+        public virtual void AddPicUrl() {
         }
 
-        public void UploadForm() {
+        public virtual void UploadForm() {
             target( SavePic );
         }
 
-        public void SavePic() {
+        public virtual void SavePic() {
 
             HttpFile postedFile = ctx.GetFileSingle();
 
@@ -191,7 +191,7 @@ namespace wojilu.Web.Controller.Admin {
 
         //--------------------------------------------------------------------------------
 
-        public void List() {
+        public virtual void List() {
 
             String customLink = Link.ToMember( Site.Instance ) + "?skin=custom";
             set( "customLink", customLink );
@@ -212,7 +212,7 @@ namespace wojilu.Web.Controller.Admin {
             }
         }
 
-        private String getApplyCmd( int id ) {
+        private String getApplyCmd( long id ) {
 
             if (config.Instance.Site.SkinId == id) {
                 return "<span class=\"currentSkin\">" + lang( "currentSkin" ) + "</span>";
@@ -223,7 +223,7 @@ namespace wojilu.Web.Controller.Admin {
         }
 
         [HttpPut]
-        public void Apply( int id ) {
+        public virtual void Apply( long id ) {
 
             SiteSkin skin = skinService.GetById( id );
             if (skin == null) {

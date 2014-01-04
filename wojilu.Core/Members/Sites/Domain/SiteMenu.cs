@@ -17,13 +17,22 @@ namespace wojilu.Members.Sites.Domain {
 
     [Serializable]
     public class SiteMenu : CacheObject, IMenu, IComparable {
-        
-        public User Creator { get; set; }
+
+        public long CreatorId { get; set; }
+
+        [NotSave]
+        public User Creator {
+            get { return User.findById( this.CreatorId ); }
+            set {
+                if (value == null) return;
+                this.CreatorId = value.Id;
+            }
+        }
 
         public int OrderId { get; set; }
 
         [NotSave]
-        public int OwnerId {
+        public long OwnerId {
             get { return Site.Instance.Id; }
             set { }
         }
@@ -40,7 +49,7 @@ namespace wojilu.Members.Sites.Domain {
             set { }
         }
 
-        public int ParentId { get; set; }
+        public long ParentId { get; set; }
         public String RawUrl { get; set; }
         public String Url { get; set; }
 

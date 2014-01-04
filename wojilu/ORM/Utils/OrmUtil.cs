@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,7 @@ namespace wojilu.ORM {
                 if (paramVal == null) {
                     setDefaultValue( cmd, info, entityInfo );
                 }
-                else if (info.Type.IsSubclassOf( typeof( IEntity ) ) || MappingClass.Instance.ClassList.Contains( info.Type.FullName )) {
+                else if (info.Type.IsSubclassOf( typeof( IEntity ) ) || MappingClass.Instance.ClassList.ContainsKey( info.Type.FullName )) {
                     setEntityId( cmd, info, paramVal );
                 }
                 else {
@@ -67,7 +67,7 @@ namespace wojilu.ORM {
 
                 if (action.Equals( "update" )) return true;
 
-                // Ôö¼ÓÊµÌå¼üÀàÐÍÊ¶±ð
+                // å¢žåŠ å®žä½“é”®ç±»åž‹è¯†åˆ«
                 if (/**/DbConfig.Instance.IsAutoId && action.Equals("insert") 
                     && entityInfo.Parent == null
                     ) 
@@ -80,8 +80,8 @@ namespace wojilu.ORM {
 
         private static void setDefaultValue( IDbCommand cmd, EntityPropertyInfo info, EntityInfo entityInfo ) {
 
-            if (MappingClass.Instance.ClassList.Contains( info.Type.FullName )) {
-                DataFactory.SetParameter( cmd, info.ColumnName, -1 );
+            if (MappingClass.Instance.ClassList.ContainsKey( info.Type.FullName )) {
+                DataFactory.SetParameter( cmd, info.ColumnName, 0 );
             }
             else if (info.Type == typeof( DateTime )) {
                 if (entityInfo.DbType == DatabaseType.Access) {
@@ -97,7 +97,7 @@ namespace wojilu.ORM {
         }
 
         private static void setEntityId( IDbCommand cmd, EntityPropertyInfo info, Object paramVal ) {
-            int id = ((IEntity)paramVal).Id;
+            long id = ((IEntity)paramVal).Id;
             DataFactory.SetParameter( cmd, info.ColumnName, id );
         }
 

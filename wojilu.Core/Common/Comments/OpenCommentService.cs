@@ -5,11 +5,13 @@ using wojilu.Common.Msg.Interface;
 using wojilu.Common.Msg.Service;
 using wojilu.Members.Users.Domain;
 using wojilu.Common.Msg.Enum;
+using wojilu.Common.AppBase.Interface;
+using wojilu.Common.Microblogs.Domain;
 
 namespace wojilu.Common.Comments {
 
 
-    public class OpenCommentService {
+    public class OpenCommentService : IOpenCommentService {
 
         public INotificationService nfService { get; set; }
 
@@ -17,12 +19,16 @@ namespace wojilu.Common.Comments {
             nfService = new NotificationService();
         }
 
-        public OpenComment GetById( int id ) {
+        public virtual OpenComment GetById(long id) {
             return db.findById<OpenComment>( id );
         }
 
+        public virtual DataPage<OpenComment> GetPageAll( String condition ) {
+            return OpenComment.findPage( condition );
+        }
 
-        public void Delete( OpenComment c ) {
+
+        public virtual void Delete( OpenComment c ) {
             if (c == null) return;
             db.delete( c );
             deleteSubComments( c );
@@ -34,7 +40,13 @@ namespace wojilu.Common.Comments {
             db.deleteBatch<OpenComment>( "ParentId=" + c.Id );
         }
 
-        public void DeleteAll( string url, int dataId, string dataType ) {
+        public virtual void DeleteBatch( String ids ) {
+            if (strUtil.IsNullOrEmpty( ids )) return;
+            if (cvt.IsIdListValid( ids ) == false) throw new ArgumentException( "id list" );
+            db.deleteBatch<OpenComment>( "Id in (" + ids + ")" );
+        }
+
+        public virtual void DeleteAll(string url, long dataId, string dataType) {
 
             if (dataId > 0 && strUtil.HasText( dataType )) {
                 deleteAllByData( dataId, dataType );
@@ -44,7 +56,7 @@ namespace wojilu.Common.Comments {
             }
         }
 
-        private void deleteAllByData( int dataId, string dataType ) {
+        private void deleteAllByData(long dataId, string dataType) {
             db.deleteBatch<OpenComment>( "TargetDataType='" + strUtil.SqlClean( dataType, 50 ) + "' and TargetDataId=" + dataId );
             clearRootTargetRepliesByData( dataId, dataType );
         }
@@ -54,16 +66,44 @@ namespace wojilu.Common.Comments {
             clearRootTargetRepliesByUrl( url );
         }
 
-        public DataPage<OpenComment> GetByDataDesc( String dataType, int dataId ) {
+        public virtual DataPage<OpenComment> GetByMicroblogOwnerId(long ownerId) {
 
-            DataPage<OpenComment> datas = OpenComment.findPage( "TargetDataType='" + strUtil.SqlClean( dataType, 50 ) + "' and TargetDataId=" + dataId + " and ParentId=0" );
+            int pageSize = 20;
+
+            DataPage<OpenComment> datas = OpenComment.findPage( "OwnerId=" + ownerId + " and FeedId>0 and ParentId=0", pageSize );
 
             datas.Results = addSubList( datas.Results, true );
 
             return datas;
         }
 
-        public DataPage<OpenComment> GetByDataAsc( String dataType, int dataId ) {
+        public virtual DataPage<OpenComment> GetByDataAndOwnerId(string dataType, long ownerId) {
+
+            int pageSize = 20;
+
+            DataPage<OpenComment> datas = OpenComment.findPage( "TargetDataType='" + strUtil.SqlClean( dataType, 50 ) + "' and OwnerId=" + ownerId + " and ParentId=0", pageSize );
+
+            datas.Results = addSubList( datas.Results, true );
+
+            return datas;
+        }
+
+        public virtual DataPage<OpenComment> GetByDataDesc(string dataType, long dataId) {
+            return GetByDataDesc( dataType, dataId, -1 );
+        }
+
+        public virtual DataPage<OpenComment> GetByDataDesc(string dataType, long dataId, int pageSize) {
+
+            if (pageSize <= 0 || pageSize > 500) pageSize = 20;
+
+            DataPage<OpenComment> datas = OpenComment.findPage( "TargetDataType='" + strUtil.SqlClean( dataType, 50 ) + "' and TargetDataId=" + dataId + " and ParentId=0", pageSize );
+
+            datas.Results = addSubList( datas.Results, true );
+
+            return datas;
+        }
+
+        public virtual DataPage<OpenComment> GetByDataAsc(string dataType, long dataId) {
 
             DataPage<OpenComment> datas = OpenComment.findPage( "TargetDataType='" + strUtil.SqlClean( dataType, 50 ) + "' and TargetDataId=" + dataId + " and ParentId=0 order by Id asc" );
 
@@ -72,7 +112,7 @@ namespace wojilu.Common.Comments {
             return datas;
         }
 
-        public DataPage<OpenComment> GetByUrlDesc( String url ) {
+        public virtual DataPage<OpenComment> GetByUrlDesc( String url ) {
 
             DataPage<OpenComment> datas = OpenComment.findPage( "TargetUrl='" + strUtil.SqlClean( url, 50 ) + "' and ParentId=0" );
 
@@ -81,13 +121,24 @@ namespace wojilu.Common.Comments {
             return datas;
         }
 
-        public DataPage<OpenComment> GetByUrlAsc( String url ) {
+        public virtual DataPage<OpenComment> GetByUrlAsc( String url ) {
 
             DataPage<OpenComment> datas = OpenComment.findPage( "TargetUrl='" + strUtil.SqlClean( url, 50 ) + "' and ParentId=0 order by Id asc" );
 
             datas.Results = addSubList( datas.Results, false );
 
             return datas;
+        }
+
+
+        public virtual List<OpenComment> GetByApp(Type type, long appId, int listCount) {
+
+            if (listCount <= 0) listCount = 7;
+
+            String condition = "TargetDataType='" + type + "'";
+            if (appId > 0) condition = condition + " and AppId=" + appId;
+
+            return OpenComment.find( condition ).list( listCount );
         }
 
         //----------------------------------------------------------------------------------------------
@@ -135,7 +186,7 @@ namespace wojilu.Common.Comments {
 
         //----------------------------------------------------------------------------------------------
 
-        public Result Create( OpenComment c ) {
+        public virtual Result Create( OpenComment c ) {
 
             Result result = c.insert();
             if (result.IsValid) {
@@ -150,9 +201,38 @@ namespace wojilu.Common.Comments {
 
         }
 
+        public virtual Result CreateNoNotification( OpenComment c ) {
+
+            Result result = c.insert();
+            if (result.IsValid) {
+                updateParentReplies( c );
+                updateRootTargetReplies( c );
+                return result;
+            }
+            else {
+                return result;
+            }
+
+        }
+
+        // 只是导入，并不发送通知
+        public virtual Result Import( OpenComment c ) {
+
+            Result result = c.insert();
+            if (result.IsValid) {
+                updateParentReplies( c );
+                updateRootTargetReplies( c );
+                return result;
+            }
+            else {
+                return result;
+            }
+
+        }
+
         private void sendNotifications( OpenComment c ) {
 
-            List<int> sentIds = new List<int>();
+            List<long> sentIds = new List<long>();
 
             if (c.ParentId > 0) {
                 OpenComment p = OpenComment.findById( c.ParentId );
@@ -173,10 +253,10 @@ namespace wojilu.Common.Comments {
             }
         }
 
-        private void sendNotificationToRoot( List<int> sentIds, OpenComment c ) {
+        private void sendNotificationToRoot(List<long> sentIds, OpenComment c) {
 
             if (c.Member != null && c.Member.Id == c.TargetUserId) return; // 不用给自己发通知
-            int receiverId = c.TargetUserId;
+            long receiverId = c.TargetUserId;
             if (sentIds.Contains( receiverId )) return; // 已经发过，不用重发
 
             String msg = c.Author + " 回复了你的 <a href=\"" + c.TargetUrl + "\">" + c.TargetTitle + "</a> ";
@@ -185,9 +265,9 @@ namespace wojilu.Common.Comments {
             sentIds.Add( receiverId );
         }
 
-        private void sendNotificationsTo( List<int> sentIds, OpenComment comment, OpenComment c ) {
+        private void sendNotificationsTo(List<long> sentIds, OpenComment comment, OpenComment c) {
 
-            int receiverId = comment.Member.Id;
+            long receiverId = comment.Member.Id;
             if (c.Member != null && c.Member.Id == receiverId) return; // 不用给自己发通知
             if (sentIds.Contains( receiverId )) return; // 已经发过，不用重发
 
@@ -222,7 +302,7 @@ namespace wojilu.Common.Comments {
         }
 
 
-        public List<OpenComment> GetMore( int parentId, int startId, int replyPageSize, string sort ) {
+        public virtual List<OpenComment> GetMore(long parentId, long startId, int replyPageSize, string sort) {
 
             String condition = "";
 
@@ -238,7 +318,7 @@ namespace wojilu.Common.Comments {
 
         //------------------------------------------------------------------------------------------------------------
 
-        public int GetReplies( int dataId, String dataType, String url ) {
+        public virtual int GetReplies(long dataId, string dataType, string url) {
 
             if (dataId > 0 && strUtil.HasText( dataType )) {
                 return GetRepliesByData( dataId, dataType );
@@ -248,14 +328,14 @@ namespace wojilu.Common.Comments {
             }
         }
 
-        public int GetRepliesByUrl( String url ) {
+        public virtual int GetRepliesByUrl( String url ) {
             OpenCommentCount objCount = OpenCommentCount.find( "TargetUrl=:url" )
                 .set( "url", url )
                 .first();
             return objCount == null ? 0 : objCount.Replies;
         }
 
-        public int GetRepliesByData( int dataId, String dataType ) {
+        public virtual int GetRepliesByData(long dataId, string dataType) {
             OpenCommentCount objCount = OpenCommentCount.find( "DataType=:dtype and DataId=" + dataId )
                 .set( "dtype", dataType )
                 .first();
@@ -278,13 +358,22 @@ namespace wojilu.Common.Comments {
                     .first();
             }
             else {
-                replies = OpenComment.find( "TargetUrl=:url" )
-                    .set( "url", c.TargetUrl )
-                    .count();
 
-                objCount = OpenCommentCount.find( "TargetUrl=:url" )
-                    .set( "url", c.TargetUrl )
-                    .first();
+                if (c.TargetUrl == null) {
+                    replies = 0;
+                    objCount = null;
+                }
+                else {
+
+                    replies = OpenComment.find( "TargetUrl=:url" )
+                        .set( "url", c.TargetUrl )
+                        .count();
+
+                    objCount = OpenCommentCount.find( "TargetUrl=:url" )
+                        .set( "url", c.TargetUrl )
+                        .first();
+
+                }
             }
 
 
@@ -313,15 +402,57 @@ namespace wojilu.Common.Comments {
             objCount.insert();
         }
 
-        private static void updateTargetReplies( OpenComment c, int replies ) {
+        public virtual IEntity GetTarget( OpenComment c ) {
+
+            if (strUtil.IsNullOrEmpty( c.TargetDataType )) return null;
+            if (c.TargetDataId <= 0) return null;
+
             Type targetType = Entity.GetType( c.TargetDataType );
-            ICommentTarget target = ndb.findById( targetType, c.TargetDataId ) as ICommentTarget;
-            if (target == null) return;
-            target.Replies = replies;
-            db.update( target );
+            if (targetType == null) return null;
+            return ndb.findById( targetType, c.TargetDataId );
         }
 
-        private static void clearRootTargetRepliesByData( int dataId, string dataType ) {
+        private void updateTargetReplies( OpenComment c, int replies ) {
+            ICommentTarget target = GetTarget( c ) as ICommentTarget;
+            if (target != null) {
+                target.Replies = replies;
+                db.update( target );
+            }
+
+            // feed replies
+            Microblog mblog = getFeed( c );
+            if (mblog != null) {
+                mblog.Replies = replies;
+                mblog.update();
+            }
+
+            if (c.AppId > 0 && target != null) {
+                Type appType = target.GetAppType();
+                if (appType != null) {
+
+                    ICommentApp app = ndb.findById( appType, c.AppId ) as ICommentApp;
+                    if (app != null) {
+                        int appCount = OpenComment.count( "AppId=" + c.AppId + " and TargetDataType='" + c.TargetDataType + "'" );
+                        app.CommentCount = appCount;
+                        db.update( app );
+                    }
+                }
+            }
+        }
+
+        private static Microblog getFeed( OpenComment c ) {
+            if (c.FeedId > 0) {
+                return Microblog.findById( c.FeedId );
+            }
+            else {
+                return Microblog.find( "DataId=:id and DataType=:dtype" )
+                    .set( "id", c.TargetDataId )
+                    .set( "dtype", c.TargetDataType )
+                    .first();
+            }
+        }
+
+        private static void clearRootTargetRepliesByData(long dataId, string dataType) {
 
             OpenCommentCount objCount = OpenCommentCount.find( "DataType=:dtype and DataId=" + dataId )
                 .set( "dtype", dataType )
@@ -344,6 +475,7 @@ namespace wojilu.Common.Comments {
             objCount.Replies = 0;
             objCount.update();
         }
+
 
     }
 }

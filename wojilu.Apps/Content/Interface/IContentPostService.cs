@@ -14,37 +14,44 @@ namespace wojilu.Apps.Content.Interface {
 
     public interface IContentPostService {
 
-        ContentPost GetById( int postId, int ownerId );
+        ContentPost GetById(long postId, long ownerId);
 
-        List<ContentPost> GetRecentPost( int appId, int count, int typeId );
-        List<ContentPost> GetRankPost( int appId, int count, int typeId );
+        List<ContentPost> GetRelatedPosts( ContentPost post, int count );
+        List<DataTagShip> GetRelatedDatas( ContentPost post, int count );
 
-        int GetCountBySection( int sectionId );
-        List<ContentPost> GetBySection( int sectionId );
-        List<ContentPost> GetBySection( List<ContentPost> dataAll, int sectionId );
-        List<ContentPost> GetBySection( int appId, int sectionId );
-        List<ContentPost> GetBySection( int appId, int sectionId, int count );
+        ContentPost GetPrevPost( ContentPost post );
+        ContentPost GetNextPost( ContentPost post );
 
-        DataPage<ContentPost> GetBySectionAndCategory( int sectionId, int categoryId );
-        DataPage<ContentPost> GetBySectionAndCategory( int sectionId, int categoryId, int pageSize );
+        List<ContentPost> GetRecentPost(long appId, int count, int typeId);
+        List<ContentPost> GetRankPost(long appId, int count, int typeId);
 
-        DataPage<ContentPost> GetPageBySection( int sectionId );
-        DataPage<ContentPost> GetPageBySection( int sectionId, int pageSize );
-        DataPage<ContentPost> GetPageBySectionAndCategory( int sectionId, int categoryId );
+        int CountBySection(long sectionId);
+        List<ContentPost> GetAllBySection(long sectionId);
+        List<ContentPost> GetBySection(long sectionId);
+        List<ContentPost> GetBySection(long sectionId, int count);
+        List<ContentPost> GetTopBySectionAndCategory(long sectionId, long categoryId);
 
-        List<ContentPost> GetTopBySectionAndCategory( int sectionId, int categoryId, int appId );
+        DataPage<ContentPost> GetPageBySectionAndCategory(long sectionId, long categoryId);
+        DataPage<ContentPost> GetPageBySectionAndCategory(long sectionId, long categoryId, int pageSize);
+
+        DataPage<ContentPost> GetPageBySection(long sectionId);
+        DataPage<ContentPost> GetPageBySection(long sectionId, int pageSize);
+
         List<ContentPost> GetByIds( string ids );
+        List<ContentPost> GetByApp(long appId);
 
-        List<ContentPost> GetByApp( int appId );
+        DataPage<ContentPost> GetByApp(long appId, int pageSize);
 
-        DataPage<ContentPost> GetByApp( int appId, int pageSize );
-        DataPage<ContentPost> GetBySearch( int appId, string key, int pageSize );
-        DataPage<ContentPost> GetTrashByApp( int appId, int pageSize );
+        DataPage<ContentPost> GetBySearch(long appId, string key, int pageSize);
+        DataPage<ContentPost> GetTrashByApp(long appId, int pageSize);
 
-        ContentPost GetFirstPost( int appId, int sectionId );
+        ContentPost GetFirstPost(long appId, long sectionId);
 
-        DataPage<ContentPost> GetByCreator( int creatorId, IMember owner, int appId );
-        int CountByCreator( int creatorId, IMember owner, int appId );
+        DataPage<ContentPost> GetPageByCreator(long creatorId, IMember owner, long appId);
+
+        int CountByCreator(long creatorId, IMember owner, long appId);
+        int CountByApp(long appId);
+
 
         void AddHits( ContentPost post );
 
@@ -55,32 +62,19 @@ namespace wojilu.Apps.Content.Interface {
         void Update( ContentPost post, String sectionIds, String tagList );
 
         void Delete( ContentPost post );
-        void Restore( int id );
-        void DeleteTrue( int postId );
-        
-        void UpdateAttachmentPermission( ContentPost post, int ischeck );
-        void UpdateSection( ContentPost post, int sectionId );
-        void UpdateTitleStyle( ContentPost post, string titleStyle );
-        void UpdateSection( string ids, int sectionId );
-
-
-        List<ContentPost> GetRelatedPosts( ContentPost post );
-        List<DataTagShip> GetRelatedDatas( ContentPost post );
-
-        ContentPost GetPrevPost( ContentPost post );
-        ContentPost GetNextPost( ContentPost post );
-
-
         void DeleteBatch( string ids );
+        void Restore(long id);
+        void DeleteSys(long postId);
+        void DeleteTrueBatch( string ids );
+
+        void UpdateAttachmentPermission( ContentPost post, int ischeck );
+        void UpdateTitleStyle( ContentPost post, string titleStyle );
+
         void SetStatus_Pick( string ids );
         void SetStatus_Normal( string ids );
         void SetStatus_Focus( string ids );
 
-
-        DataPage<ContentPost> GetPageBySectionArchive( int sectionId, int pageSize );
-
-
-
+        void Trans( string postIds, string targetSectionIds );
     }
 }
 

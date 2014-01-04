@@ -11,22 +11,24 @@ using wojilu.Common.Tags;
 using wojilu.Common.Jobs;
 using wojilu.Common.AppBase.Interface;
 using wojilu.Common;
+using wojilu.Common.Comments;
+using wojilu.Common.Microblogs.Interface;
 
 namespace wojilu.Apps.Blog.Domain {
 
     [Serializable]
-    public class BlogPost : ObjectBase<BlogPost>, IAppData, IShareData, IHits {
+    public class BlogPost : ObjectBase<BlogPost>, IAppData, IShareData, IHits, ICommentTarget, ILike {
 
         public IShareInfo GetShareInfo() {
             return new BlogPostFeed( this );
         }
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         [Column( Length = 50 )]
         public String OwnerUrl { get; set; }
 
-        public int AppId { get; set; }
+        public long AppId { get; set; }
         public int SysCategoryId { get; set; }
 
         public User Creator { get; set; }
@@ -59,6 +61,7 @@ namespace wojilu.Apps.Blog.Domain {
         public int IsTop { get; set; }
 
         public int Replies { get; set; }
+        public int Likes { get; set; }
 
         [TinyInt]
         public int SaveStatus { get; set; }
@@ -68,6 +71,8 @@ namespace wojilu.Apps.Blog.Domain {
         public String Ip { get; set; }
 
         public DateTime Created { get; set; }
+
+        public int AttachmentCount { get; set; }
 
         private TagTool tag;
         [NotSave]
@@ -81,6 +86,26 @@ namespace wojilu.Apps.Blog.Domain {
         [NotSave]
         public String Tags { get; set; }
 
+        public void UpdateComments() {
+
+            BlogApp app = BlogApp.findById( this.AppId );
+            if (app == null) return;
+            app.CommentCount = OpenComment.count( "AppId=" + this.AppId + " and TargetDataType='" + this.GetType().FullName + "'" );
+            app.update();
+
+        }
+
+        public Type GetAppType() {
+            return typeof( BlogApp );
+        }
+
+        [NotSave]
+        public String SummaryInfo {
+            get {
+                if (strUtil.HasText( this.Abstract )) return this.Abstract;
+                return strUtil.ParseHtml( this.Content, 200 );
+            }
+        }
     }
 }
 

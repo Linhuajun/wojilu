@@ -19,17 +19,27 @@ namespace wojilu.Members.Sites.Domain {
     public class SiteApp : CacheObject, IMemberApp, IComparable {
 
 
-        public User Creator { get; set; }
+        public long CreatorId { get; set; }
+
+        [NotSave]
+        public User Creator {
+            get { return User.findById( this.CreatorId ); }
+            set {
+                if (value == null) return;
+                this.CreatorId = value.Id;
+            }
+        }
+
         public String CreatorUrl { get; set; }
-        public int AppInfoId { get; set; }
-        public int AppOid { get; set; }
+        public long AppInfoId { get; set; }
+        public long AppOid { get; set; }
         public int IsStop { get; set; }
         public int AccessStatus { get; set; }
         public DateTime Created { get; set; }
         public int OrderId { get; set; }
 
         [NotSave]
-        public int OwnerId {
+        public long OwnerId {
             get { return Site.Instance.Id; }
             set { }
         }

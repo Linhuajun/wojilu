@@ -23,11 +23,11 @@ namespace wojilu.Web.Controller.Forum.Moderators {
     [App( typeof( ForumApp ) )]
     public class PostController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
-        public ICurrencyService currencyService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumRateService rateService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual ICurrencyService currencyService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumRateService rateService { get; set; }
 
         public PostController() {
             topicService = new ForumTopicService();
@@ -40,7 +40,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
 
 
         private Boolean boardError( ForumTopic topic ) {
-            if (ctx.GetInt( "boardId" ) != topic.ForumBoard.Id) {
+            if (ctx.GetLong( "boardId" ) != topic.ForumBoard.Id) {
                 echoRedirect( lang( "exNoPermission" ) + ": borad id error" );
                 return true;
             }
@@ -48,7 +48,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         private Boolean boardError( ForumPost post ) {
-            if (ctx.GetInt( "boardId" ) != post.ForumBoardId) {
+            if (ctx.GetLong( "boardId" ) != post.ForumBoardId) {
                 echoRedirect( lang( "exNoPermission" ) + ": borad id error" );
                 return true;
             }
@@ -58,23 +58,23 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         //--------------------------------------------------------------------------
 
 
-        public void AddCredit( int id ) {
+        public virtual void AddCredit( long id ) {
 
             String msg = "<div style=\"font-size:22px;color:red;font-weight:bold;margin-top:30px; text-align:center;\">{0}</div>";
 
             if (rateService.HasRate( ctx.viewer.Id, id )) {
-                actionContent( string.Format( msg, alang( "exRewarded" ) ) );
+                content( string.Format( msg, alang( "exRewarded" ) ) );
                 return;
             }
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             if (post == null) {
-                actionContent( string.Format( msg, alang( "exPostNotFound" ) ) );
+                content( string.Format( msg, alang( "exPostNotFound" ) ) );
                 return;
             }
 
             if (post.Creator.Id == ctx.viewer.Id) {
-                actionContent( string.Format( msg, alang( "exNotAllowSelfCredit" ) ) );
+                content( string.Format( msg, alang( "exNotAllowSelfCredit" ) ) );
                 return;
             }
 

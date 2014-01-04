@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -18,8 +18,8 @@ namespace wojilu.Web.Controller.Users {
 
     public class ForbiddenController :ControllerBase {
 
-        public IPhotoPostService photoPostService { get; set; }
-        public IBlogPostService blogPostService { get; set; }
+        public virtual IPhotoPostService photoPostService { get; set; }
+        public virtual IBlogPostService blogPostService { get; set; }
 
         public ForbiddenController() {
             photoPostService = new PhotoPostService();
@@ -27,7 +27,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
 
-        public void User() {
+        public virtual void User() {
 
 
             HideLayout( typeof( wojilu.Web.Controller.LayoutController ) );
@@ -35,7 +35,7 @@ namespace wojilu.Web.Controller.Users {
             User owner = ctx.owner.obj as User;
 
             set( "user.Name", owner.Name );
-            set( "user.Face", owner.PicMedium );
+            set( "user.Face", owner.PicM );
 
             int friendCount = owner.FriendCount;
             int blogCount = blogPostService.GetCountByUser( owner.Id );

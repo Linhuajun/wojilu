@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ using System.Text;
 namespace wojilu.Web {
 
     /// <summary>
-    /// ¶îÍâ×Ô¶¨ÒåµÄ°ó¶¨·½·¨¡£ÔÚÄ¬ÈÏµÄ°ó¶¨Ö´ĞĞÍêÖ®ºó£¬±¾·½·¨»á±»¸½¼ÓÉÏÈ¥¼ÌĞøÖ´ĞĞ
+    /// é¢å¤–è‡ªå®šä¹‰çš„ç»‘å®šæ–¹æ³•ã€‚åœ¨é»˜è®¤çš„ç»‘å®šæ‰§è¡Œå®Œä¹‹åï¼Œæœ¬æ–¹æ³•ä¼šè¢«é™„åŠ ä¸Šå»ç»§ç»­æ‰§è¡Œ
     /// </summary>
     /// <param name="tpl"></param>
     /// <param name="lbl"></param>
@@ -29,10 +29,10 @@ namespace wojilu.Web {
     public delegate void otherBindFunction( IBlock tpl, String lbl, Object obj );
 
     /// <summary>
-    /// ¶îÍâ×Ô¶¨ÒåµÄ°ó¶¨·½·¨¡£ÔÚÄ¬ÈÏµÄ°ó¶¨Ö´ĞĞÍêÖ®ºó£¬±¾·½·¨»á±»¸½¼ÓÉÏÈ¥¼ÌĞøÖ´ĞĞ
+    /// é¢å¤–è‡ªå®šä¹‰çš„ç»‘å®šæ–¹æ³•ã€‚åœ¨é»˜è®¤çš„ç»‘å®šæ‰§è¡Œå®Œä¹‹åï¼Œæœ¬æ–¹æ³•ä¼šè¢«é™„åŠ ä¸Šå»ç»§ç»­æ‰§è¡Œ
     /// </summary>
     /// <param name="tpl"></param>
     /// <param name="id"></param>
-    public delegate void bindFunction( IBlock tpl, int id );
+    public delegate void bindFunction( IBlock tpl, long id );
 
 }

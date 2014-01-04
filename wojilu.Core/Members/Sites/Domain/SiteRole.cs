@@ -59,7 +59,7 @@ namespace wojilu.Members.Sites.Domain {
             return new SiteRole( DeletedUserId, lang.get( "deletedUserName" ) );
         }
 
-        public static Boolean IsInAdminGroup( int roleId ) {
+        public static bool IsInAdminGroup(long roleId) {
             SiteRole role = cdb.findById<SiteRole>( roleId );
             if (role == null) return false;
 
@@ -77,7 +77,7 @@ namespace wojilu.Members.Sites.Domain {
             return false;
         }
 
-        public static SiteRole GetById( int userId, int roleId ) {
+        public static SiteRole GetById(long userId, long roleId) {
 
             if (userId == GuestId) return Guest;
             if (userId == DeletedUserId) return DeletedUser;
@@ -88,7 +88,7 @@ namespace wojilu.Members.Sites.Domain {
             return role;
         }
 
-        public static SiteRole GetById( int roleId ) {
+        public static SiteRole GetById(long roleId) {
             if (roleId == DeletedUserId) return DeletedUser;
             return cdb.findById<SiteRole>( roleId );
         }

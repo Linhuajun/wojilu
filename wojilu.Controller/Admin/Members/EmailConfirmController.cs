@@ -17,9 +17,9 @@ namespace wojilu.Web.Controller.Admin.Members {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( EmailConfirmController ) );
 
-        public IUserService userService { get; set; }
-        public IUserConfirmService confirmService { get; set; }
-        public IConfirmEmail confirmEmail { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IUserConfirmService confirmService { get; set; }
+        public virtual IConfirmEmail confirmEmail { get; set; }
 
         public EmailConfirmController() {
             userService = new UserService();
@@ -27,12 +27,12 @@ namespace wojilu.Web.Controller.Admin.Members {
             confirmEmail = new ConfirmEmail();
         }
 
-        public void EditTemplate() {
-            redirectUrl( to( new ViewsFileController().Edit ) + "?file=" + confirmEmail.getTemplatePath() + MvcConfig.Instance.ViewExt );
+        public virtual void EditTemplate() {
+            redirectDirect( to( new ViewsFileController().Edit ) + "?file=" + confirmEmail.getTemplatePath() + MvcConfig.Instance.ViewExt );            
         }
 
         [HttpPost, DbTransaction]
-        public void SendConfirmMail( ) {
+        public virtual void SendConfirmMail( ) {
 
             if (config.Instance.Site.EnableEmail == false) {
                 echo( "对不起，邮件服务尚未开启，无法发送邮件" );
@@ -43,7 +43,7 @@ namespace wojilu.Web.Controller.Admin.Members {
             String title = ctx.Post( "Title" );
             if (strUtil.IsNullOrEmpty( title )) title = config.Instance.Site.SiteName + lang( "exAccountConfirm" );
 
-            MailService mail = MailUtil.getMailService();
+            MailClient mail = MailClient.Init();
 
             int[] arrId = cvt.ToIntArray( ids );
 
@@ -65,7 +65,7 @@ namespace wojilu.Web.Controller.Admin.Members {
             if( ctx.HasErrors )
                 echoError();
             else
-                echoRedirect( lang( "opok" ) );
+                echoRedirectPart( lang( "opok" ) );
 
         }
 

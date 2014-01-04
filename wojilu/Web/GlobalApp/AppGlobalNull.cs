@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@ using System;
 namespace wojilu.Web.GlobalApp {
 
     /// <summary>
-    /// “Ï≥£≤ª¥¶¿Ì
+    /// ÂºÇÂ∏∏‰∏çÂ§ÑÁêÜ
     /// </summary>
     public class AppGlobalNull : AppGlobalHelper {
 

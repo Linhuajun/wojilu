@@ -21,7 +21,6 @@ using wojilu.Web.Controller.Security;
 using wojilu.Common.Menus.Interface;
 using wojilu.Common.MemberApp.Interface;
 using wojilu.Members.Sites.Interface;
-using wojilu.Web.Utils;
 using wojilu.Common;
 using wojilu.Web.Controller.Common;
 
@@ -29,9 +28,9 @@ namespace wojilu.Web.Controller.Layouts {
 
     public partial class SiteLayoutController : ControllerBase {
 
-        public IMemberAppService siteAppService { get; set; }
-        public IAppInstallerService appInfoService { get; set; }
-        public ISiteSkinService siteSkinService { get; set; }
+        public virtual IMemberAppService siteAppService { get; set; }
+        public virtual IAppInstallerService appInfoService { get; set; }
+        public virtual ISiteSkinService siteSkinService { get; set; }
         private IMenuService menuService { get; set; }
 
         public SiteLayoutController() {
@@ -57,6 +56,7 @@ namespace wojilu.Web.Controller.Layouts {
             bindCommon();
             bindSiteSkin();
 
+            set( "siteBeiAn", config.Instance.Site.BeiAn );
             set( "copyright", lang( "siteCopyright" ) );
             set( "ramsize", lang( "memoryUse" ) + ": " + (((Environment.WorkingSet / 1024) / 1024)) + " MB" );
 
@@ -67,7 +67,7 @@ namespace wojilu.Web.Controller.Layouts {
             set( "customSkinLink", to( new Admin.SiteSkinController().CustomBg ) );
         }
 
-        public void AdminLayout() {
+        public virtual void AdminLayout() {
 
             if (strUtil.IsNullOrEmpty( Page.Title )) {
                 Page.Title = "wojilu " + lang( "adminTitle" );
@@ -99,7 +99,7 @@ namespace wojilu.Web.Controller.Layouts {
 
 
         private void bindSiteSkin() {
-            String skinContent = siteSkinService.GetSkin( ctx.GetInt( "skinId" ), MvcConfig.Instance.CssVersion );
+            String skinContent = siteSkinService.GetSkin( ctx.GetLong( "skinId" ), MvcConfig.Instance.CssVersion );
             set( "siteSkinContent", skinContent );
         }
 

@@ -18,8 +18,8 @@ namespace wojilu.Web.Controller.Groups {
 
     public class MemberController : ControllerBase {
 
-        public IGroupService groupService { get; set; }
-        public IMemberGroupService mgrService { get; set; }
+        public virtual IGroupService groupService { get; set; }
+        public virtual IMemberGroupService mgrService { get; set; }
 
         public MemberController() {
             groupService = new GroupService();
@@ -28,9 +28,9 @@ namespace wojilu.Web.Controller.Groups {
         }
 
 
-        public void List() {
+        public virtual void List() {
 
-            WebUtils.pageTitle( this, lang( "memberList" ) );
+            ctx.Page.Title = lang( "memberList" );
 
             IBlock block = getBlock( "list" );
             DataPage<GroupUser> list = mgrService.GetMembersApproved( ctx.owner.Id );

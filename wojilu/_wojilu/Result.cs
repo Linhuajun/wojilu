@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -136,6 +136,7 @@ namespace wojilu {
                     builder.Append( "{" );
                     builder.Append( "\"IsValid\":false, \"Msg\":\"" );
                     for (int i = 0; i < Errors.Count; i++) {
+                        if (Errors[i] == null) continue;
                         builder.Append( Errors[i].Replace( "\"", "'" ) );
                         if (i < Errors.Count - 1) builder.Append( "," );
                     }

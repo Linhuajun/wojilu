@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,7 +50,7 @@ namespace wojilu {
         /// <typeparam name="T"></typeparam>
         /// <param name="id"></param>
         /// <returns>返回某条数据</returns>
-        public static T findById<T>( int id ) where T : CacheObject {
+        public static T findById<T>(long id) where T : CacheObject {
             Object obj = MemoryDB.FindById( typeof( T ), id );
             return (T)obj;
         }

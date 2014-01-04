@@ -1,43 +1,47 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
 using System;
 
-using wojilu.Apps;
 using wojilu.Web.Mvc;
-using wojilu.Web.Mvc.Attr;
 
 using wojilu.Web.Controller.Common;
 using wojilu.Members.Users.Domain;
 using wojilu.Common.Microblogs.Domain;
 using wojilu.Common.Microblogs.Service;
-using wojilu.Members.Sites.Domain;
+using wojilu.Common.Microblogs.Interface;
 
 namespace wojilu.Web.Controller.Users {
 
 
     public class ProfileController : ControllerBase {
 
-        public void Main() {
+        public virtual IMicroblogService microblogService { get; set; }
 
-            WebUtils.pageTitle( this, "about" );
+        public ProfileController() {
+            microblogService = new MicroblogService();
+        }
 
+        public virtual void Main() {
+
+            ctx.Page.Title = "about";
 
             User user = ctx.owner.obj as User;
             load( "userMenu", UserMenu );
 
-            Microblog blog = new MicroblogService().GetFirst( user.Id );
+            //Microblog blog = microblogService.GetFirst( user.Id );
 
-            if (blog != null) {
-                String lnkMore = alink.ToUserMicroblog( user );
-                String more = "<a href='" + lnkMore + "'>" + lang( "more" ) + "...</a>";
-                String logcontent = blog.Content + " <span class='left10'>" + more + "</span>";
+            //if (blog != null) {
+            //    String lnkMore = alink.ToUserMicroblog( user );
+            //    String more = "<a href='" + lnkMore + "'>" + lang( "more" ) + "...</a>";
+            //    String logcontent = blog.Content + " <span class='left10'>" + more + "</span>";
 
-                set( "microblog", logcontent );
-            }
-            else
-                set( "microblog", "" );
+            //    set( "microblog", logcontent );
+            //}
+            //else {
+            //    set( "microblog", "" );
+            //}
 
             UserVo uservo = new UserVo( user );
 
@@ -65,7 +69,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
 
-        public void UserMenu() {
+        public virtual void UserMenu() {
 
             User user = ctx.GetItem( "__owner" ) as User;
             if (user == null) {
@@ -73,12 +77,12 @@ namespace wojilu.Web.Controller.Users {
             }
 
             if (user == null) {
-                actionContent( "" );
+                content( "" );
                 return;
             }
 
             set( "profile", t2( Main ) );
-            set( "user.Face", user.PicMedium );
+            set( "user.Face", user.PicM );
 
             set( "user.FriendCount", user.FriendCount );
             set( "user.FollowingCount", user.FollowingCount );
@@ -104,7 +108,7 @@ namespace wojilu.Web.Controller.Users {
 
             String shareLink = Link.To( ctx.owner.obj, new wojilu.Web.Controller.ShareController().Add );
             shareLink = shareLink + string.Format( "?url={0}&title={1}&pic={2}",
-                getFullUrl( toUser( user ) ), user.Name + " �Ŀռ�", user.PicOriginal );
+                getFullUrl( toUser( user ) ), user.Name + " 的空间", user.PicO );
 
             set( "shareLink", shareLink );
         }

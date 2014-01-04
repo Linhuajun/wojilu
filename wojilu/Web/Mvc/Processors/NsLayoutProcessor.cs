@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,11 +48,7 @@ namespace wojilu.Web.Mvc.Processors {
 
                 content = addLayoutPrivate( paths[i].ToString(), content, ctx, isLastLayout );
 
-                if (ctx.utils.isEnd()) {
-
-                    context.endMsgByView( content );
-                    return;
-                }
+                if (ctx.utils.isEnd()) return;
             }
 
 
@@ -73,18 +69,15 @@ namespace wojilu.Web.Mvc.Processors {
         // 2) path => ""
         private static String addLayoutPrivate( String path, String actionContent, MvcContext ctx, Boolean isLastLayout ) {
 
-            // String content = layoutCacher.getByPath( path )
-            // if( strUtil.HasText( content ) ) return HtmlCombiner.combinePage( content, actionContent );
-
             ControllerBase controller = ControllerFactory.FindLayoutController( path, ctx );
             if (controller == null) return actionContent;
 
-            ctx.controller.utils.addHidedLayouts( controller ); // ½«controllerÖĞÌáµ½ĞèÒªÒş²ØµÄ¿ØÖÆÆ÷Òş²Ø
+            ctx.controller.utils.addHidedLayouts( controller ); // å°†controllerä¸­æåˆ°éœ€è¦éšè—çš„æ§åˆ¶å™¨éšè—
             if (ctx.controller.utils.isHided( controller.GetType() )) return actionContent;
 
-            // ¼ì²é»º´æ
-            CacheInfo ci = CacheInfo.InitLayout( ctx, controller );
-            Object cacheContent = ci.CheckCache();
+            // æ£€æŸ¥ç¼“å­˜
+            ActionCacheChecker ci = ActionCacheChecker.InitLayout( ctx, controller );
+            Object cacheContent = ci.GetCache();
             if (cacheContent != null) {
                 logger.Info( "load from nsLayoutCache=" + ci.CacheKey );
                 return HtmlCombiner.combinePage( cacheContent.ToString(), actionContent );
@@ -95,12 +88,12 @@ namespace wojilu.Web.Mvc.Processors {
             ActionRunner.runLayoutAction( ctx, controller, controller.Layout );
 
             if (ctx.utils.isEnd()) {
-                return controller.utils.getActionResult();
+                return ctx.utils.getCurrentOutputString();
             }
 
             String actionResult = controller.utils.getActionResult();
             if (ci.IsActionCache) {
-                ci.AddContentToCache( actionResult );
+                ci.AddCache( actionResult );
             }
 
             return HtmlCombiner.combinePage( actionResult, actionContent );

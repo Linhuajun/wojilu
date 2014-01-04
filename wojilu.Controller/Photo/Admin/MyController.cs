@@ -25,18 +25,16 @@ namespace wojilu.Web.Controller.Photo.Admin {
     [App( typeof( PhotoApp ) )]
     public class MyController : ControllerBase {
 
-        public IFeedService feedService { get; set; }
-        public IFriendService friendService { get; set; }
+        public virtual IFriendService friendService { get; set; }
 
-        public IPhotoPostService postService { get; set; }
-        public IPhotoAlbumService albumService { get; set; }
-        public IPhotoSysCategoryService categoryService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IPhotoAlbumService albumService { get; set; }
+        public virtual IPhotoSysCategoryService categoryService { get; set; }
 
         public MyController() {
 
             base.HideLayout( typeof( Photo.LayoutController ) );
 
-            feedService = new FeedService();
             friendService = new FriendService();
 
             postService = new PhotoPostService();
@@ -56,7 +54,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
 
 
 
-        public void My() {
+        public virtual void My() {
 
 
             DataPage<PhotoPost> posts = postService.GetPostPage( ctx.owner.Id, ctx.app.Id, 20 );
@@ -66,7 +64,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
 
 
 
-        public void Category( int categoryId ) {
+        public virtual void Category( long categoryId ) {
 
             view( "My" );
 
@@ -74,7 +72,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             bindPhotoList( posts, categoryId );
         }
 
-        private void bindPhotoList( DataPage<PhotoPost> posts, int categoryId ) {
+        private void bindPhotoList( DataPage<PhotoPost> posts, long categoryId ) {
 
 
             String albumName = "";
@@ -117,31 +115,31 @@ namespace wojilu.Web.Controller.Photo.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Admin() {
+        public virtual void Admin() {
 
             String ids = ctx.Post( "choice" );
             String cmd = ctx.Post( "action" );
-            int categoryId = ctx.PostInt( "categoryId" );
+            long categoryId = ctx.PostLong( "categoryId" );
 
             if (strUtil.IsNullOrEmpty( cmd )) {
-                actionContent( lang( "exCmd" ) );
+                content( lang( "exCmd" ) );
                 return;
             }
             if (cvt.IsIdListValid( ids ) == false) {
-                actionContent( lang( "exId" ) );
+                content( lang( "exId" ) );
                 return;
             }
 
             if (cmd.Equals( "category" )) {
                 postService.UpdateAlbum( categoryId, ids, ctx.owner.Id, ctx.app.Id );
-                actionContent( "ok" );
+                content( "ok" );
             }
             else if (cmd.Equals( "deletetrue" )) {
                 postService.DeleteTrue( ids, ctx.owner.Id );
-                actionContent( "ok" );
+                content( "ok" );
             }
             else {
-                actionContent( lang( "exUnknowCmd" ) );
+                content( lang( "exUnknowCmd" ) );
             }
 
         }

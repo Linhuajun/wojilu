@@ -32,8 +32,8 @@ namespace wojilu.Web.GlobalApp {
             logger.Info( "begin send email" );
 
             String email = config.Instance.Site.Email;
-            MailService mail = MailUtil.getMailService();
-            mail.send( email, job.Title, job.ErrorHtml );
+            MailClient mail = MailClient.Init();
+            mail.Send( email, job.Title, job.ErrorHtml );
 
             cdb.delete( job );
         }

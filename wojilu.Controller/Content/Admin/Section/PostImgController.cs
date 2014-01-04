@@ -13,18 +13,17 @@ using wojilu.Apps.Content.Service;
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
     [App( typeof( ContentApp ) )]
-    public class PostImgController : ControllerBase, IPageSection {
+    public class PostImgController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentImgService imgService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentImgService imgService { get; set; }
 
         public PostImgController() {
             postService = new ContentPostService();
             imgService = new ContentImgService();
         }
 
-
-        public void AdminSectionShow( int sectionId ) {
+        public virtual void AdminSectionShow( long sectionId ) {
 
             int postcat = PostCategory.Post;
             int imgcat = PostCategory.Img;
@@ -32,23 +31,47 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
             bindCmds( sectionId, postcat, imgcat, imgPostCat );
 
-            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat, ctx.app.Id );
+            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat );
             ContentPost img = imgService.GetTopImg( sectionId, imgPostCat, ctx.app.Id );
             List<ContentPost> imgs = this.imgService.GetByCategory( sectionId, imgcat, ctx.app.Id, 4 );
 
             bindPosts( posts );
             bindTopImg( img );
             bindImgs( imgs );
-
         }
 
-        private void bindCmds( int sectionId, int postcat, int imgcat, int imgPostCat ) {
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
 
-            set( "postAddUrl", to( new PostController().Add, sectionId ) + "?categoryId=" + postcat );
+            int postcat = PostCategory.Post;
+            int imgcat = PostCategory.Img;
+            int imgPostCat = PostCategory.ImgPost;
+
+            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat );
+            ContentPost img = imgService.GetTopImg( sectionId, imgPostCat, ctx.app.Id );
+            List<ContentPost> imgs = this.imgService.GetByCategory( sectionId, imgcat, ctx.app.Id, 4 );
+
+            List<ContentPost> list = new List<ContentPost>();
+            list.AddRange( posts );
+            list.Add( img );
+            list.AddRange( imgs );
+            return list;
+        }
+
+        public virtual String GetEditLink( long postId ) {
+            return to( new Common.PostController().Edit, postId );
+        }
+
+        public virtual String GetSectionIcon( long sectionId ) {
+            return "";
+        }
+
+        private void bindCmds( long sectionId, int postcat, int imgcat, int imgPostCat ) {
+
+            set( "postAddUrl", to( new Common.PostController().Add, sectionId ) + "?categoryId=" + postcat );
             set( "postListUrl", to( new ListController().AdminList, sectionId ) + "?categoryId=" + postcat );
-            set( "imgAddUrl", to( new PostController().Add, sectionId ) + "?categoryId=" + imgcat );
+            set( "imgAddUrl", to( new Common.PostController().Add, sectionId ) + "?categoryId=" + imgcat );
             set( "imgListUrl", to( new ListController().AdminList, sectionId ) + "?categoryId=" + imgcat );
-            set( "imgPostAddUrl", to( new PostController().Add, sectionId ) + "?categoryId=" + imgPostCat );
+            set( "imgPostAddUrl", to( new Common.PostController().Add, sectionId ) + "?categoryId=" + imgPostCat );
             set( "imgPostListUrl", to( new ListController().AdminList, sectionId ) + "?categoryId=" + imgPostCat );
         }
 
@@ -66,7 +89,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                     block.Set( "post.Title", post.Title );
 
 
-                block.Set( "post.Url", to( new PostController().Edit, post.Id ) );
+                block.Set( "post.Url", to( new Common.PostController().Edit, post.Id ) );
                 block.Set( "post.Created", post.Created.ToShortTimeString() );
 
                 block.Bind( "post", post );
@@ -91,7 +114,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 imgBlock.Set( "ipost.Width", img.Width );
                 imgBlock.Set( "ipost.Height", img.Height );
 
-                imgBlock.Set( "ipost.EditLink", to( new PostController().EditImg, img.Id ) );
+                imgBlock.Set( "ipost.EditLink", to( new Common.PostController().EditImg, img.Id ) );
                 imgBlock.Next();
             }
         }
@@ -111,17 +134,14 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
                 imgBlock.Set( "img.Thumb", img.GetImgThumb() );
-                imgBlock.Set( "img.Url", to( new PostController().EditImg, img.Id ) );
+                imgBlock.Set( "img.Url", to( new Common.PostController().EditImg, img.Id ) );
                 imgBlock.Bind( "img", img );
                 imgBlock.Next();
             }
 
         }
 
-        public void SectionShow( int sectionId ) {
-        }
-
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
 
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 

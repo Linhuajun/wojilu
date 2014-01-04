@@ -12,6 +12,17 @@ namespace wojilu.Apps.Content.Domain {
     [Serializable]
     public class ContentSetting {
 
+        public ContentSetting() {
+
+            AllowComment = 1;
+            AllowAnonymousComment = 1;
+            EnableSubmit = 0;
+
+            IsAutoHtml = 0;
+
+            SetDefaultValue();
+        }
+
         public void SetDefaultValue() {
 
             if (this.ListPostPerPage == 0) this.ListPostPerPage = 15;
@@ -26,19 +37,13 @@ namespace wojilu.Apps.Content.Domain {
 
         }
 
-        public ContentSetting() {
-
-            AllowComment = 1;
-            AllowAnonymousComment = 1;
-            EnableSubmit = 0;
-
-            SetDefaultValue();
-        }
-
         public int AllowComment { get; set; }
         public int AllowAnonymousComment { get; set; }
 
         public int EnableSubmit { get; set; } // 开放投递功能
+
+        public int IsAutoHtml { get; set; } // 是否自动生成静态页面
+
 
         public int ListPostPerPage { get; set; }
         public int ListPicPerPage { get; set; }
@@ -52,7 +57,14 @@ namespace wojilu.Apps.Content.Domain {
         public int ArticleListMode { get; set; }
         public int SummaryLength { get; set; }
 
-        public String StaticDir { get; set; }
+        public String MetaKeywords { get; set; }
+        public String MetaDescription { get; set; }
+
+        public String StaticPath { get; set; }
+
+
+        public static int ListPageWidth = 3;
+        public static int ListRecentPageSize = 50;
 
     }
 }

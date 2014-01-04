@@ -11,7 +11,7 @@ namespace wojilu.Web.Controller.Download {
     [App( typeof( DownloadApp ) )]
     public class CategoryController : ControllerBase {
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
 
             FileCategory c = FileCategory.GetById( id );
@@ -20,7 +20,7 @@ namespace wojilu.Web.Controller.Download {
                 return;
             }
 
-            WebUtils.pageTitle( this, c.Name );
+            ctx.Page.Title = c.Name;
 
 
             load( "sidebar", new DownloadController().sidebar );
@@ -36,7 +36,7 @@ namespace wojilu.Web.Controller.Download {
         }
 
         [NonVisit]
-        public void List() {
+        public virtual void List() {
             FileCategory c = ctx.GetItem( "category" ) as FileCategory;
             if (c != null && c.IsThumbView == 1) view( "ThumbList" );
 
@@ -45,24 +45,7 @@ namespace wojilu.Web.Controller.Download {
             set( "page", list.PageBar );
         }
 
-        //private void bindSubCategories( FileCategory c ) {
-        //    IBlock subblock = getBlock( "sub" );
-
-        //    int rootId = c.Id;
-        //    if (c.ParentId > 0) rootId = c.ParentId;
-
-        //    IBlock block = subblock.GetBlock( "subcats" );
-        //    List<FileCategory> subs = FileCategory.GetByParentId( rootId );
-        //    foreach (FileCategory sub in subs) {
-        //        block.Set( "cat.Name", sub.Name );
-        //        block.Set( "cat.Link", to( Show, sub.Id ) );
-        //        block.Next();
-        //    }
-        //    subblock.Next();
-
-        //}
-
-        private void bindLink( IBlock block, int id ) {
+        private void bindLink( IBlock block, long id ) {
             block.Set( "f.ShowLink", to( new FileController().Show, id ) );
         }
 

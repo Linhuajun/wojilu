@@ -26,24 +26,22 @@ namespace wojilu.Web.Controller.Blog.Admin {
     [App( typeof( BlogApp ) )]
     public class TrashController : ControllerBase {
 
-        public IBlogService blogService { get; set; }
-        public IBlogCategoryService categoryService { get; set; }
-        public IBlogPostService postService { get; set; }
+        public virtual IBlogService blogService { get; set; }
+        public virtual IBlogCategoryService categoryService { get; set; }
+        public virtual IBlogPostService postService { get; set; }
 
-        public IFeedService feedService { get; set; }
-        public IFriendService friendService { get; set; }
+        public virtual IFriendService friendService { get; set; }
 
         public TrashController() {
 
             blogService = new BlogService();
             postService = new BlogPostService();
             categoryService = new BlogCategoryService();
-            feedService = new FeedService();
             friendService = new FriendService();
         }
 
 
-        public void Trash() {
+        public virtual void Trash() {
             target( Admin );
 
             DataPage<BlogPost> blogpostList = postService.GetTrash( ctx.app.Id, 25 );
@@ -68,7 +66,7 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void Admin() {
+        public virtual void Admin() {
 
             if (adminList()) {
                 echoAjaxOk();
@@ -86,7 +84,7 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
             if (strUtil.IsNullOrEmpty( cmd )) return false;
 
-            int appId = ctx.app.Id;
+            long appId = ctx.app.Id;
 
             if (cmd.Equals( "undelete" )) {
                 postService.UnDelete( ids, appId );

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -11,16 +11,15 @@ using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Domain;
 using wojilu.Common.Onlines;
 using wojilu.Members.Users.Interface;
-using wojilu.Serialization;
 
 namespace wojilu.Web.Controller.Users.Admin.Friends {
 
     public class FriendController : ControllerBase {
 
-        public IFriendService friendService { get; set; }
-        public IUserService userService { get; set; }
-        public IFollowerService followService { get; set; }
-        public IBlacklistService blacklistService { get; set; }
+        public virtual IFriendService friendService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IFollowerService followService { get; set; }
+        public virtual IBlacklistService blacklistService { get; set; }
 
         public FriendController() {
             friendService = new FriendService();
@@ -30,6 +29,11 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
         }
 
         public override void Layout() {
+
+            set( "searchAction", to( Query ) );
+            String friendName = getSearchName();
+            set( "qValue", friendName );
+
 
             set( "f.AddLink", to( Add ) );
             set( "categoryLink", to( new FriendCategoryController().List ) );
@@ -42,7 +46,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
 
         }
 
-        public void SelectBox() {
+        public virtual void SelectBox() {
 
             List<FriendShip> ulist = friendService.GetFriendsAll( ctx.owner.Id );
             set( "friendAll", getUserNames( ulist ) );
@@ -110,20 +114,34 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
 
         //---------------------------------------------------------------------------
 
-        public void Search() {
+        public virtual void Search() {
             run( new Users.MainController().Search );
         }
 
-        public void List( int categoryId ) {
+        public virtual void Query() {
+            view( "List" );
+            String friendName = getSearchName();
+            DataPage<FriendShip> list = friendService.GetPageBySearch( ctx.owner.Id, friendName, 20 );
+            bindFriends( list );
+        }
+
+        private String getSearchName() {
+            return strUtil.SqlClean( ctx.Get( "q" ), 20 );
+        }
+
+        public virtual void List( long categoryId ) {
             DataPage<FriendShip> list = friendService.GetPageByCategory( ctx.owner.Id, categoryId, 20 );
+            bindFriends( list );
+        }
+
+        private void bindFriends( DataPage<FriendShip> list ) {
             bindFriendList( list, ctx.owner.Id );
 
-            // ÐÞ¸ÄÀà±ð
+            // ä¿®æ”¹ç±»åˆ«
             List<FriendCategory> categories = FriendCategory.GetByOwner( ctx.owner.Id );
             dropList( "FriendCategory", categories, "Name=Id", 0 );
             set( "saveCategoryLink", to( SaveCategory ) );
             set( "categoryLink", to( new FriendCategoryController().List ) );
-
         }
 
         private void bindCategories( List<FriendCategory> categories ) {
@@ -138,14 +156,14 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveCategory() {
+        public virtual void SaveCategory() {
 
-            int friendId = ctx.PostInt( "friendId" );
-            int categoryId = ctx.PostInt( "categoryId" );
+            long friendId = ctx.PostLong( "friendId" );
+            long categoryId = ctx.PostLong( "categoryId" );
             String friendDescription = strUtil.CutString( ctx.Post( "friendDescription" ), 250 );
 
             if (categoryId <= 0) {
-                echoError( "ÇëÑ¡Ôñ·ÖÀà»ò´´½¨ÐÂµÄ·ÖÀà" );
+                echoError( "è¯·é€‰æ‹©åˆ†ç±»æˆ–åˆ›å»ºæ–°çš„åˆ†ç±»" );
                 return;
             }
 
@@ -160,23 +178,23 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
             dic.Add( "Description", friendDescription );
             dic.Add( "IsValid", true );
 
-            echoJson( JsonString.Convert( dic ) );
+            echoJson( dic );
         }
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
         }
 
-        public void FollowingList() {
+        public virtual void FollowingList() {
             DataPage<User> list = followService.GetFollowingPage( ctx.owner.Id );
             bindFriendList( list );
         }
 
-        public void More() {
+        public virtual void More() {
 
-            int userId = ctx.owner.Id;
+            long userId = ctx.owner.Id;
 
-            List<int> friendIds = friendService.FindFriendsIdList( userId );
+            List<long> friendIds = friendService.FindFriendsIdList( userId );
 
             List<User> flist = friendService.FindFriendsByFriends( userId, 20 );
             List<User> usertops = userService.GetRankedToMakeFriends( 20, friendIds );
@@ -187,7 +205,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
             bindFriends( onlines, "online" );
         }
 
-        public List<User> GetRecentToMakeFriends( int userId, int count, List<int> friendIds ) {
+        public virtual List<User> GetRecentToMakeFriends(long userId, int count, List<long> friendIds) {
             List<OnlineUser> all = OnlineService.GetAll();
 
             String ids = "";
@@ -221,7 +239,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
             String target = ctx.Post( "Name" );
             if (strUtil.IsNullOrEmpty( target )) {
                 errors.Add( lang( "exUserName" ) );
@@ -235,7 +253,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
                 return;
             }
 
-            Result result = friendService.AddFriend( ctx.owner.Id, friend.Id, strUtil.CutString( ctx.Post( "Msg" ), 100 ) );
+            Result result = friendService.AddFriend( ctx.owner.Id, friend.Id, strUtil.CutString( ctx.Post( "Msg" ), 100 ), ctx.Ip );
             if (result.HasErrors) {
                 echoError( result );
             }
@@ -245,13 +263,13 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
-            friendService.DeleteFriend( ctx.owner.obj.Id, id );
+        public virtual void Delete( long id ) {
+            friendService.DeleteFriend( ctx.owner.obj.Id, id, ctx.Ip );
             echoRedirectPart( lang( "opok" ) );
         }
 
         [HttpDelete, DbTransaction]
-        public void DeleteFollowing( int id ) {
+        public virtual void DeleteFollowing( long id ) {
             followService.DeleteFollow( ctx.owner.obj.Id, id );
             echoRedirectPart( lang( "opok" ) );
         }
@@ -261,7 +279,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
             List<User> friends = list.Results;
             foreach (User user in friends) {
                 block.Set( "m.Name", user.Name );
-                block.Set( "m.FaceFull", user.PicMedium );
+                block.Set( "m.FaceFull", user.PicM );
                 block.Set( "m.UrlFull", toUser( user ) );
                 block.Set( "m.DeleteUrl", to( Delete, user.RealId ) );
                 block.Set( "m.DeleteFollowingLink", to( DeleteFollowing, user.RealId ) );
@@ -273,7 +291,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
             set( "page", list.PageBar );
         }
 
-        private void bindFriendList( DataPage<FriendShip> list, int userId ) {
+        private void bindFriendList( DataPage<FriendShip> list, long userId ) {
 
             IBlock block = getBlock( "list" );
             List<FriendShip> friends = list.Results;
@@ -307,7 +325,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
                 block.Set( "m.Id", friend.RealId );
                 block.Set( "m.Name", friend.Name );
 
-                block.Set( "m.FaceFull", friend.PicMedium );
+                block.Set( "m.FaceFull", friend.PicM );
                 block.Set( "m.UrlFull", toUser( friend ) );
                 block.Set( "m.DeleteUrl", to( Delete, friend.RealId ) );
                 block.Set( "m.DeleteFollowingLink", to( DeleteFollowing, friend.RealId ) );
@@ -325,7 +343,7 @@ namespace wojilu.Web.Controller.Users.Admin.Friends {
             set( "page", list.PageBar );
         }
 
-        private FriendCategory getCategory( List<FriendCategory> cats, int categoryId ) {
+        private FriendCategory getCategory( List<FriendCategory> cats, long categoryId ) {
             if (categoryId <= 0) return null;
             foreach (FriendCategory c in cats) {
                 if (c.Id == categoryId) return c;

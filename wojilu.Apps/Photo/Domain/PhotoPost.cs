@@ -15,19 +15,21 @@ using wojilu.Common.Jobs;
 using wojilu.Common.AppBase.Interface;
 using wojilu.Common;
 using wojilu.Common.Comments;
+using wojilu.Apps.Photo.Helper;
+using wojilu.Common.Microblogs.Interface;
 
 namespace wojilu.Apps.Photo.Domain {
 
     [Serializable]
-    public class PhotoPost : ObjectBase<PhotoPost>, IAppData, IShareData, IHits, ICommentTarget {
+    public class PhotoPost : ObjectBase<PhotoPost>, IAppData, IShareData, IHits, ICommentTarget, ILike {
 
-        public int AppId { get; set; }
-        public int SysCategoryId { get; set; }
+        public long AppId { get; set; }
+        public long SysCategoryId { get; set; }
 
         [Column( Name = "CategoryId" )]
         public PhotoAlbum PhotoAlbum { get; set; }
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         [Column( Length = 50 )]
         public String OwnerUrl { get; set; }
@@ -48,6 +50,11 @@ namespace wojilu.Apps.Photo.Domain {
         public int Hits { get; set; }
         public int Replies { get; set; }
 
+        /// <summary>
+        /// 图片大小等信息，存储格式：s=68/68,sx=80/120,m=180/500
+        /// </summary>
+        public String SizeInfo { get; set; }
+
         //--------------------------------------------------------------------
 
         public int Likes { get; set; }
@@ -57,8 +64,8 @@ namespace wojilu.Apps.Photo.Domain {
         public String SrcUrl { get; set; } // 来源网址
         public String SrcTool { get; set; } // 采集工具
 
-        public int ParentId { get; set; } // 转采来源 parent
-        public int RootId { get; set; } // 转采来源 root
+        public long ParentId { get; set; } // 转采来源 parent
+        public long RootId { get; set; } // 转采来源 root
 
         //--------------------------------------------------------------------
 
@@ -69,6 +76,43 @@ namespace wojilu.Apps.Photo.Domain {
         [Column( Length = 40 )]
         public String Ip { get; set; }
 
+        //--------------------------------------------------------------------
+
+        private Dictionary<String, PhotoInfo> _sizeInfo;
+
+        [NotSave]
+        public PhotoInfo SizeS {
+            get { return getSizeDic( "s" ); }
+        }
+
+        [NotSave]
+        public PhotoInfo SizeSX {
+            get { return getSizeDic( "sx" ); }
+        }
+
+        [NotSave]
+        public PhotoInfo SizeM {
+            get { return getSizeDic( "m" ); }
+        }
+
+        [NotSave]
+        public PhotoInfo SizeB {
+            get { return getSizeDic( "b" ); }
+        }
+
+        private PhotoInfo getSizeDic( string key ) {
+
+            if (_sizeInfo == null) {
+                _sizeInfo = ObjectContext.Create<PhotoInfoHelper>().GetInfo( this.SizeInfo );
+            }
+
+            PhotoInfo ret;
+            _sizeInfo.TryGetValue( key, out ret );
+            return ret;
+        }
+
+        //--------------------------------------------------------------------
+
         [NotSave]
         public String ImgUrl {
             get { return sys.Path.GetPhotoOriginal( this.DataUrl ); }
@@ -77,13 +121,18 @@ namespace wojilu.Apps.Photo.Domain {
         [NotSave]
         public String ImgMediumUrl {
             get {
-                return sys.Path.GetPhotoThumb( this.DataUrl, wojilu.Drawing.ThumbnailType.Medium );
+                return sys.Path.GetPhotoThumb( this.DataUrl, "m" );
             }
         }
 
         [NotSave]
         public String ImgThumbUrl {
-            get { return sys.Path.GetPhotoThumb( this.DataUrl ); }
+            get { return sys.Path.GetPhotoThumb( this.DataUrl, "sx" ); }
+        }
+
+        [NotSave]
+        public String ImgSmallUrl {
+            get { return sys.Path.GetPhotoThumb( this.DataUrl, "s" ); }
         }
 
         private TagTool _tag;
@@ -107,6 +156,10 @@ namespace wojilu.Apps.Photo.Domain {
         public IShareInfo GetShareInfo() {
             return new PhotoPostFeed( this );
 
+        }
+
+        public Type GetAppType() {
+            return typeof( PhotoApp );
         }
 
     }

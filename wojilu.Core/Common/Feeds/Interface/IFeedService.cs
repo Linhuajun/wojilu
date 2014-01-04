@@ -16,43 +16,40 @@ namespace wojilu.Common.Feeds.Interface {
         IFollowerService followerService { get; set; }
         IFriendService friendService { get; set; }
 
-        Feed GetById( int id );
-        //Feed GetByIdWithComments( int id );
-        IEntity GetData( int id );
+        Feed GetById(long id);
+        IEntity GetData(long id);
 
         DataPage<Feed> GetAll( String dataType, int pageSize );
-        DataPage<Feed> GetAll( int userId, String dataType, int pageSize );
+        DataPage<Feed> GetAll(long userId, string dataType, int pageSize);
 
-        DataPage<Feed> GetByUser( int userId, String dataType );
-        DataPage<Feed> GetUserSelf( int userId, String dataType );
+        DataPage<Feed> GetByUser(long userId, string dataType);
+        DataPage<Feed> GetUserSelf(long userId, string dataType);
 
-        DataPage<Feed> GetByUser( int userId, String dataType, int pageSize );
-        DataPage<Feed> GetUserSelf( int userId, String dataType, int pageSize );
+        DataPage<Feed> GetByUser(long userId, string dataType, int pageSize);
+        DataPage<Feed> GetUserSelf(long userId, string dataType, int pageSize);
 
 
 
         String GetHtmlValue( String template, String templateData, String actorInfo );
 
-        TemplateBundle getRegisteredTemplateBundleByID( int id );
+        TemplateBundle getRegisteredTemplateBundleByID(long id);
         int GetTemplateBundleCount();
 
-        List<Feed> GetUserFeeds( int count, int userId );
+        List<Feed> GetUserFeeds(int count, long userId);
 
-        Boolean IsUserIdValid( int userId, int ownerId );
+        bool IsUserIdValid(long userId, long ownerId);
 
         void publishUserAction( Feed data );
         void publishUserAction( IFeed data );
-        void publishUserAction( User creator, String dataType, int templateBundleId, String templateData, String bodyGeneral );
+        void publishUserAction(User creator, string dataType, long templateBundleId, string templateData, string bodyGeneral, string ip);
 
         TemplateBundle registerTemplateBundle( List<OneLineStoryTemplate> oneLineStoryTemplates, List<ShortStoryTemplate> shortStoryTemplates, List<ActionLink> actionLinks );
 
         void ClearFeeds();
 
-        //void Comment( FeedComment comment, String feedLink, String targetType );
-        //void CommentAppend( User user, IEntity parent, String content, String ip );
-
-
         void SetCommentCount( IEntity target );
+
+        void DeleteOne(long feedId);
     }
 
 }

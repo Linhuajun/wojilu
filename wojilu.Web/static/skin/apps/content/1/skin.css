@@ -1,22 +1,30 @@
-.sectionPanel {} /*“≥√Ê«¯øÈ*/
-.sectionTitle {} /*«¯øÈ±ÍÃ‚µƒ±≥æ∞…´ ∫Õ…œ√Êµƒ±ﬂœﬂ*/ 
-.sectionTitle,  .sectionTitle a {} /*«¯øÈ±ÍÃ‚—’…´*/
+Ôªø.sectionPanel {} /*È°µÈù¢Âå∫Âùó*/
+.sectionTitle {} /*Âå∫ÂùóÊ†áÈ¢òÁöÑËÉåÊôØËâ≤ Âíå‰∏äÈù¢ÁöÑËæπÁ∫ø*/ 
+.sectionTitle,  .sectionTitle a {} /*Âå∫ÂùóÊ†áÈ¢òÈ¢úËâ≤*/
 .clear { clear:both;}
 
 /*************************************************************************************/
 
-#portalContainer { margin: 0 auto; padding-top:15px; background:#;}
+#portalContainer { margin: 0 auto; padding-top:15px; }
+#portalContainer a {color:#333;}
+#portalContainer .slideBarText a {color:#fff;}
+#portalContainer .slideBarNum a {color:#fff;}
+
 .rowContainer {margin: 0 auto;text-align: left;color: #2b2b2b; }
 
     .columnContainer {float: left;overflow:hidden;display:inline;}
     
-        .sectionPanel {margin-bottom:10px; clear:both; border-radius:5px; }
+        .sectionPanel {margin-bottom:10px; clear:both; border:1px solid #ddd; }
+        
+        .normal-section {margin-left:5px; margin-right:3px;}
 
-            .sectionTitle { padding:0px 5px; font-size:14px;font-weight:bold;}
+            .sectionTitle { padding:1px 5px; font-size:14px;font-weight:bold; margin:0px; border-bottom:1px solid #dedede; }
             .sectionMore {float:right;padding:6px 3px 0px 0px;font-weight:normal;font-size:12px;}
-            .sectionMore a {font-size:12px;color:#555;font-weight:normal;}
+            .sectionMore a {font-size:12px;color:#555;font-weight:normal; font-family:Song style;}
             .sectionContent {line-height:150%; font-size:14px;padding:10px 6px;}
-            .sectionContent li {margin:2px 0px 3px 0px;}
+            .sectionContent li {list-style:none; margin:2px 0px 3px 0px;}
+
+                .item-pic-title {width:158px;  overflow:hidden;text-overflow:clip;  white-space:nowrap;}
             
                 .sectionTitleText {float:left; }
                 .sectionTitleText div {float:left; margin-right:8px; margin-top:0px; padding:5px 8px;cursor:default;}
@@ -24,70 +32,115 @@
                 .sectionTitleTab { }
                 
                 .ul1 {margin:5px;}
-                .ul1 li {width:100%;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden; }
-                .ul2 li {width:45%;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden; float:left; margin-right:5px;  }
-                .ulimg {margin:0px;}
-                .ulimg li {float:left;}
-                .ulimg img {width:60px;height:60px;margin:5px}
-                .ulLR li .leftTitle{width:270px;float:left;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden;}
-                .ulLR li .rightInfo{float:right;}
-                
-                .ulRank {margin:5px;}
-                .ulRank li {font-size:12px;width:100%;margin-bottom:2px;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden; }                
-                .ulRank li span {padding:0px 3px;margin-right:5px; text-align:center; background-color:#eee;display:inline-block;  font-size:9px;}
-                .ulRank li.rankItem1 span{background-color:orange; color:#fff; font-weight:bold;}
-                .ulRank li.rankItem2 span{background-color:orange; color:#fff;font-weight:bold;}}
-                .ulRank li.rankItem3 span{background-color:orange; color:#fff;font-weight:bold;}}
-                .ulRank li span {color:#555;}               
+                .ul1 li {list-style:none; width:100%;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden;}
+                .ul2 {margin-left:0px;}
+                .ul2 li {list-style:none; width:45%;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden; float:left; margin-right:3px; }
 
-                .sectionVideos li{float:left;margin:10px 10px 0px 0px; width:150px; height:120px; font-size:12px; text-align:center; padding:5px 3px;}
-                
-                .excerpt li {margin-bottom:10px; display:block; clear:both; background:#fff; padding:5px 10px 10px 5px;}
-                .epFace {float:left; width:60px; text-align:center; font-size:12px;}
-                .epTitle, .epContent {margin-left:80px;}
-                .epTitle a {font-weight:bold;}
-                .epContent {font-size:12px;}
+                .ulimg {margin:0px;}
+                .ulimg li {float:left;list-style:none; }
+                .ulimg img {width:60px;height:60px;margin:5px}
                 
                 .ulL {float:left;}
                 .ulR {float:right; text-align:center; font-size:12px;}
                 
-div.articleLocation {margin:0px 10px 10px 5px; color:#666;}
+                .ulLR li .left-title{width:270px;float:left;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden;}
+                .ulLR li .right-info{float:right;color:#999; font-size:12px;}
+                
+                .float-img {float:left; border:1px solid #ccc; padding:3px; margin:0px 8px 8px 0px;}
+                .float-img2 {float:left; margin:5px 8px 8px 0px;}
+                
+                .ulRank {margin:5px;}
+                .ulRank li {list-style:none; font-size:12px;width:100%;margin-bottom:2px;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden; }                
+                .ulRank li span {padding:0px 3px;margin-right:5px; text-align:center; background-color:#eee;display:inline-block;  font-size:9px;}
+                .ulRank li.rankItem1 span{background-color:orange; color:#fff; font-weight:bold;}
+                .ulRank li.rankItem2 span{background-color:orange; color:#fff;font-weight:bold;}
+                .ulRank li.rankItem3 span{background-color:orange; color:#fff;font-weight:bold;}
+                .ulRank li span {color:#555;}               
+
+                .sectionVideos li{list-style:none; float:left;margin:5px 3px 0px 0px; width:136px; height:110px; font-size:12px; text-align:center; padding:5px 3px;}
+                .sectionVideos li:hover { background:#f2f2f2;}
+                .sectionVideos li .item-pic-title {width:130px;}
+                
+                .excerpt {margin-left:10px;}
+                .excerpt li {list-style:none; margin-bottom:10px; display:block; clear:both; background:#fff; padding-bottom:10px; border-bottom:1px solid #ddd;}
+                .epFace {width:55px; vertical-align:top;}
+                .epTitle, .epContent { line-height:150%;}
+                .epTitle a {font-weight:bold;}
+                .epContent { font-size:12px;}
+                .epOnlyTitle {font-size:14px;}
+                .excerpt .note { font-size:12px; margin-top:5px;}
+                
+
+    .summary-wrap { margin:0px 10px;}
+    .summary-item h3 {font-size:16px; font-family:"microsoft yahei" }
+    .summary-item h3 a { color:#333;}
+    .summary-item {border-bottom:1px solid #ccc; margin-bottom:10px;padding-bottom:10px; }
+    .summary-item:last-child { border-bottom:0px;}
+    
+    .summary-body { font-size:14px; line-height:150%; color:#666;}    
+    .summary-body .summary-pic img { float: left; margin-right: 10px; width: 160px; height: 120px;  border:0px solid #eee; margin-top:3px; box-shadow:0px 3px 10px rgba(0,0,0,0.1); }
+    
+    .summary-tag { color:#999; font-size:12px; margin-top:5px;}
+    .summary-tag a { color:#999 !important;}
+    .summary-tag .tag-label { margin-right:5px;}
+    
+    .summary-more { text-align:right; margin:5px 5px 0px 0px;}
+                
+div.articleLocation {margin:0px 0px 0px 0px; color:#666; border-bottom:1px solid #dedede; padding:6px 10px; background:url(../../../../img/sectionTitleBg.gif);}
+div.articleLocation a { color:#333;}
       
 /************** detail ***************/
 
-#postContainer {width:100%;position:relative;}
+#postContainer {width:100%;position:relative;border-top1:1px dotted #d8d8d8;margin-top:0px;background1:url(post-sp-bg.png) repeat-y;}
 
 
-    #postMain {float:left;  padding:10px 10px 10px 0px; margin:10px 10px 10px 0px }
-    #postMain h4{font-size:18px; margin:5px;}
-        #postMainContainer {padding:15px; background:#ebf4ff;border:1px #92b0dd solid; width:600px;}
+    #postMain {float:left;  padding:20px 10px 10px 5px; margin:0px 0px 10px 10px;}
+        #postMain h4{font-size:20px;font-family:ÂæÆËΩØÈõÖÈªë; margin:10px;margin-top:20px;}
+        #postMainContainer {padding:0px 0px 15px 0px;  width:630px;margin-top:10px; border:1px solid #ddd; }
         
-        .ulimgMiddle li {float:left;width:115px;height:125px;margin:10px; padding-top:10px; background:#fff;text-align:center}
+        .ulimgMiddle li {float:left;width:115px;list-style:none; height:125px;margin:10px; padding-top:10px; background:#fff;text-align:center}
         .ulimgMiddle li div {margin:5px; }
     
-        .h1title {font-size:26px;font-weight:bold; color:#004499; margin:25px 0px 5px 0px; text-align:center; border-bottom:1px #aaa solid; padding-bottom:5px;}
+        .post-detail-title{font-size:26px;font-weight:bold; color1:#333; margin:25px 0px 5px 0px; text-align:center; border-bottom:1px #ddd solid; padding-bottom:5px;}
         .h4title {font-size:16px; font-weight:bold; margin:20px 0px 0px 5px;}
-        .ulposts {font-size:14px; line-height:150%; padding:15px 10px 10px 5px;}
-        .ulposts .note {font-size:12px;}
         
-        .postInfo {color:#333;text-align:center;margin:5px 5px 10px 5px; }
-        .postInfo a{color:#cc0000;}
-        .postSource {text-align:; color:#666; padding:0px 0px 10px 10px;}
+        /********** list ***********/
+        .ulposts {padding:15px 10px 10px 5px; }
+        .ulposts li { list-style:square;margin-left:25px;}
+        .ulposts .list-title { color:#333; font-size:14px;}
+        .ulposts .list-info { float:right; color:#999; font-size:12px;}
+        .ulposts .note {font-size:12px; color:#666; margin-left:5px; }
+        
+        .post-detail-info {color:#999;text-align:center;margin:5px 5px 10px 5px; }
+        .post-detail-info a{color:#cc0000;}
         #postContent {margin:5px 5px 5px 5px; font-size:14px; line-height:150%}   
         #postContent img {max-width:560px;}
         
-        .postSummary {margin:10px 0px;padding:10px;border:1px #ccc solid; background:#fff; line-height:150%;}
+        .post-detail-summary {margin:10px 0px;padding:10px;border:1px #ccc solid; background:#f2f2f2; line-height:150%;}
+        .post-detail-attachment {margin:0px 20px;}
+        .post-detail-tag {text-align:; color:#666; padding:0px 0px 10px 10px;}
+        .post-detail-submitter { margin-left:10px;}
         
-    #postSidebar { width:280px; float:left; padding:10px 0px 0px 0px; }
-    #postSidebarContainer {padding:10px 0px 0px 0px; }
-        .postPanel {margin:0px 0px 10px 0px;padding-bottom:10px; border:1px #aaccee solid; line-height:150%; font-size:14px; display:block;}
-        .postPanelTitle {padding:3px 0px 1px 10px; border-bottom:1px #aaccee solid; background:#e2eaf8; color:#004499; font-weight:bold; font-size:14px; line-height:25px;}
-        .postPanel a {color:#004499}
-        .postPanel ul {list-style:none; margin:10px; padding:0px;}
-    #postSidebarContainer .postPanel .ulimg img {width:110px;height:80px;text-align:center;} 
-    #postSidebarContainer .postPanel .ulimg div.postTitle {width:130px;text-align:center;font-size:12px;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden;} 
+        .post-detail-content-pic { text-align:center; margin-bottom:15px;}
 
-.postPanel ul.textList li {width:100%;white-space:nowrap;text-overflow:ellipsis; -o-text-overflow:ellipsis; -moz-text-overflow:ellipsis; overflow: hidden;}
+    #postSidebar { width:265px; float:right; padding:10px 0px 0px 10px;margin-right:5px;}
+    #postSidebarContainer {padding:10px 0px 0px 0px; }
+        .postPanel {margin:0px 0px 10px 0px;padding-bottom:10px; line-height:150%; font-size:14px; display:block;}
+        .postPanelTitle {border-bottom:1px #ccc solid; line-height:25px; font-family:ÂæÆËΩØÈõÖÈªë;}
+        .postPanelTitle h2 {width:83px;padding:0px 0px 0px 1px;font-weight:normal; font-size:20px; border-bottom:1px solid #666;margin-bottom:-1px; }
+        .postPanel a {color:#333;}
+        .postPanel ul {list-style:none; margin:10px; padding:0px;}
+
+        #postSidebarContainer li.textListTitle {width:220px; margin:3px 0px 3px 0px;white-space:nowrap;text-overflow:clip; -o-text-overflow:clip; -moz-text-overflow:clip; overflow: hidden;}
+        
+    #postSidebarContainer .postPanel .ulimg { margin-left:0px;}
+    #postSidebarContainer .postPanel .ulimg li{ float:left;margin:5px 10px 5px 0px;width:115px;}
+    #postSidebarContainer .postPanel .ulimg img {width:105px;height:80px;text-align:center;} 
+    #postSidebarContainer .postPanel .postTitle {width:105px;} 
+    #postSidebarContainer .postPanel .postTitle {text-align:center;font-size:12px;white-space:nowrap;text-overflow:clip; -o-text-overflow:clip; -moz-text-overflow:clip; overflow: hidden;} 
+
+        .postPanel ul.textList {margin-left:5px;}
+        .postPanel ul.textList li {list-style:none; width:100%;white-space:nowrap;text-overflow:clip; -o-text-overflow:clip; -moz-text-overflow:clip; overflow: hidden;}
 
 #postComment {}
 .postCommentOne {margin:0px 0px 10px 0px; }
@@ -98,7 +151,7 @@ table.commentPublishTable {color:#004499; border:0px #aaa solid; margin-left:15p
 .commentPublishTable input {border:1px #aaa solid;}
 .commentPublishTable textarea {border:1px #aaa solid;}
 
-    /*∏Ωº˛*/
+    /*ÈôÑ‰ª∂*/
     
     .downloadWarning {margin-top:15px;border:1px #fed22f solid;background:#ffe45c;width:80%;}
     .downloadWarning div {background:url('../../../../img/lock.gif') no-repeat 10px center;padding:5px 5px 5px 25px;font-size:12px;}
@@ -116,3 +169,45 @@ table.commentPublishTable {color:#004499; border:0px #aaa solid; margin-left:15p
         .attachmentForbidden span.afText {background:url("../../../../img/ajax/error.gif") no-repeat left center; padding-left:18px; font-size:12px;}
         .attachmentForbidden span.afInfo {background:url("../../../../img/attachment.gif") no-repeat; padding-left:15px}
 
+
+.sideSection .sectionTitle .sectionTitleText { background:url(side-title-line.png) no-repeat 0px 5px;}
+
+/**************************************/
+.adRow {border:0px !important;}
+.adRow .sectionContent {padding-left:1px !important;overflow:hidden;}
+.adRow .sectionTitle { display:none;}
+
+.focusSection { background:url(focus-new-left.jpg) no-repeat; border:0px !important;}
+.focusSection a{ color:#2A2A2A;}
+.focusSection .sectionTitle { display:none;}
+.focusSection .sectionContentText { background:url(focus-new-right.jpg) no-repeat top right;}
+#portalContainer .focusSection .sectionContent {padding:0px;}
+
+.login {font-size:12px !important;}
+.login td { padding:3px 1px;}
+.login .tdL {width:50px; padding-right:5px;}
+.login .uid, .login .pwd {width:120px !important;}
+.login .reglink { font-size:12px !important;}
+.login .alert { font-size:12px !important; padding-left:8px;padding-right:2px; margin-top:10px;}
+
+
+/**************************************/
+
+.diggUp {background: url("../../../../img/big/diggBg.png") left top no-repeat;}
+.diggDown {background: url("../../../../img/big/diggBg.png") right top no-repeat;}
+
+.btnDigg {width: 195px;height: 51px;float: left;margin-right: 8px;overflow: hidden;cursor: pointer;}
+.btnDigg .diggText {font-size: 14px;float: left;line-height: 31px;text-indent: 32px;height: 29px;overflow: hidden;font-weight: bold;}
+.btnDigg .diggNum {float: left;line-height: 29px;text-indent: 5px;}
+.btnDigg .diggPer {width: 180px;clear: both;padding-left: 10px;overflow: hidden;}
+.btnDigg .diggPer .diggPerBar {width: 100px;height: 7px;background: #E8E8E8;border-right: 1px solid #CCC;float: left;overflow: hidden;margin-top: 3px;}
+.btnDigg .diggPer .diggPerBar span {display: block;height: 5px;overflow: hidden;background: black;}
+.btnDigg .diggPer .diggPerNum {font-size: 10px;float: left;padding-left: 10px;}
+
+.diggUp .diggText {color: #C30;}
+.diggUp .diggNum {color: #C63;}
+.diggUp .diggPer .diggPerBar span {border: 1px solid #E37F24;background: #FFC535;}
+
+.diggDown .diggText {color: #36C;}
+.diggDown .diggNum {color: #39C;}
+.diggDown .diggPer .diggPerBar span {border: 1px solid #689ACC;background: #94C0E4;}

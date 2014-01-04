@@ -61,12 +61,16 @@ namespace wojilu.Reflection {
             return asm.CreateInstance( typeName );
         }
 
-        //private static Object GetInstance( String typeFullName ) {
-        //    if (typeFullName.IndexOf( ',' ) <= 0) {
-        //        typeFullName = typeFullName + "," + Assembly.GetEntryAssembly().GetName().Name;
-        //    }
-        //    return rft.GetInstance( Type.GetType( typeFullName ) );
-        //}
+        /// <summary>
+        /// 初始化匿名类型
+        /// </summary>
+        /// <param name="t">匿名类型的type</param>
+        /// <param name="values">参数的值</param>
+        /// <returns></returns>
+        public static Object GetAnonymousInstance( Type t, Object[] values ) {
+            ConstructorInfo constructor = t.GetConstructors()[0];
+            return constructor.Invoke( values );
+        }
 
         public static Object GetInstanceFromProgId( String progId ) {
             return rft.GetInstance( Type.GetTypeFromProgID( progId ) );
@@ -101,11 +105,16 @@ namespace wojilu.Reflection {
                 throw new NullReferenceException( String.Format( "propertyName={0}, propertyValue={1}", propertyName, propertyValue ) );
             }
 
+            PropertyInfo p = currentObject.GetType().GetProperty( propertyName );
+            if (p == null) {
+                throw new NullReferenceException( "property not exist=" + propertyName + ", type=" + currentObject.GetType().FullName );
+            }
+
             try {
-                currentObject.GetType().GetProperty( propertyName ).SetValue( currentObject, propertyValue, null );
+                p.SetValue( currentObject, propertyValue, null );
             }
             catch (Exception exception) {
-                throw new Exception( exception.Message + "(propertyName=" + propertyName + ")" );
+                throw new Exception( exception.Message + " (property=" + propertyName + ", type=" + currentObject.GetType().FullName + ")" );
             }
         }
 
@@ -163,6 +172,15 @@ namespace wojilu.Reflection {
         }
 
         /// <summary>
+        /// 获取 public 实例方法，包括继承的方法。子对象的方法在前，父对象的方法在后。
+        /// </summary>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public static MethodInfo[] GetMethodsAll( Type t ) {
+            return t.GetMethods( BindingFlags.Public | BindingFlags.Instance );
+        }
+
+        /// <summary>
         /// 获取 public 实例方法，包括继承的方法
         /// </summary>
         /// <param name="t"></param>
@@ -197,6 +215,7 @@ namespace wojilu.Reflection {
                 type == typeof( String ) ||
                 type == typeof( DateTime ) ||
                 type == typeof( bool ) ||
+                type == typeof( long ) ||
                 type == typeof( double ) ||
                 type == typeof( decimal );
         }
@@ -208,13 +227,35 @@ namespace wojilu.Reflection {
         /// <param name="interfaceType">是否实现的接口</param>
         /// <returns></returns>
         public static Boolean IsInterface( Type t, Type interfaceType ) {
-            Type[] interfaces = t.GetInterfaces();
-            foreach (Type type in interfaces) {
-                if (interfaceType.FullName.Equals( type.FullName )) {
-                    return true;
-                }
+            if (t.IsInterface) return false;
+            return interfaceType.IsAssignableFrom( t );
+        }
+
+        /// <summary>
+        /// 判断某个方法是否是接口的实现
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="objType"></param>
+        /// <param name="interfaceType"></param>
+        /// <returns></returns>
+        public static Boolean IsMethodInInterface( MethodInfo method, Type objType, Type interfaceType ) {
+
+            InterfaceMapping map = objType.GetInterfaceMap( interfaceType );
+
+            foreach (MethodInfo x in map.TargetMethods) {
+                if (x == method) return true;
             }
+
             return false;
+        }
+
+        /// <summary>
+        /// 判断此 method 是否是属性 property
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        public static Boolean IsMethodProperty( MethodInfo m ) {
+            return m.IsSpecialName && (m.Name.StartsWith( "set_" ) || m.Name.StartsWith( "get_" ));
         }
 
 

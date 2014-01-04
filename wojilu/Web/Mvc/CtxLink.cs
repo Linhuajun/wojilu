@@ -22,6 +22,7 @@ using wojilu.Web.Context;
 
 using wojilu.Members.Interface;
 using wojilu.Common;
+using wojilu.Web.Mvc.Attr;
 
 namespace wojilu.Web.Mvc {
 
@@ -29,9 +30,10 @@ namespace wojilu.Web.Mvc {
     /// <summary>
     /// 带上下文(context=ctx)的链接生成工具
     /// </summary>
+    [MvcLink]
     public class CtxLink {
 
-        private int _appId;
+        private long _appId;
         private IMember _owner;
 
         public CtxLink( MvcContext ctx ) {
@@ -43,15 +45,15 @@ namespace wojilu.Web.Mvc {
             return To( action, _appId );
         }
 
-        public String To( aAction action, int appId ) {
+        public String To( aAction action, long appId ) {
             return Link.To( _owner, getController( action.Target.GetType() ), action.Method.Name, -1, appId );
         }
 
-        public String To( aActionWithId action, int id ) {
+        public String To( aActionWithId action, long id ) {
             return To( action, id, _appId );
         }
 
-        public String To( aActionWithId action, int id, int appId ) {
+        public String To( aActionWithId action, long id, long appId ) {
             return Link.To( _owner, getController( action.Target.GetType() ), action.Method.Name, id, appId );
         }
 
@@ -61,14 +63,14 @@ namespace wojilu.Web.Mvc {
             return Link.To( _owner, getController( action.Target.GetType() ), action.Method.Name, 0, 0 );
         }
 
-        public String T2( aActionWithId action, int id ) {
+        public String T2( aActionWithId action, long id ) {
             return Link.To( _owner, getController( action.Target.GetType() ), action.Method.Name, id, 0 );
         }
 
         private static String getController( Type controllerType ) {
             return trimRootNamespace( strUtil.GetTypeFullName( controllerType ) )
                 .TrimStart( '.' )
-                .Replace( ".", "/" );
+                .Replace( ".", MvcConfig.Instance.UrlSeparator );
         }
 
         private static String trimRootNamespace( String typeFullName ) {

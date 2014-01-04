@@ -212,7 +212,7 @@ namespace wojilu.Common.Tags {
             return builder.ToString().Trim();
         }
 
-        private static Tag insertTag( String tagName, int memberId ) {
+        private static Tag insertTag(string tagName, long memberId) {
             Tag tag = new Tag();
             tag.Name = tagName;
             tag.CreatorId = memberId;
@@ -322,7 +322,7 @@ namespace wojilu.Common.Tags {
             }
         }
 
-        public static void DeleteTag( int tagId ) {
+        public static void DeleteTag(long tagId) {
 
             Tag tag = Tag.findById( tagId );
             if (tag == null) return;
@@ -331,12 +331,12 @@ namespace wojilu.Common.Tags {
             tag.delete();
         }
 
-        public static void DeleteDataTag( int dataTagId ) {
+        public static void DeleteDataTag(long dataTagId) {
 
             DataTagShip dt = DataTagShip.findById( dataTagId );
             if (dt == null) return;
 
-            int tagId = dt.Tag == null ? 0 : dt.Tag.Id;
+            long tagId = dt.Tag == null ? 0 : dt.Tag.Id;
             dt.delete();
 
             if (tagId == 0) return;

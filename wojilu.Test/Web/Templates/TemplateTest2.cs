@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using wojilu.Web;
 using NUnit.Framework;
 using System.Collections;
@@ -16,7 +16,7 @@ namespace wojilu.Test.Web.Templates {
 
 		public void Test() {
 			//TReg.Init();
-			Console.WriteLine( "Ä£°å´¦Àí¡­¡­" );
+			Console.WriteLine( "æ¨¡æ¿å¤„ç†â€¦â€¦" );
 			SpeedUtil.Start();
             loopThird();
 			SpeedUtil.Stop();
@@ -30,10 +30,10 @@ namespace wojilu.Test.Web.Templates {
 			string looppage = @"
 <table>
 <!-- BEGIN newphotos -->
-	<tr><td>{#Title#}</td><td>{#CreateTime#}</td></tr>
-	<tr><td colspan=2><!-- BEGIN item --> {#Name#} 
+	<tr><td>#{Title}</td><td>#{CreateTime}</td></tr>
+	<tr><td colspan=2><!-- BEGIN item --> #{Name} 
 <!-- BEGIN suitem -->
-{#SubName#}<br/><!-- END suitem -->
+#{SubName}<br/><!-- END suitem -->
 <!-- END item --></td></tr>
 <!-- END newphotos -->
 </table>
@@ -74,8 +74,8 @@ namespace wojilu.Test.Web.Templates {
 			string looppage = @"
 <table>
 <!-- BEGIN newphotos -->
-	<tr><td>{#Title#}</td><td>{#CreateTime#}</td></tr>
-	<tr><td colspan=2><!-- BEGIN item --> {#Name#} <!-- END item --></td></tr>
+	<tr><td>#{Title}</td><td>#{CreateTime}</td></tr>
+	<tr><td colspan=2><!-- BEGIN item --> #{Name} <!-- END item --></td></tr>
 <!-- END newphotos -->
 </table>
 ";
@@ -110,17 +110,17 @@ namespace wojilu.Test.Web.Templates {
 
 			string looppage = @"
 <table><!-- BEGIN newphotos -->
-	<tr><td>{#Title#}</td><td>{#CreateTime#}</td></tr><!-- END newphotos -->
+	<tr><td>#{Title}</td><td>#{CreateTime}</td></tr><!-- END newphotos -->
 </table>
 ";
 
 			Template loopTemplate = new Template();
 			loopTemplate.InitContent( looppage );
 
-			// ¸øÑ­»·¿éÉèÖµ
+			// ç»™å¾ªç¯å—è®¾å€¼
             IBlock loopBlock = loopTemplate.GetBlock( "newphotos" );
 			for( int i=0;i<5;i++ ) {
-				loopBlock.Set( "Title", "Ò»°Ùº½µÄÊ«Æª"+i );
+				loopBlock.Set( "Title", "ä¸€ç™¾èˆªçš„è¯—ç¯‡"+i );
 				loopBlock.Set( "CreateTime", DateTime.Now.ToString() );
 				loopBlock.Next();
 			}
@@ -136,7 +136,7 @@ namespace wojilu.Test.Web.Templates {
 
 //            string looppage = @"
 //<table><!-- BEGIN newphotos -->
-//	<tr><td>{#Title#}</td><td>{#CreateTime#}</td></tr><!-- END newphotos -->
+//	<tr><td>#{Title}</td><td>#{CreateTime}</td></tr><!-- END newphotos -->
 //</table>
 //";
 
@@ -146,10 +146,10 @@ namespace wojilu.Test.Web.Templates {
 
 //            SyyLoopBlock loopBlock = loopTemplate.GetBlock( "newphotos" );
 
-//            // ¸øÑ­»·¿éÉèÖµ
+//            // ç»™å¾ªç¯å—è®¾å€¼
 //            //LoopBlock loopBlock = loopTemplate.GetBlock( "newphotos" );
 //            for (int i = 0 ; i < 5 ; i++) {
-//                loopBlock.Set( "Title", "Ò»°Ùº½µÄÊ«Æª" + i );
+//                loopBlock.Set( "Title", "ä¸€ç™¾èˆªçš„è¯—ç¯‡" + i );
 //                loopBlock.Set( "CreateTime", DateTime.Now.ToString() );
 //                loopBlock.Next();
 //            }
@@ -164,16 +164,16 @@ namespace wojilu.Test.Web.Templates {
 
 			string a = @"  
 <h4>
-{#Title#}</h4> 
-<b>{#CreateTime#}</b><br />
+#{Title}</h4> 
+<b>#{CreateTime}</b><br />
 	";
 			SpeedUtil.Start();
 
 			Template t = new Template();
 			t.InitContent( a );
 
-			t.Set( "Title", "Ò»°Ùº½µÄÊ«Æª" );
-			t.Set( "CreateTime", "½ñÄêµÄÊ±¼ä " + DateTime.Now );
+			t.Set( "Title", "ä¸€ç™¾èˆªçš„è¯—ç¯‡" );
+			t.Set( "CreateTime", "ä»Šå¹´çš„æ—¶é—´ " + DateTime.Now );
 
 			Console.WriteLine( t );
 			SpeedUtil.Stop();
@@ -184,16 +184,16 @@ namespace wojilu.Test.Web.Templates {
 //        public void singleNew() {
 //            string a = @"  
 //<h4>
-//{#Title#}</h4> 
-//<b>{#CreateTime#}</b><br />
+//#{Title}</h4> 
+//<b>#{CreateTime}</b><br />
 //	";
 //            timer.Start();
 
 //            SyyTemplate t = new SyyTemplate();
 //            t.InitContent( a );
 
-//            t.Set( "Title", "Ò»°Ùº½µÄÊ«Æª" );
-//            t.Set( "CreateTime", "½ñÄêµÄÊ±¼ä " + DateTime.Now );
+//            t.Set( "Title", "ä¸€ç™¾èˆªçš„è¯—ç¯‡" );
+//            t.Set( "CreateTime", "ä»Šå¹´çš„æ—¶é—´ " + DateTime.Now );
 
 //            Console.WriteLine( t );
 //            timer.Stop();
@@ -203,7 +203,7 @@ namespace wojilu.Test.Web.Templates {
 	}
 
 
-    class ViewData {
+    class VoData {
         private string _Name;
 
         public string Name {

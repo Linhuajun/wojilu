@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -25,7 +25,7 @@ namespace wojilu.Apps.Photo.Service {
         }
 
 
-        public virtual PhotoSysCategory GetById( int id ) {
+        public virtual PhotoSysCategory GetById(long id) {
             return db.findById<PhotoSysCategory>( id );
         }
 

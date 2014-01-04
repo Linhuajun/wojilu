@@ -1,4 +1,20 @@
-﻿using System;
+﻿/*
+ * Copyright 2010 www.wojilu.com
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Collections;
@@ -41,20 +57,20 @@ namespace wojilu.Serialization {
             if (obj == null) return empty();
 
             Type t = obj.GetType();
-            if (t.IsArray) return ConvertArray( (object[])obj );
+            if (t.IsArray) return ConvertArray( obj );
             if (rft.IsInterface( t, typeof( IList ) )) return ConvertList( (IList)obj );
             if (rft.IsInterface( t, typeof( IDictionary ) )) return ConvertDictionary( (IDictionary)obj, isBreakline );
 
             if (t == typeof( int ) ||
+                t == typeof( long ) ||
                 t == typeof( decimal ) ||
                 t == typeof( double )) {
                 return obj.ToString();
             }
 
             if (t == typeof( Boolean )) return obj.ToString().ToLower();
-            if (t == typeof( DateTime )) return "\"" + obj.ToString() + "\"";
+            if (t == typeof( DateTime ) || t == typeof( long )) return "\"" + obj.ToString() + "\"";
             if (t == typeof( String )) {
-
                 // 转义双引号，消除换行
                 return "\"" + ClearNewLine( obj.ToString() ) + "\"";
             }
@@ -77,6 +93,29 @@ namespace wojilu.Serialization {
                     .Replace( "\r", "" )
                     .Replace( "\n", "" )
                     .Replace( "\t", "" );
+        }
+
+        public static String ConvertArray( Object obj ) {
+
+            if (obj == null) return "[]";
+            Array arrObj = (Array)obj;
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append( "[ " );
+
+            for (int i = 0; i < arrObj.Length; i++) {
+
+                Object x = arrObj.GetValue( i );
+
+                if (x == null) continue;
+                sb.Append( Convert( x, getDefaultIsBreakline() ) );
+                if (i < arrObj.Length - 1) sb.Append( ", " );
+
+
+            }
+
+            sb.Append( " ]" );
+            return sb.ToString();
         }
 
 
@@ -209,6 +248,11 @@ namespace wojilu.Serialization {
             Object nameValue = "";
             List<PropertyInfo> propertyList = new List<PropertyInfo>();
             foreach (PropertyInfo info in properties) {
+
+                if (isSkip( info )) {
+                    continue;
+                }
+
                 if (info.Name.Equals( "Id" )) {
                     isIdFind = true;
                     idValue = ReflectionUtil.GetPropertyValue( obj, "Id" );
@@ -234,14 +278,16 @@ namespace wojilu.Serialization {
             }
 
             foreach (PropertyInfo info in propertyList) {
-                if (info.IsDefined( typeof( NotSerializeAttribute ), false )) {
+
+                if (info.CanRead == false) {
                     continue;
                 }
+
                 Object propertyValue = ReflectionUtil.GetPropertyValue( obj, info.Name );
 
                 String jsonValue;
                 if (info.PropertyType.IsArray) {
-                    jsonValue = ConvertArray( (object[])propertyValue );
+                    jsonValue = ConvertArray( propertyValue );
                 }
                 else if (rft.IsInterface( info.PropertyType, typeof( IList ) )) {
                     jsonValue = ConvertList( (IList)propertyValue, isBreakline );
@@ -264,6 +310,19 @@ namespace wojilu.Serialization {
             String result = builder.ToString().Trim().TrimEnd( ',' );
             if (isBreakline) result += Environment.NewLine;
             return result + " }";
+        }
+
+        private static Boolean isSkip( PropertyInfo info ) {
+
+            if (info.IsDefined( typeof( NotSerializeAttribute ), false )) {
+                return true;
+            }
+
+            if (info.IsDefined( typeof( NotSaveAttribute ), false )) {
+                return true;
+            }
+
+            return false;
         }
 
         public static String ConvertEntity( IEntity obj ) {
@@ -307,6 +366,7 @@ namespace wojilu.Serialization {
 
         private static bool shouldPass( EntityPropertyInfo info ) {
             if (info.Type == typeof( int )) return false;
+            if (info.Type == typeof( long )) return false;
             if (info.Type == typeof( string )) return false;
             if (info.Type == typeof( decimal )) return false;
             if (info.Type == typeof( DateTime )) return false;

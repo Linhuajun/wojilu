@@ -20,8 +20,8 @@ namespace wojilu.Web.Controller.Photo.Admin {
     [App( typeof( PhotoApp ) )]
     public class PhotoController : ControllerBase {
 
-        public IPhotoPostService postService { get; set; }
-        public IFriendService friendService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IFriendService friendService { get; set; }
 
         public PhotoController() {
 
@@ -31,10 +31,13 @@ namespace wojilu.Web.Controller.Photo.Admin {
 
         }
 
+        public virtual void Index() {
+            redirect( new MyController().My );
+        }
 
-        public void Index( int friendId ) {
+        public virtual void Friends( long friendId ) {
 
-            int userId = ctx.viewer.Id;
+            long userId = ctx.viewer.Id;
             DataPage<PhotoPost> list = postService.GetFriendsPhoto( userId, friendId );
 
             IBlock block = getBlock( "list" );
@@ -60,7 +63,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             foreach (User user in friends) {
                 block.Set( "user.Name", user.Name );
                 block.Set( "user.Face", user.PicSmall );
-                block.Set( "user.BlogLink", to( Index, user.Id ) );
+                block.Set( "user.BlogLink", to( Friends, user.Id ) );
                 block.Next();
             }
         }

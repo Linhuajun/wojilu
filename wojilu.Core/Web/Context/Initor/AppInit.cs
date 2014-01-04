@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -13,7 +13,7 @@ namespace wojilu.Web.Context.Initor {
 
     public class AppInit : IContextInit {
 
-        public void Init( MvcContext ctx ) {
+        public virtual void Init( MvcContext ctx ) {
 
             if (ctx.utils.isEnd()) return;
 
@@ -21,16 +21,18 @@ namespace wojilu.Web.Context.Initor {
 
             if (ctx.app.obj != null) {
 
-                // ºÏ≤Èapp «∑ÒÕ£”√
+                // Ê£ÄÊü•appÊòØÂê¶ÂÅúÁî®
                 Type appType = ctx.app.obj.GetType();
                 AppInstaller installer = new AppInstallerService().GetByType( appType );
                 if (installer == null || installer.IsInstanceClose( ctx.owner.obj.GetType() )) {
-                    ctx.utils.endMsg( "∂‘≤ª∆£¨±æapp“—æ≠Õ£”√", HttpStatus.NotFound_404 );
+                    ctx.utils.endMsg( "ÂØπ‰∏çËµ∑ÔºåÊú¨appÂ∑≤ÁªèÂÅúÁî®", HttpStatus.NotFound_404 );
                     return;
                 }
 
+                if (InitHelperFactory.GetHelper( ctx ).IsAppRunning( ctx ) == false) { // Ê£ÄÊü•appÊòØÂê¶Â±û‰∫éÊöÇÂÅúÁä∂ÊÄÅ
+                    ctx.utils.endMsg( lang.get( "exAppNotFound" ) + ": appType=" + appType+", appId=" + ctx.app.Id, HttpStatus.NotFound_404 );
+                }
 
-                InitHelperFactory.GetHelper( ctx ).IsAppRunning( ctx ); // ºÏ≤Èapp «∑Ò Ù”⁄‘›Õ£◊¥Ã¨
             }
 
         }
@@ -40,7 +42,7 @@ namespace wojilu.Web.Context.Initor {
 
             IAppContext context = new AppContext();
 
-            int appId = ctx.route.appId;
+            long appId = ctx.route.appId;
             context.Id = appId; // ID
 
             Type appType = ctx.controller.utils.getAppType();
@@ -61,8 +63,20 @@ namespace wojilu.Web.Context.Initor {
 
             IApp app = getAppById( appType, appId, ctx.owner.obj );
             if (app == null) {
-                ctx.utils.setAppContext( context );
-                ctx.utils.endMsg( lang.get( "exAppNotFound" ) + ", appType=" + appType, HttpStatus.NotFound_404 );
+
+                if (appId == 1) {
+
+                    context.setAppType( appType );
+                    ctx.utils.setAppContext( context );
+                    return;
+
+
+                }
+                else {
+
+                    ctx.utils.setAppContext( context );
+                    ctx.utils.endMsg( lang.get( "exAppNotFound" ) + ": appType=" + appType, HttpStatus.NotFound_404 );
+                }
             }
             else {
 
@@ -78,7 +92,7 @@ namespace wojilu.Web.Context.Initor {
             }
         }
 
-        private static IApp getAppById( Type appType, int appId, IMember owner ) {
+        private static IApp getAppById(Type appType, long appId, IMember owner) {
 
             IApp app = ndb.findById( appType, appId ) as IApp;
 

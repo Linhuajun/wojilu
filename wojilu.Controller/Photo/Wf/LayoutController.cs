@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using wojilu.Web.Mvc;
@@ -11,7 +15,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
     public class LayoutController : ControllerBase {
 
-        public IPhotoSysCategoryService sysCategoryService { get; set; }
+        public virtual IPhotoSysCategoryService sysCategoryService { get; set; }
 
         public LayoutController() {
             sysCategoryService = new PhotoSysCategoryService();
@@ -28,6 +32,17 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
             bindCategories();
             bindAdminCmd();
+
+            bindSysAdminLink();
+        }
+
+        private void bindSysAdminLink() {
+            set( "listLink", to( new wojilu.Web.Controller.Admin.Apps.Photo.MainController().Index, -1 ) );
+            set( "pickedLink", to( new wojilu.Web.Controller.Admin.Apps.Photo.PostAdminController().Picked ) );
+            set( "trashLink", to( new wojilu.Web.Controller.Admin.Apps.Photo.PostAdminController().Trash ) );
+            set( "commentLink", to( new wojilu.Web.Controller.Admin.Apps.Photo.CommentController().List ) );
+            set( "categoryLink", to( new wojilu.Web.Controller.Admin.Apps.Photo.SysCategoryController().List ) );
+            set( "settingLink", to( new wojilu.Web.Controller.Admin.Apps.Photo.SettingController().Index ) );
         }
 
         private void bindCategories() {

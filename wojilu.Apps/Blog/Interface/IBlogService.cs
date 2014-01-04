@@ -14,10 +14,10 @@ namespace wojilu.Apps.Blog.Interface {
 
         void AddHits( BlogApp app );
         List<BlogApp> GetBlogAppAll();
-        void UpdateCommentCount( int appId );
-        void UpdateCommentCount( IApp blogApp );
         void UpdateCount( BlogApp blog );
 
+
+        BlogApp GetFirstByUser(long ownerId);
     }
 
 }

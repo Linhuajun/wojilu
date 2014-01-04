@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +16,56 @@
 
 using System;
 using System.Text;
+using System.Collections.Generic;
+using System.Collections;
 using wojilu.Data;
 
 namespace wojilu {
 
     /// <summary>
-    /// ²»Í¬ÀàĞÍÖ®¼äÊıÖµ×ª»»
+    /// ä¸åŒç±»å‹ä¹‹é—´æ•°å€¼è½¬æ¢
     /// </summary>
     public class cvt {
 
+        public static Boolean IsLong( String str ) {
+
+            if (strUtil.IsNullOrEmpty( str )) {
+                return false;
+            }
+
+            if (str.StartsWith( "-" )) {
+                str = str.Substring( 1, str.Length - 1 );
+            }
+
+            if (str.Length > 19) {
+                return false;
+            }
+
+            char[] chArray = str.ToCharArray();
+            foreach (char ch in chArray) {
+                if (!char.IsDigit( ch )) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public static Int64 ToLong( Object objInt ) {
+
+            if ((objInt != null) && IsLong( objInt.ToString() )) {
+                Int64 result;
+                Int64.TryParse( objInt.ToString(), out result );
+                return result;
+            }
+            return 0;
+        }
+
+
+
+
         /// <summary>
-        /// ÅĞ¶Ï×Ö·û´®ÊÇ·ñÊÇĞ¡Êı»òÕûÊı
+        /// åˆ¤æ–­å­—ç¬¦ä¸²æ˜¯å¦æ˜¯å°æ•°æˆ–æ•´æ•°
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -45,7 +84,8 @@ namespace wojilu {
         }
 
         private static Boolean isDecimal_private( String str ) {
-            foreach (char ch in str.ToCharArray()) {
+            char[] arrChar = str.ToCharArray();
+            foreach (char ch in arrChar) {
                 if (!(char.IsDigit( ch ) || (ch == '.'))) {
                     return false;
                 }
@@ -54,7 +94,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ÅĞ¶Ï×Ö·û´®ÊÇ·ñÊÇ¶à¸öÕûÊıµÄÁĞ±í£¬ÕûÊıÖ®¼ä±ØĞëÍ¨¹ıÓ¢ÎÄ¶ººÅ·Ö¸ô
+        /// åˆ¤æ–­å­—ç¬¦ä¸²æ˜¯å¦æ˜¯å¤šä¸ªæ•´æ•°çš„åˆ—è¡¨ï¼Œæ•´æ•°ä¹‹é—´å¿…é¡»é€šè¿‡è‹±æ–‡é€—å·åˆ†éš”
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
@@ -73,7 +113,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ÅĞ¶Ï×Ö·û´®ÊÇ·ñÊÇÕûÊı»ò¸ºÕûÊı
+        /// åˆ¤æ–­å­—ç¬¦ä¸²æ˜¯å¦æ˜¯æ•´æ•°æˆ–è´Ÿæ•´æ•°
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -118,10 +158,10 @@ namespace wojilu {
 
 
         /// <summary>
-        /// ÅĞ¶Ï×Ö·û´®ÊÇ·ñÊÇ"true"»ò"false"(²»Çø·Ö´óĞ¡Ğ´)
+        /// åˆ¤æ–­å­—ç¬¦ä¸²æ˜¯å¦æ˜¯"true"æˆ–"false"(ä¸åŒºåˆ†å¤§å°å†™)
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Ö»ÓĞ×Ö·û´®ÊÇ"true"»ò"false"(²»Çø·Ö´óĞ¡Ğ´)Ê±£¬²Å·µ»Øtrue</returns>
+        /// <returns>åªæœ‰å­—ç¬¦ä¸²æ˜¯"true"æˆ–"false"(ä¸åŒºåˆ†å¤§å°å†™)æ—¶ï¼Œæ‰è¿”å›true</returns>
         public static Boolean IsBool( String str ) {
             if (str == null) return false;
             if (strUtil.EqualsIgnoreCase( str, "true" ) || strUtil.EqualsIgnoreCase( str, "false" )) return true;
@@ -130,7 +170,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³ÉÄ¿±êÀàĞÍ
+        /// å°†å¯¹è±¡è½¬æ¢æˆç›®æ ‡ç±»å‹
         /// </summary>
         /// <param name="val"></param>
         /// <param name="destinationType"></param>
@@ -140,20 +180,20 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«ÕûÊı×ª»»³É Boolean ÀàĞÍ¡£Ö»ÓĞ²ÎÊıµÈÓÚ1Ê±£¬²Å·µ»Øtrue
+        /// å°†æ•´æ•°è½¬æ¢æˆ Boolean ç±»å‹ã€‚åªæœ‰å‚æ•°ç­‰äº1æ—¶ï¼Œæ‰è¿”å›true
         /// </summary>
         /// <param name="integer"></param>
-        /// <returns>Ö»ÓĞ²ÎÊıµÈÓÚ1Ê±£¬²Å·µ»Øtrue</returns>
+        /// <returns>åªæœ‰å‚æ•°ç­‰äº1æ—¶ï¼Œæ‰è¿”å›true</returns>
         public static Boolean ToBool( int integer ) {
 
             return (integer == 1);
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É Boolean ÀàĞÍ¡£Ö»ÓĞ¶ÔÏóµÄ×Ö·û´®ĞÎÊ½µÈÓÚ1»òÕßtrue(²»Çø·Ö´óĞ¡Ğ´)Ê±£¬²Å·µ»Øtrue
+        /// å°†å¯¹è±¡è½¬æ¢æˆ Boolean ç±»å‹ã€‚åªæœ‰å¯¹è±¡çš„å­—ç¬¦ä¸²å½¢å¼ç­‰äº1æˆ–è€…true(ä¸åŒºåˆ†å¤§å°å†™)æ—¶ï¼Œæ‰è¿”å›true
         /// </summary>
         /// <param name="objBool"></param>
-        /// <returns>Ö»ÓĞ¶ÔÏóµÄ×Ö·û´®ĞÎÊ½µÈÓÚ1»òÕßtrue(²»Çø·Ö´óĞ¡Ğ´)Ê±£¬²Å·µ»Øtrue</returns>
+        /// <returns>åªæœ‰å¯¹è±¡çš„å­—ç¬¦ä¸²å½¢å¼ç­‰äº1æˆ–è€…true(ä¸åŒºåˆ†å¤§å°å†™)æ—¶ï¼Œæ‰è¿”å›true</returns>
         public static Boolean ToBool( Object objBool ) {
 
             if (objBool == null) {
@@ -164,10 +204,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«×Ö·û´®(²»Çø·Ö´óĞ¡Ğ´)×ª»»³É Boolean ÀàĞÍ¡£Ö»ÓĞ×Ö·û´®µÈÓÚ1»òÕßtrueÊ±£¬²Å·µ»Øtrue
+        /// å°†å­—ç¬¦ä¸²(ä¸åŒºåˆ†å¤§å°å†™)è½¬æ¢æˆ Boolean ç±»å‹ã€‚åªæœ‰å­—ç¬¦ä¸²ç­‰äº1æˆ–è€…trueæ—¶ï¼Œæ‰è¿”å›true
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Ö»ÓĞ×Ö·û´®µÈÓÚ1»òÕßtrueÊ±£¬²Å·µ»Øtrue</returns>
+        /// <returns>åªæœ‰å­—ç¬¦ä¸²ç­‰äº1æˆ–è€…trueæ—¶ï¼Œæ‰è¿”å›true</returns>
         public static Boolean ToBool( String str ) {
 
             if (str == null) {
@@ -183,10 +223,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É System.Decimal ÀàĞÍ¡£Èç¹ûstr²»ÊÇÕûÊı»òĞ¡Êı£¬·µ»Ø0
+        /// å°†å­—ç¬¦ä¸²è½¬æ¢æˆ System.Decimal ç±»å‹ã€‚å¦‚æœsträ¸æ˜¯æ•´æ•°æˆ–å°æ•°ï¼Œè¿”å›0
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Èç¹ûstr²»ÊÇÕûÊı»òĞ¡Êı£¬·µ»Ø0</returns>
+        /// <returns>å¦‚æœsträ¸æ˜¯æ•´æ•°æˆ–å°æ•°ï¼Œè¿”å›0</returns>
         public static decimal ToDecimal( String str ) {
 
             if (!IsDecimal( str )) {
@@ -196,10 +236,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É System.Double ÀàĞÍ¡£Èç¹ûstr²»ÊÇÕûÊı»òĞ¡Êı£¬·µ»Ø0
+        /// å°†å­—ç¬¦ä¸²è½¬æ¢æˆ System.Double ç±»å‹ã€‚å¦‚æœsträ¸æ˜¯æ•´æ•°æˆ–å°æ•°ï¼Œè¿”å›0
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Èç¹ûstr²»ÊÇÕûÊı»òĞ¡Êı£¬·µ»Ø0</returns>
+        /// <returns>å¦‚æœsträ¸æ˜¯æ•´æ•°æˆ–å°æ•°ï¼Œè¿”å›0</returns>
         public static Double ToDouble( String str ) {
 
             if (!IsDecimal( str )) {
@@ -209,7 +249,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³É System.Decimal ÀàĞÍ¡£Èç¹ûstr²»ÊÇÕûÊı»òĞ¡Êı£¬·µ»Ø²ÎÊı defaultValue Ö¸¶¨µÄÖµ
+        /// å°†å­—ç¬¦ä¸²è½¬æ¢æˆ System.Decimal ç±»å‹ã€‚å¦‚æœsträ¸æ˜¯æ•´æ•°æˆ–å°æ•°ï¼Œè¿”å›å‚æ•° defaultValue æŒ‡å®šçš„å€¼
         /// </summary>
         /// <param name="str"></param>
         /// <param name="defaultValue"></param>
@@ -223,10 +263,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³ÉÕûÊı£»Èç¹û²»ÊÇÕûÊı£¬Ôò·µ»Ø0
+        /// å°†å¯¹è±¡è½¬æ¢æˆæ•´æ•°ï¼›å¦‚æœä¸æ˜¯æ•´æ•°ï¼Œåˆ™è¿”å›0
         /// </summary>
         /// <param name="objInt"></param>
-        /// <returns>Èç¹û²»ÊÇÕûÊı£¬Ôò·µ»Ø0</returns>
+        /// <returns>å¦‚æœä¸æ˜¯æ•´æ•°ï¼Œåˆ™è¿”å›0</returns>
         public static int ToInt( Object objInt ) {
 
             if ((objInt != null) && IsInt( objInt.ToString() )) {
@@ -238,7 +278,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½« decimal ×ª»»³ÉÕûÊı
+        /// å°† decimal è½¬æ¢æˆæ•´æ•°
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
@@ -247,10 +287,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É·ÇNullĞÎÊ½£¬Èç¹û´«ÈëµÄ²ÎÊıÊÇ null£¬Ôò·µ»Ø¿Õ×Ö·û´®(¼´""£¬Ò²¼´string.Empty)
+        /// å°†å¯¹è±¡è½¬æ¢æˆéNullå½¢å¼ï¼Œå¦‚æœä¼ å…¥çš„å‚æ•°æ˜¯ nullï¼Œåˆ™è¿”å›ç©ºå­—ç¬¦ä¸²(å³""ï¼Œä¹Ÿå³string.Empty)
         /// </summary>
         /// <param name="str"></param>
-        /// <returns>Èç¹ûÎªnull£¬Ôò·µ»Ø¿Õ×Ö·û´®(¼´""£¬Ò²¼´string.Empty)</returns>
+        /// <returns>å¦‚æœä¸ºnullï¼Œåˆ™è¿”å›ç©ºå­—ç¬¦ä¸²(å³""ï¼Œä¹Ÿå³string.Empty)</returns>
         public static String ToNotNull( Object str ) {
 
             if (str == null) {
@@ -260,17 +300,17 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É DateTime ĞÎÊ½£¬Èç¹û²»·ûºÏ¸ñÊ½£¬Ôò·µ»Øµ±Ç°Ê±¼ä
+        /// å°†å¯¹è±¡è½¬æ¢æˆ DateTime å½¢å¼ï¼Œå¦‚æœä¸ç¬¦åˆæ ¼å¼ï¼Œåˆ™è¿”å›å½“å‰æ—¶é—´
         /// </summary>
         /// <param name="objTime"></param>
-        /// <returns>Èç¹û²»·ûºÏ¸ñÊ½£¬Ôò·µ»Øµ±Ç°Ê±¼ä</returns>
+        /// <returns>å¦‚æœä¸ç¬¦åˆæ ¼å¼ï¼Œåˆ™è¿”å›å½“å‰æ—¶é—´</returns>
         public static DateTime ToTime( Object objTime ) {
 
             return ToTime( objTime, DateTime.Now );
         }
 
         /// <summary>
-        /// ½«¶ÔÏó×ª»»³É DateTime ĞÎÊ½£¬Èç¹û²»·ûºÏ¸ñÊ½£¬Ôò·µ»ØµÚ¶ş¸ö²ÎÊıÖ¸¶¨µÄÊ±¼ä
+        /// å°†å¯¹è±¡è½¬æ¢æˆ DateTime å½¢å¼ï¼Œå¦‚æœä¸ç¬¦åˆæ ¼å¼ï¼Œåˆ™è¿”å›ç¬¬äºŒä¸ªå‚æ•°æŒ‡å®šçš„æ—¶é—´
         /// </summary>
         /// <param name="objTime"></param>
         /// <param name="targetTime"></param>
@@ -289,7 +329,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ÅĞ¶ÏÁ½¸öÊ±¼äµÄÈÕÆÚÊÇ·ñÏàÍ¬(ÒªÇóÍ¬ÄêÍ¬ÔÂÍ¬ÈÕ)
+        /// åˆ¤æ–­ä¸¤ä¸ªæ—¶é—´çš„æ—¥æœŸæ˜¯å¦ç›¸åŒ(è¦æ±‚åŒå¹´åŒæœˆåŒæ—¥)
         /// </summary>
         /// <param name="day1"></param>
         /// <param name="day2"></param>
@@ -299,10 +339,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// »ñÈ¡ÈÕÆÚµÄÈÕ³£±í´ïĞÎÊ½£¬ÒªÇó×î½üÈıÌìÒÀ´ÎÓÃ {½ñÌì£¬×òÌì£¬Ç°Ìì} ±íÊ¾
+        /// è·å–æ—¥æœŸçš„æ—¥å¸¸è¡¨è¾¾å½¢å¼ï¼Œè¦æ±‚æœ€è¿‘ä¸‰å¤©ä¾æ¬¡ç”¨ {ä»Šå¤©ï¼Œæ˜¨å¤©ï¼Œå‰å¤©} è¡¨ç¤º
         /// </summary>
         /// <param name="day"></param>
-        /// <returns>ÒªÇó×î½üÈıÌìÒÀ´ÎÓÃ {½ñÌì¡¢×òÌì¡¢Ç°Ìì} ±íÊ¾</returns>
+        /// <returns>è¦æ±‚æœ€è¿‘ä¸‰å¤©ä¾æ¬¡ç”¨ {ä»Šå¤©ã€æ˜¨å¤©ã€å‰å¤©} è¡¨ç¤º</returns>
         public static String ToDayString( DateTime day ) {
 
             DateTime today = DateTime.Now;
@@ -315,10 +355,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// »ñÈ¡Ê±¼äµÄÈÕ³£±í´ïĞÎÊ½£¬¸ñÊ½Îª {**Ğ¡Ê±Ç°£¬**·ÖÖÓÇ°£¬**ÃëÇ°}£¬ÒÔ¼° {×òÌì£¬Ç°Ìì}
+        /// è·å–æ—¶é—´çš„æ—¥å¸¸è¡¨è¾¾å½¢å¼ï¼Œæ ¼å¼ä¸º {**å°æ—¶å‰ï¼Œ**åˆ†é’Ÿå‰ï¼Œ**ç§’å‰}ï¼Œä»¥åŠ {æ˜¨å¤©ï¼Œå‰å¤©}
         /// </summary>
         /// <param name="t"></param>
-        /// <returns>¸ñÊ½Îª {**Ğ¡Ê±Ç°£¬**·ÖÖÓÇ°£¬**ÃëÇ°}£¬ÒÔ¼° {×òÌì£¬Ç°Ìì}</returns>
+        /// <returns>æ ¼å¼ä¸º {**å°æ—¶å‰ï¼Œ**åˆ†é’Ÿå‰ï¼Œ**ç§’å‰}ï¼Œä»¥åŠ {æ˜¨å¤©ï¼Œå‰å¤©}</returns>
         public static String ToTimeString( DateTime t ) {
 
             DateTime now = DateTime.Now;
@@ -346,7 +386,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«¶ÔÏóĞòÁĞ»¯Îª xml (ÄÚ²¿µ÷ÓÃ .net ¿ò¼Ü×Ô´øµÄ XmlSerializer)
+        /// å°†å¯¹è±¡åºåˆ—åŒ–ä¸º xml (å†…éƒ¨è°ƒç”¨ .net æ¡†æ¶è‡ªå¸¦çš„ XmlSerializer)
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
@@ -355,7 +395,7 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«ÕûÊı×ª»»³É×Ö·û´®ĞÎÊ½£¬¶à¸öÕûÊıÖ®¼äÓÃÓ¢ÎÄ¶ººÅ·Ö¸ô
+        /// å°†æ•´æ•°è½¬æ¢æˆå­—ç¬¦ä¸²å½¢å¼ï¼Œå¤šä¸ªæ•´æ•°ä¹‹é—´ç”¨è‹±æ–‡é€—å·åˆ†éš”
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
@@ -370,8 +410,33 @@ namespace wojilu {
             return builder.ToString();
         }
 
+        public static String ToString( long[] ids ) {
+
+            if (ids == null || ids.Length == 0) return "";
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < ids.Length; i++) {
+                builder.Append( ids[i] );
+                if (i < ids.Length - 1) builder.Append( ',' );
+            }
+            return builder.ToString();
+        }
+
+        public static long[] ToLongArray( String myids ) {
+
+            if (strUtil.IsNullOrEmpty( myids )) return new long[] { };
+
+            String[] arrIds = myids.Split( ',' );
+            long[] Ids = new long[arrIds.Length];
+            for (int i = 0; i < arrIds.Length; i++) {
+                long oneID = ToLong( arrIds[i].Trim() );
+                Ids[i] = oneID;
+            }
+
+            return Ids;
+        }
+
         /// <summary>
-        /// ½«×Ö·û´®ĞÎÊ½µÄ id ÁĞ±í×ª»»³ÉÕûĞÍÊı×é
+        /// å°†å­—ç¬¦ä¸²å½¢å¼çš„ id åˆ—è¡¨è½¬æ¢æˆæ•´å‹æ•°ç»„
         /// </summary>
         /// <param name="myids"></param>
         /// <returns></returns>
@@ -390,10 +455,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«×Ö·û´®×ª»»³ÉÒÔ¾®ºÅ¿ªÍ·µÄ±í´ïĞÎÊ½£»Èç¹û²»ÊÇÓĞĞ§µÄÑÕÉ«Öµ£¬Ôò·µ»Ønull
+        /// å°†å­—ç¬¦ä¸²è½¬æ¢æˆä»¥äº•å·å¼€å¤´çš„è¡¨è¾¾å½¢å¼ï¼›å¦‚æœä¸æ˜¯æœ‰æ•ˆçš„é¢œè‰²å€¼ï¼Œåˆ™è¿”å›null
         /// </summary>
         /// <param name="val"></param>
-        /// <returns>½«×Ö·û´®×ª»»³ÉÒÔ¾®ºÅ¿ªÍ·µÄ±í´ïĞÎÊ½£»Èç¹û²»ÊÇÓĞĞ§µÄÑÕÉ«Öµ£¬Ôò·µ»Ønull</returns>
+        /// <returns>å°†å­—ç¬¦ä¸²è½¬æ¢æˆä»¥äº•å·å¼€å¤´çš„è¡¨è¾¾å½¢å¼ï¼›å¦‚æœä¸æ˜¯æœ‰æ•ˆçš„é¢œè‰²å€¼ï¼Œåˆ™è¿”å›null</returns>
         public static String ToColorValue( String val ) {
             if (strUtil.IsColorValue( val ) == false) return null;
             if (val.StartsWith( "#" )) return val;
@@ -401,19 +466,19 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«10½øÖÆÕûÊı×ª»»Îª62½øÖÆ
+        /// å°†10è¿›åˆ¶æ•´æ•°è½¬æ¢ä¸º62è¿›åˆ¶
         /// </summary>
         /// <param name="inputNum"></param>
-        /// <returns>62½øÖÆÊı</returns>
+        /// <returns>62è¿›åˆ¶æ•°</returns>
         public static String ToBase62( Int64 inputNum ) {
             String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
             return ToBase( inputNum, chars );
         }
 
         /// <summary>
-        /// ½«10½øÖÆÕûÊı×ª»»Îªn½øÖÆ
+        /// å°†10è¿›åˆ¶æ•´æ•°è½¬æ¢ä¸ºnè¿›åˆ¶
         /// </summary>
-        /// <param name="inputNum">10½øÖÆÕûÊı</param>
+        /// <param name="inputNum">10è¿›åˆ¶æ•´æ•°</param>
         /// <param name="chars"></param>
         /// <returns></returns>
         public static String ToBase( Int64 inputNum, String chars ) {
@@ -431,10 +496,10 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«62½øÖÆ×ª»»Îª10½øÖÆÕûÊı
+        /// å°†62è¿›åˆ¶è½¬æ¢ä¸º10è¿›åˆ¶æ•´æ•°
         /// </summary>
-        /// <param name="str">62½øÖÆÊı</param>
-        /// <returns>10½øÖÆÕûÊı</returns>
+        /// <param name="str">62è¿›åˆ¶æ•°</param>
+        /// <returns>10è¿›åˆ¶æ•´æ•°</returns>
         public static Int64 DeBase62( String str ) {
 
             String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -442,11 +507,11 @@ namespace wojilu {
         }
 
         /// <summary>
-        /// ½«n½øÖÆ×ª»»Îª10½øÖÆÕûÊı
+        /// å°†nè¿›åˆ¶è½¬æ¢ä¸º10è¿›åˆ¶æ•´æ•°
         /// </summary>
-        /// <param name="str">ĞèÒª×ª»»µÄn½øÖÆÊı</param>
+        /// <param name="str">éœ€è¦è½¬æ¢çš„nè¿›åˆ¶æ•°</param>
         /// <param name="chars"></param>
-        /// <returns>10½øÖÆÕûÊı</returns>
+        /// <returns>10è¿›åˆ¶æ•´æ•°</returns>
         public static Int64 DeBase( String str, String chars ) {
             int cbase = chars.Length;
 
@@ -458,6 +523,14 @@ namespace wojilu {
             }
 
             return result;
+        }
+
+        public static List<T> ToList<T>( IList list ) {
+            List<T> results = new List<T>();
+            foreach (T obj in list) {
+                results.Add( obj );
+            }
+            return results;
         }
 
 

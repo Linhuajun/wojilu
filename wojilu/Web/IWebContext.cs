@@ -75,14 +75,14 @@ namespace wojilu.Web {
         /// 获取当前登录用户的 userId，如果没有登录，则为-1
         /// </summary>
         /// <returns></returns>
-        int UserId();
+        long UserId();
 
         /// <summary>
         /// 获取使用自定义的cookie名称登录的 userId
         /// </summary>
         /// <param name="cookieName"></param>
         /// <returns></returns>
-        int UserId( String cookieName );
+        long UserId(string cookieName);
 
         /// <summary>
         /// 判断用户是否登录(默认cookie验证)
@@ -94,8 +94,16 @@ namespace wojilu.Web {
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="userName"></param>
-        /// <param name="expiration"></param>
-        void UserLogin( int userId, String userName, LoginTime expiration );
+        /// <param name="expiration">过期的时间，比如10分钟过期： DateTime.Now.AddMinutes( 10 )</param>
+        void UserLogin(long userId, string userName, DateTime expiration);
+
+        /// <summary>
+        /// 使用默认的cookie登录
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="userName"></param>
+        /// <param name="expiration">使用 LoginTime 枚举确定过期时间</param>
+        void UserLogin(long userId, string userName, LoginTime expiration);
 
         /// <summary>
         /// 使用自定义的cookie名称登录，允许多个验证授权，互不影响
@@ -103,8 +111,17 @@ namespace wojilu.Web {
         /// <param name="cookieName"></param>
         /// <param name="userId"></param>
         /// <param name="userName"></param>
-        /// <param name="expiration"></param>
-        void UserLogin( String cookieName, int userId, String userName, LoginTime expiration );
+        /// <param name="expiration">过期的时间，比如10分钟过期： DateTime.Now.AddMinutes( 10 )</param>
+        void UserLogin(string cookieName, long userId, string userName, DateTime expiration);
+
+        /// <summary>
+        /// 使用自定义的cookie名称登录，允许多个验证授权，互不影响
+        /// </summary>
+        /// <param name="cookieName"></param>
+        /// <param name="userId"></param>
+        /// <param name="userName"></param>
+        /// <param name="expiration">使用 LoginTime 枚举确定过期时间</param>
+        void UserLogin(string cookieName, long userId, string userName, LoginTime expiration);
 
         /// <summary>
         /// 用户注销
@@ -167,6 +184,8 @@ namespace wojilu.Web {
         String SessionId { get; }
 
         String GetAuthJson();
+        String GetAuthJson( String cookieName );
+        String GetAuthJson( String[] arrCookieName );
 
         object Session { get; }
         object Context { get; }

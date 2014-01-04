@@ -19,7 +19,7 @@ namespace wojilu.Members.Groups.Domain {
 
         public int PostCount { get; set; }
         public int TopicCount { get; set; }
-        public int Status { get; set; }
+        public long Status { get; set; }
 
         public String Msg { get; set; }
 
@@ -28,6 +28,9 @@ namespace wojilu.Members.Groups.Domain {
 
         public DateTime CreateTime { get; set; }
         public DateTime LastUpdateTime { get; set; }
+
+        [Column( Length = 40 )]
+        public String Ip { get; set; }
 
         [NotSave]
         public String RoleString {

@@ -8,37 +8,37 @@ namespace wojilu.Common.Spider.Service {
 
     public class SportImportService : ISportImportService {
 
-        public List<SpiderImport> GetAll() {
+        public virtual List<SpiderImport> GetAll() {
             return SpiderImport.find( "order by OrderId desc, Id asc" ).list();
         }
 
-        public SpiderImport GetById( int id ) {
+        public virtual SpiderImport GetById(long id) {
             return SpiderImport.findById( id );
         }
 
-        public void Stop( int id ) {
+        public virtual void Stop(long id) {
             SpiderImport s = SpiderImport.findById( id );
             s.IsDelete = 1;
             s.update( "IsDelete" );
         }
 
-        public void Start( int id ) {
+        public virtual void Start(long id) {
             SpiderImport s = SpiderImport.findById( id );
             s.IsDelete = 0;
             s.update( "IsDelete" );
         }
 
-        public void Delete( int id ) {
+        public virtual void Delete(long id) {
             SpiderImport s = SpiderImport.findById( id );
             s.IsDelete = 1;
             s.update( "IsDelete" );
         }
 
-        public void Insert( SpiderImport s ) {
+        public virtual void Insert( SpiderImport s ) {
             s.insert();
         }
 
-        public void Update( SpiderImport s ) {
+        public virtual void Update( SpiderImport s ) {
             s.update();
         }
 

@@ -23,7 +23,7 @@ namespace wojilu.Web.Controller.Admin {
 
         }
 
-        public void Toolbar() {
+        public virtual void Toolbar() {
 
             set( "tagName", ctx.Get( "tag" ) );
 
@@ -38,16 +38,16 @@ namespace wojilu.Web.Controller.Admin {
             set( "countAscLink", to( ListAsc ) );
         }
 
-        public void Index() {
+        public virtual void Index() {
             bindTags( "" );
         }
 
-        public void ListDesc() {
+        public virtual void ListDesc() {
             view( "Index" );
             bindTags( "order by DataCount desc, Id desc" );
         }
 
-        public void ListAsc() {
+        public virtual void ListAsc() {
             view( "Index" );
             bindTags( "order by DataCount asc, Id asc" );
         }
@@ -65,7 +65,7 @@ namespace wojilu.Web.Controller.Admin {
             set( "page", list.PageBar );
         }
 
-        public void DataList(  ) {
+        public virtual void DataList(  ) {
 
             load( "toolbar", Toolbar );
             set( "tagName", ctx.Get( "tag" ) );
@@ -82,20 +82,20 @@ namespace wojilu.Web.Controller.Admin {
         }
 
         [HttpDelete, DbTransaction]
-        public void DeleteTag( int id ) {
+        public virtual void DeleteTag( long id ) {
 
             TagService.DeleteTag( id );
             echoAjaxOk();
         }
 
-        public void DeleteData( int dataTagId ) {
+        public virtual void DeleteData( long dataTagId ) {
 
             TagService.DeleteDataTag( dataTagId );
             echoAjaxOk();
         }
         
 
-        private void bindTagList( int count, List<Tag> tags, String blockName ) {
+        private void bindTagList(int count, List<Tag> tags, string blockName) {
             IBlock block = getBlock( blockName );
             foreach (Tag tag in tags) {
 

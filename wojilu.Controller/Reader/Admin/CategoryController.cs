@@ -18,9 +18,9 @@ namespace wojilu.Web.Controller.Reader.Admin {
     [App( typeof( ReaderApp ) )]
     public class CategoryController : ControllerBase {
 
-        public IFeedCategoryService categoryService { get; set; }
-        public ISubscriptionService subscriptionService { get; set; }
-        public IFeedEntryService entryService { get; set; }
+        public virtual IFeedCategoryService categoryService { get; set; }
+        public virtual ISubscriptionService subscriptionService { get; set; }
+        public virtual IFeedEntryService entryService { get; set; }
 
         public CategoryController() {
             HideLayout( typeof( Reader.LayoutController ) );
@@ -32,7 +32,7 @@ namespace wojilu.Web.Controller.Reader.Admin {
         public override void Layout() {
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             FeedCategory category = categoryService.GetById( id );
             bindCategory( category );
@@ -40,7 +40,7 @@ namespace wojilu.Web.Controller.Reader.Admin {
             String feedIds = subscriptionService.GetFeedIdsByCategoryId( id );
 
             if (strUtil.IsNullOrEmpty( feedIds )) {
-                actionContent( "<div style=\"margin:30px;\" class=\"warning\">no items</div>" );
+                content( "<div style=\"margin:30px;\" class=\"warning\">no items</div>" );
                 return;
             }
 
@@ -53,7 +53,7 @@ namespace wojilu.Web.Controller.Reader.Admin {
             bind( "c", category );
         }
 
-        private void bindItemList( int id, FeedCategory category, DataPage<FeedEntry> list ) {
+        private void bindItemList( long id, FeedCategory category, DataPage<FeedEntry> list ) {
             set( "feed.Title", category.Name );
             set( "feed.Link", to( Show, id ) );
             set( "LastRefreshTime", "" );

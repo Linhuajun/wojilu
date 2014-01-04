@@ -22,6 +22,7 @@ using System.IO;
 using System.Web;
 using wojilu.Web;
 using wojilu.Web.Utils;
+using System.Collections.Generic;
 
 
 namespace wojilu.Drawing {
@@ -40,7 +41,7 @@ namespace wojilu.Drawing {
         /// <param name="srcPath">相对网址</param>
         public static void DeleteImgAndThumb( String srcPath ) {
 
-            DeleteImgAndThumb( srcPath, Uploader.ThumbTypes );
+            DeleteImgAndThumb( srcPath, ThumbConfig.GetPhotoConfig() );
         }
 
         /// <summary>
@@ -48,20 +49,23 @@ namespace wojilu.Drawing {
         /// </summary>
         /// <param name="srcPath">相对网址</param>
         /// <param name="arrThumbType">多个缩略图类型</param>
-        public static void DeleteImgAndThumb( String srcPath, ThumbnailType[] arrThumbType ) {
+        public static void DeleteImgAndThumb( String srcPath, Dictionary<String, ThumbInfo> arrThumbType ) {
 
             if (strUtil.IsNullOrEmpty( srcPath )) return;
-            if (srcPath.ToLower().StartsWith( "http://" )) return;
+            if (srcPath.ToLower().StartsWith( "http://" ) ||
+                srcPath.ToLower().StartsWith( "https://" )
+                ) return;
 
             String path = PathHelper.Map( srcPath );
-            if (file.Exists( path ))
+            if (file.Exists( path )) {
                 wojilu.IO.File.Delete( path );
+            }
 
-            foreach (ThumbnailType ttype in arrThumbType) {
-
-                String pathThumb = PathHelper.Map( GetThumbPath( srcPath, ttype ) );
-                if (file.Exists( pathThumb ))
+            foreach (KeyValuePair<String, ThumbInfo> kv in arrThumbType) {
+                String pathThumb = PathHelper.Map( GetThumbPath( srcPath,  kv.Key ) );
+                if (file.Exists( pathThumb )) {
                     wojilu.IO.File.Delete( pathThumb );
+                }
             }
         }
 
@@ -71,20 +75,23 @@ namespace wojilu.Drawing {
         /// <param name="srcPath">相对路径</param>
         public static void DeleteFile( String srcPath ) {
             if (strUtil.IsNullOrEmpty( srcPath )) return;
-            if (srcPath.ToLower().StartsWith( "http://" )) return;
+            if (srcPath.ToLower().StartsWith( "http://" ) ||
+                srcPath.ToLower().StartsWith( "https://" )
+                ) return;
 
             String path = PathHelper.Map( srcPath );
-            if (file.Exists( path ))
+            if (file.Exists( path )) {
                 wojilu.IO.File.Delete( path );
+            }
         }
 
         /// <summary>
-        /// 获取图片的随机文件名(会添加日期文件夹和随机文件名)，比如 2009-9-28/1530703343314547.jpg
+        /// 获取图片的随机文件名(会添加日期文件夹和随机文件名)，比如 2009/9/28/1530703343314547.jpg
         /// </summary>
         /// <remarks>如果日期文件夹不存在，则在磁盘上自动创建文件夹</remarks>
         /// <param name="pathName">图片存储的绝对路径</param>
         /// <param name="strContentType">图片类型</param>
-        /// <returns>返回图片名称，包括所在文件夹，比如 2009-9-28/1530703343314547.jpg</returns>
+        /// <returns>返回图片名称，包括所在文件夹，比如 2009/9/28/1530703343314547.jpg</returns>
         public static String GetPhotoName( String absPath, String strContentType ) {
             DateTime now = DateTime.Now;
             String strDir = getDirName( now );
@@ -101,22 +108,41 @@ namespace wojilu.Drawing {
             return Path.Combine( strDir, strFile );
         }
 
-        //private static string getDirName( DateTime now ) {
-        //    return string.Format( "{0}-{1}-{2}", now.Year, now.Month, now.Day );
-        //}
-
         private static string getDirName( DateTime now ) {
             return string.Format( "{0}/{1}/{2}", now.Year, now.Month, now.Day );
         }
 
         /// <summary>
-        /// 获取文件的随机文件名(会添加日期文件夹和随机文件名)，比如 2009-9-28/1530703343314547.zip
+        /// 获取上传文件(图片或其他类型)的随机文件名。
+        /// <para>返回完整绝对路径，比如 d:\www\static\upload\image\2009\9\28\1530703343314547.zip</para>
+        /// </summary>
+        /// <param name="ext">文件类型，比如 jpg 或者 png</param>
+        /// <returns>返回完整绝对路径，比如 d:\www\static\upload\image\2009\9\28\1530703343314547.zip</returns>
+        public static String GetPhotoAbsName( String ext ) {
+            String targetPath = GetPhotoName( ext );
+            return PathHelper.Map( strUtil.Join( sys.Path.DiskPhoto, targetPath ) );
+        }
+
+        /// <summary>
+        /// 获取上传文件(图片或其他类型)的随机文件名。
+        /// <para>返回 2009/9/28/1530703343314547.jpg 类似格式。</para> 
+        /// <para>如果文件夹不存在，则自动创建。</para> 
+        /// </summary>
+        /// <remarks>如果日期文件夹不存在，则在磁盘上自动创建文件夹，存放在 sys.Path.DiskPhoto 中</remarks>
+        /// <param name="ext">文件类型，比如 jpg 或者 png</param>
+        /// <returns>返回文件名称，包括所在文件夹，比如 2009/9/28/1530703343314547.zip</returns>
+        public static String GetPhotoName( String ext ) {
+            return GetFileName( PathHelper.Map( sys.Path.DiskPhoto ), ext );
+        }
+
+        /// <summary>
+        /// 获取文件的随机文件名(会添加日期文件夹和随机文件名)，比如 2009/9/28/1530703343314547.zip
         /// </summary>
         /// <remarks>如果日期文件夹不存在，则在磁盘上自动创建文件夹</remarks>
-        /// <param name="pathName">存储路径</param>
-        /// <param name="fileExt">文件类型</param>
-        /// <returns>返回文件名称，包括所在文件夹，比如 2009-9-28/1530703343314547.zip</returns>
-        public static String GetFileName( String pathName, String fileExt ) {
+        /// <param name="absPath">存储的绝对路径，比如 PathHelper.Map( sys.Path.DiskPhoto )</param>
+        /// <param name="fileExt">文件类型，比如 jpg 或者 png</param>
+        /// <returns>返回文件名称，包括所在文件夹，比如 2009/9/28/1530703343314547.zip</returns>
+        public static String GetFileName( String absPath, String fileExt ) {
             DateTime now = DateTime.Now;
             String strDate = getDirName( now );
 
@@ -124,11 +150,11 @@ namespace wojilu.Drawing {
             String strFile = now.Hour.ToString() + now.Minute.ToString() + now.Second.ToString() + now.Millisecond.ToString() + strRandom;
             strFile = strUtil.Join( strFile, fileExt, "." );
 
-            String path = Path.Combine( pathName, strDate );
+            String path = Path.Combine( absPath, strDate );
             if (!Directory.Exists( path )) {
                 Directory.CreateDirectory( path );
             }
-            return Path.Combine( strDate, strFile );
+            return Path.Combine( strDate, strFile ).Replace( "\\", "/" );
         }
 
         /// <summary>
@@ -190,10 +216,36 @@ namespace wojilu.Drawing {
             if (pathWithoutExt.EndsWith( "_m" )) pathWithoutExt = strUtil.TrimEnd( pathWithoutExt, "_m" );
 
             String suffix = "_s";
-            if (ttype == ThumbnailType.Medium)
+            if (ttype == ThumbnailType.Medium) {
                 suffix = "_m";
-            else if (ttype == ThumbnailType.Big)
+            }
+            else if (ttype == ThumbnailType.Big) {
                 suffix = "_b";
+            }
+
+            return pathWithoutExt + suffix + ext;
+        }
+
+        /// <summary>
+        /// 根据原始图片名称和缩略图后缀(_s或_m等)，获取缩略图名称
+        /// </summary>
+        /// <param name="srcPath"></param>
+        /// <param name="suffix">请勿添加下划线，系统会自动添加</param>
+        /// <returns></returns>
+        public static String GetThumbPath( Object srcPath, String suffix ) {
+
+            if (srcPath == null) return "";
+            String path = srcPath.ToString();
+            if (strUtil.IsNullOrEmpty( path )) return "";
+
+            String ext = Path.GetExtension( path );
+            String pathWithoutExt = strUtil.TrimEnd( path, ext );
+
+            if (suffix.StartsWith( "_" ) == false) suffix = "_" + suffix;
+
+            foreach (KeyValuePair<String, ThumbInfo> kv in ThumbConfig.GetPhotoConfig()) {
+                pathWithoutExt = strUtil.TrimEnd( pathWithoutExt, "_" + kv.Key );
+            }
 
             return pathWithoutExt + suffix + ext;
         }
@@ -229,26 +281,43 @@ namespace wojilu.Drawing {
         /// <param name="mode"></param>
         public static void SaveThumbnail( String srcPath, String destPath, int width, int height, SaveThumbnailMode mode ) {
 
-            using (Image srcImg = Image.FromFile( srcPath )) {
+            try {
+                using (Image srcImg = Image.FromFile( srcPath )) {
 
-                ThumbSize t = getTargetSize( width, height, mode, srcImg );
-                using (Bitmap newImg = new Bitmap( t.New.Width, t.New.Height )) {
+                    ThumbSize t = getTargetSize( width, height, mode, srcImg );
+                    using (Bitmap newImg = new Bitmap( t.New.Width, t.New.Height )) {
 
-                    using (Graphics g = Graphics.FromImage( newImg )) {
-                        g.InterpolationMode = InterpolationMode.High;
-                        g.SmoothingMode = SmoothingMode.HighQuality;
-                        g.Clear( Color.Transparent );
-                        g.DrawImage( srcImg, t.getNewRect(), t.getRect(), GraphicsUnit.Pixel );
+                        using (Graphics g = Graphics.FromImage( newImg )) {
+                            g.InterpolationMode = InterpolationMode.High;
+                            g.SmoothingMode = SmoothingMode.HighQuality;
+                            g.Clear( Color.White );
+                            g.DrawImage( srcImg, t.getNewRect(), t.getRect(), GraphicsUnit.Pixel );
 
-                        try {
-                            newImg.Save( destPath, ImageFormat.Jpeg );
+                            try {
+                                newImg.Save( destPath, ImageFormat.Jpeg );
+                            }
+                            catch (Exception e) {
+                                throw e;
+                            }
+
                         }
-                        catch (Exception e) {
-                            throw e;
-                        }
-
                     }
+
                 }
+            }
+            catch (OutOfMemoryException ex) {
+                logger.Error( "file format error: " + srcPath );
+            }
+        }
+
+        /// <summary>
+        /// 根据图片绝对路径，获取图片的大小
+        /// </summary>
+        /// <param name="absPhotoPath"></param>
+        /// <returns></returns>
+        public static Size GetPhotoSize( String absPhotoPath ) {
+            using (Image img = Image.FromFile( absPhotoPath )) {
+                return img.Size;
             }
         }
 
@@ -353,17 +422,17 @@ namespace wojilu.Drawing {
             if (t.Equals( "jpg" )) return "jpg";
             if (t.Equals( "jpeg" )) return "jpeg";
 
-            if (t.Equals( "image/gif")) return "gif";
-            if (t.Equals( "image/bmp")) return "bmp";
-            if (t.Equals( "image/tiff")) return "tiff";
-            if (t.Equals( "image/x-icon")) return "icon";
-            if (t.Equals( "image/x-png")) return "png"; // ie
+            if (t.Equals( "image/gif" )) return "gif";
+            if (t.Equals( "image/bmp" )) return "bmp";
+            if (t.Equals( "image/tiff" )) return "tiff";
+            if (t.Equals( "image/x-icon" )) return "icon";
+            if (t.Equals( "image/x-png" )) return "png"; // ie
             if (t.Equals( "image/png" )) return "png"; // firefox, google
 
-            if (t.Equals( "image/x-emf")) return "emf";
-            if (t.Equals( "image/x-exif")) return "exif";
-            if (t.Equals( "image/x-wmf")) return "wmf";
-            if (t.Equals( "image/pjpeg")) return "jpg"; // ie6
+            if (t.Equals( "image/x-emf" )) return "emf";
+            if (t.Equals( "image/x-exif" )) return "exif";
+            if (t.Equals( "image/x-wmf" )) return "wmf";
+            if (t.Equals( "image/pjpeg" )) return "jpg"; // ie6
             if (t.Equals( "image/jpg" )) return "jpg"; // ie8
             if (t.Equals( "image/jpeg" )) return "jpg"; // firefox, google
 
@@ -393,20 +462,46 @@ namespace wojilu.Drawing {
             if (t.Equals( "jpg" )) return ImageFormat.Jpeg;
             if (t.Equals( "jpeg" )) return ImageFormat.Jpeg;
 
-            if (t.Equals( "image/pjpeg")) return ImageFormat.Jpeg;
-            if (t.Equals( "image/gif")) return ImageFormat.Gif;
-            if (t.Equals( "image/bmp")) return ImageFormat.Bmp;
-            if (t.Equals( "image/tiff")) return ImageFormat.Tiff;
-            if (t.Equals( "image/x-icon")) return ImageFormat.Icon;
-            if (t.Equals( "image/x-png")) return ImageFormat.Png;
+            if (t.Equals( "image/pjpeg" )) return ImageFormat.Jpeg;
+            if (t.Equals( "image/gif" )) return ImageFormat.Gif;
+            if (t.Equals( "image/bmp" )) return ImageFormat.Bmp;
+            if (t.Equals( "image/tiff" )) return ImageFormat.Tiff;
+            if (t.Equals( "image/x-icon" )) return ImageFormat.Icon;
+            if (t.Equals( "image/x-png" )) return ImageFormat.Png;
             if (t.Equals( "image/png" )) return ImageFormat.Png;
-            if (t.Equals( "image/x-emf")) return ImageFormat.Emf;
-            if (t.Equals( "image/x-exif")) return ImageFormat.Exif;
-            if (t.Equals( "image/x-wmf")) return ImageFormat.Wmf;
+            if (t.Equals( "image/x-emf" )) return ImageFormat.Emf;
+            if (t.Equals( "image/x-exif" )) return ImageFormat.Exif;
+            if (t.Equals( "image/x-wmf" )) return ImageFormat.Wmf;
 
             return ImageFormat.MemoryBmp;
         }
 
+        /// <summary>
+        /// 将图片拷贝到上传目录中，并生成中、小缩略图
+        /// </summary>
+        /// <param name="oPath">原始相对路径</param>
+        /// <returns>返回图片名称，包括所在文件夹，比如 2009/9/28/1530703343314547.jpg</returns>
+        public static string CopyToUploadPath( String oPath ) {
+            oPath = PathHelper.Map( oPath );
+
+            // 需要保存的路径
+            String shortPath = Img.GetPhotoName( Path.GetExtension( oPath ) );
+            String targetPath = PathHelper.Map( strUtil.Join( sys.Path.DiskPhoto, shortPath ) );
+            logger.Info( "copy pic. oPath=" + oPath + ", target=" + targetPath );
+
+            // 1) 复制原图
+            file.Copy( oPath, targetPath );
+
+            Dictionary<String, ThumbInfo> thumbConfigMap = ThumbConfig.GetPhotoConfig();
+            foreach (KeyValuePair<String, ThumbInfo> kv in thumbConfigMap) {
+
+                String sPath = Img.GetThumbPath( targetPath, kv.Key );
+                Img.SaveThumbnail( oPath, sPath, kv.Value.Width, kv.Value.Height, kv.Value.Mode );
+
+            }
+
+            return shortPath;
+        }
 
     }
 }

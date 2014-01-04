@@ -22,55 +22,38 @@ namespace wojilu.Web.Controller.Content.Section {
     public partial class NormalController : ControllerBase, IPageSection {
 
 
-        public IContentPostService postService { get; set; }
-        public IContentImgService imgService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentImgService imgService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public NormalController() {
             postService = new ContentPostService();
             imgService = new ContentImgService();
             sectionService = new ContentSectionService();
-            ctService = new ContentCustomTemplateService();
         }
 
-        public void AdminSectionShow( int sectionId ) {
-
-        }
-
-
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void SectionShow( int sectionId ) {
+        public virtual void SectionShow( long sectionId ) {
 
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
                 throw new Exception( lang( "exDataNotFound" ) + "=>page section:" + sectionId );
             }
 
-            TemplateUtil.loadTemplate( this, s, ctService );
-
-            int appId = ctx.app.Id;
+            long appId = ctx.app.Id;
             int postcat = PostCategory.Post;
             int imgcat = PostCategory.Img;
 
-            List<ContentPost> posts = this.postService.GetTopBySectionAndCategory( sectionId, postcat, appId );
+            List<ContentPost> posts = this.postService.GetTopBySectionAndCategory( sectionId, postcat );
             ContentPost img = this.imgService.GetTopImg( sectionId, imgcat, appId );
 
             bindSectionShow( posts, img );
         }
 
-        public void List( int sectionId ) {
+        public virtual void List( long sectionId ) {
             run( new ListController().List, sectionId );
         }
 
-        public void Archive( int sectionId ) {
-            run( new ListController().Archive, sectionId );
-        }
-
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
             run( new ListController().Show, id );
         }
 

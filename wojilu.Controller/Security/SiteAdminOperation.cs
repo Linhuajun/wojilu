@@ -19,9 +19,9 @@ namespace wojilu.Web.Controller.Security {
 
         private static readonly String rootNamespace = "wojilu.Web.Controller";
 
-        public int Id { get; set; }
+        public long Id { get; set; }
         public String Name { get; set; }
-        public int ParentId { get; set; }
+        public long ParentId { get; set; }
 
         // 保留属性，暂时无作用
         public int Depth { get; set; } 
@@ -30,36 +30,39 @@ namespace wojilu.Web.Controller.Security {
 
         public SiteAdminOperation() { }
 
-        public SiteAdminOperation( int id, String name, int menuId, String url ) {
+        public SiteAdminOperation(long id, string name, long menuId, string url) {
             init( id, name, menuId );
             this.Url = url;
+            checkLowerUrl();
         }
 
-        public SiteAdminOperation( int id, String name, int menuId, Type controllerType ) {
+        public SiteAdminOperation(long id, string name, long menuId, Type controllerType) {
 
             init( id, name, menuId );
             initOperations( controllerType );
         }
 
-        public SiteAdminOperation( int id, String name, int menuId, Type[] controllerTypes ) {
+        public SiteAdminOperation(long id, string name, long menuId, Type[] controllerTypes) {
 
             init( id, name, menuId );
             initOperations( controllerTypes );
         }
 
-        public SiteAdminOperation( int id, String name, int menuId, aActionWithId action, String rootNamespace ) {
+        public SiteAdminOperation(long id, string name, long menuId, aActionWithId action, string rootNamespace) {
             init( id, name, menuId );
             this.Url = SecurityUtils.getPath( action.Method, rootNamespace );
+            checkLowerUrl();
         }
 
-        public SiteAdminOperation( int id, String name, int menuId, aAction action, String rootNamespace ) {
+        public SiteAdminOperation(long id, string name, long menuId, aAction action, string rootNamespace) {
             init( id, name, menuId );
             this.Url = SecurityUtils.getPath( action.Method, rootNamespace );
+            checkLowerUrl();
         }
 
         //--------------------------------------------------------------------------------------
 
-        private void init( int id, String name, int parentId) {
+        private void init(long id, string name, long parentId) {
             this.Id = id;
             this.Name = name;
             this.ParentId = parentId;
@@ -69,7 +72,9 @@ namespace wojilu.Web.Controller.Security {
             StringBuilder sb = new StringBuilder();
             addUrl( sb, controllerType, rootNamespace );
             this.Url = sb.ToString().TrimEnd( ';' );
+            checkLowerUrl();
         }
+
 
         private void initOperations( Type[] controllerTypes ) {
 
@@ -78,6 +83,7 @@ namespace wojilu.Web.Controller.Security {
                 addUrl( sb, controllerType, rootNamespace );
             }
             this.Url = sb.ToString().TrimEnd( ';' );
+            checkLowerUrl();
         }
 
         private static void addUrl( StringBuilder sb, Type controllerType, String rootNamespace ) {
@@ -90,13 +96,18 @@ namespace wojilu.Web.Controller.Security {
         }
 
 
+        private void checkLowerUrl() {
+            if (MvcConfig.Instance.IsUrlToLower) {
+                this.Url = this.Url.ToLower();
+            }
+        }
 
 
         //--------------------------------------------------------------------------------------
 
         private List<string> _urls;
 
-        public List<string> GetUrlList() {
+        public virtual List<string> GetUrlList() {
             if (_urls == null) {
                 List<string> results = getUrlList();
                 _urls = results;
@@ -118,7 +129,7 @@ namespace wojilu.Web.Controller.Security {
             return results;
         }
 
-        public String GetFirstUrl() {
+        public virtual String GetFirstUrl() {
             List<string> urls = GetUrlList();
             if (urls.Count > 0) {
                 return urls[0];
@@ -129,29 +140,29 @@ namespace wojilu.Web.Controller.Security {
 
         //-----------------------------------------------------------------------------
         
-        public ISecurityAction GetById( int id ) {
+        public virtual ISecurityAction GetById(long id) {
             foreach (SiteAdminOperation op in OperationDB.GetInstance().SiteAdminOperations) {
                 if (op.Id == id) return op as ISecurityAction;
             }
             return null;
         }
 
-        public IList findAll() {
+        public virtual IList findAll() {
             return OperationDB.GetInstance().SiteAdminOperations;
         }
 
-        public void insert() {
+        public virtual void insert() {
         }
 
-        public Result update() {
+        public virtual Result update() {
             return new Result();
         }
 
-        public void delete() {
+        public virtual void delete() {
         }
 
 
-        public static List<SiteAdminOperation> GetOperationsByMenu( List<SiteAdminOperation> userActions, int menuId ) {
+        public static List<SiteAdminOperation> GetOperationsByMenu(List<SiteAdminOperation> userActions, long menuId) {
             List<SiteAdminOperation> results = new List<SiteAdminOperation>();
             foreach (SiteAdminOperation action in userActions) {
                 if (action.ParentId == menuId ) results.Add( action );

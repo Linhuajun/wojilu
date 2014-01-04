@@ -15,8 +15,8 @@ namespace wojilu.Web.Controller.Content.Section {
     [App( typeof( ContentApp ) )]
     public class PostImgController : ControllerBase, IPageSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentImgService imgService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentImgService imgService { get; set; }
 
         public PostImgController() {
             postService = new ContentPostService();
@@ -24,14 +24,14 @@ namespace wojilu.Web.Controller.Content.Section {
         }
 
 
-        public void SectionShow( int sectionId ) {
+        public virtual void SectionShow( long sectionId ) {
 
             int postcat = PostCategory.Post;
             int imgcat = PostCategory.Img;
             int imgPostCat = PostCategory.ImgPost;
 
 
-            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat, ctx.app.Id );
+            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat );
             ContentPost img = imgService.GetTopImg( sectionId, imgPostCat, ctx.app.Id );
             List<ContentPost> imgs = this.imgService.GetByCategory( sectionId, imgcat, ctx.app.Id, 4 );
 
@@ -78,7 +78,7 @@ namespace wojilu.Web.Controller.Content.Section {
                 else
                     imgBlock.Set( "ipost.Title", img.Title );
 
-                String content = strUtil.HasText( img.Summary ) ? img.Summary : strUtil.ParseHtml( img.Content, 50 );
+                String content = strUtil.HasText( img.Summary ) ? img.Summary : strUtil.ParseHtml( img.Content, 100 );
                 imgBlock.Set( "ipost.Content", content );
                 imgBlock.Set( "ipost.Width", img.Width );
                 imgBlock.Set( "ipost.Height", img.Height );
@@ -115,23 +115,12 @@ namespace wojilu.Web.Controller.Content.Section {
 
         }
 
-        public void List( int sectionId ) {
+        public virtual void List( long sectionId ) {
             run( new ListController().List, sectionId );
         }
 
-        public void Archive( int sectionId ) {
-            run( new ListController().Archive, sectionId );
-        }
-
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
             run( new ListController().Show, id );
-        }
-
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void AdminSectionShow( int sectionId ) {
         }
 
     }

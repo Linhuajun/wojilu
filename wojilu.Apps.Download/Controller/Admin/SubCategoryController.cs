@@ -12,7 +12,7 @@ namespace wojilu.Web.Controller.Download.Admin {
     [App( typeof( DownloadApp ) )]
     public class SubCategoryController : ControllerBase {
 
-        public void List() {
+        public virtual void List() {
             set( "addLink", to( Add, 0 ) );
 
             List<FileCategory> cats = FileCategory.GetRootList();
@@ -46,7 +46,7 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
 
-        public void ListSub( int id ) {
+        public virtual void ListSub( long id ) {
             FileCategory cat = FileCategory.GetById( id );
             set( "cat.Name", cat.Name );
             set( "addLink", to( Add, id ) );
@@ -68,7 +68,7 @@ namespace wojilu.Web.Controller.Download.Admin {
 
         //------------------------------------------------------------------------------------------------------
 
-        public void Files() {
+        public virtual void Files() {
 
             List<FileCategory> cats = FileCategory.GetRootList();
             IBlock block = getBlock( "cat" );
@@ -99,9 +99,9 @@ namespace wojilu.Web.Controller.Download.Admin {
 
 
         [HttpPost]
-        public virtual void SaveSort( int parentId ) {
+        public virtual void SaveSort( long parentId ) {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             FileCategory acategory = FileCategory.GetById( id );
@@ -127,7 +127,7 @@ namespace wojilu.Web.Controller.Download.Admin {
         //------------------------------------------------------------------------------------------------------
 
 
-        public void Add( int id ) {
+        public virtual void Add( long id ) {
             target( Create );
 
             List<FileCategory> cats = FileCategory.GetRootList();
@@ -135,22 +135,24 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
         [HttpPost]
-        public void Create() {
+        public virtual void Create() {
 
             FileCategory cat = ctx.PostValue<FileCategory>();
-            if (ctx.HasErrors) {
-                run( Add, ctx.PostInt( "fileCategory.ParentId" ) );
+
+            if (strUtil.IsNullOrEmpty( cat.Name )) {
+                echoError( "请填写名称" );
                 return;
             }
+
 
             cat.IsThumbView = ctx.PostIsCheck( "fileCategory.IsThumbView" );
 
             cat.insert();
-            echoRedirect( lang( "opok" ), List );
+            echoToParentPart( lang( "opok" ) );
         }
 
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             FileCategory cat = FileCategory.GetById( id );
             bind( cat );
@@ -165,24 +167,24 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
         [HttpPost]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
             FileCategory c = FileCategory.GetById( id );
 
             FileCategory cat = ctx.PostValue( c ) as FileCategory;
-            if (ctx.HasErrors) {
-                run( Edit, id );
+
+            if (strUtil.IsNullOrEmpty( cat.Name )) {
+                echoError( "请填写名称" );
                 return;
             }
+
             cat.IsThumbView = ctx.PostIsCheck( "fileCategory.IsThumbView" );
 
-
             cat.update();
-            echoRedirect( lang( "opok" ), List );
-
+            echoToParentPart( lang( "opok" ) );
         }
 
         [HttpDelete]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             FileCategory f = FileCategory.GetById( id );
             if (f != null) {
                 f.delete();

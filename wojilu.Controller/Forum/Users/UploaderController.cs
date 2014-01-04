@@ -3,12 +3,7 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Web;
 
-using wojilu.Serialization;
 using wojilu.Web.Mvc;
 using wojilu.Web.Utils;
 using wojilu.Web.Mvc.Attr;
@@ -26,24 +21,24 @@ namespace wojilu.Web.Controller.Forum.Users {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( UploaderController ) );
 
-        public IAttachmentService attachService { get; set; }
-        public IForumTopicService topicService { get; set; }
+        public virtual IAttachmentService attachService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
 
         public UploaderController() {
             topicService = new ForumTopicService();
             attachService = new AttachmentService();
         }
 
-        public void UploadForm() {
+        public virtual void UploadForm() {
 
-            int boardId = ctx.GetInt( "boardId" );
+            long boardId = ctx.GetLong( "boardId" );
 
             set( "ActionLink", to( SaveUpload ) + "?boardId=" + boardId );
         }
 
-        public void SaveUpload() {
+        public virtual void SaveUpload() {
 
-            int boardId = ctx.GetInt( "boardId" );
+            long boardId = ctx.GetLong( "boardId" );
             HttpFile postedFile = ctx.GetFileSingle();
 
             Result result = Uploader.SaveFileOrImage( postedFile );
@@ -57,7 +52,7 @@ namespace wojilu.Web.Controller.Forum.Users {
             AttachmentTemp uploadFile = savePostData( postedFile, result );
 
             // 返回数据给主页面
-            set( "objFile", SimpleJsonString.ConvertObject( uploadFile.GetJsonObject() ) );
+            set( "objFile", Json.ToString( uploadFile.GetJsonObject() ) );
             set( "deleteLink", to( DeleteTempAttachment ) + "?boardId=" + boardId );
 
         }
@@ -77,9 +72,9 @@ namespace wojilu.Web.Controller.Forum.Users {
             return uploadFile;
         }
 
-        public void SaveFlashUpload() {
+        public virtual void SaveFlashUpload() {
 
-            int boardId = ctx.GetInt( "boardId" );
+            long boardId = ctx.GetLong( "boardId" );
             HttpFile postedFile = ctx.GetFileSingle();
 
             Result result = Uploader.SaveFileOrImage( postedFile );
@@ -94,14 +89,14 @@ namespace wojilu.Web.Controller.Forum.Users {
             AttachmentTemp uploadFile = savePostData( postedFile, result );
 
             // 返回json给主页面
-            String photoJson = SimpleJsonString.ConvertObject( uploadFile.GetJsonObject() );
+            String photoJson = Json.ToString( uploadFile.GetJsonObject() );
             String json = "{\"deleteLink\":\"" + to( DeleteTempAttachment ) + "?boardId=" + boardId + "\", \"photo\":" + photoJson + "}";
             echoText( json );
 
         }
 
-        public void DeleteTempAttachment() {
-            int id = ctx.PostInt( "Id" );
+        public virtual void DeleteTempAttachment() {
+            long id = ctx.PostLong( "Id" );
             attachService.DeleteTempAttachment( id );
             echoAjaxOk();
         }

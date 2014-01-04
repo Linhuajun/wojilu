@@ -21,14 +21,15 @@ namespace wojilu.Web.Controller.Photo {
     [App( typeof( PhotoApp ) )]
     public class LayoutController : ControllerBase {
 
-        public IPhotoAlbumService albumService { get; set; }
-        public ICommentService<PhotoPostComment> commentService { get; set; }
+        public virtual IPhotoAlbumService albumService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IOpenCommentService commentService { get; set; }
 
         public LayoutController() {
 
             albumService = new PhotoAlbumService();
-
-            commentService = new CommentService<PhotoPostComment>();
+            postService = new PhotoPostService();
+            commentService = new OpenCommentService();
         }
 
         public override void Layout() {
@@ -36,44 +37,58 @@ namespace wojilu.Web.Controller.Photo {
             set( "adminUrl", to( new Admin.MyController().My ) );
 
             set( "photo.AppUrl", to( new PhotoController().Index ) );
-            IBlock block = getBlock( "list" );
-            List<PhotoAlbum> albumList = albumService.GetListByApp( ctx.app.Id );
-            foreach (PhotoAlbum album in albumList) {
-                block.Set( "category.Title", album.Name );
-                block.Set( "category.Url", to( new PhotoController().Album, album.Id ) );
-                String coverImg = PhotoHelper.getCover( album );
-                block.Set( "category.Cover", coverImg );
-                block.Next();
-            }
 
+            bindNewPhoto();
 
             bindComments( "comment" );
+
+            bindAdminLink();
+        }
+
+        private void bindNewPhoto() {
+
+            IBlock block = getBlock( "list" );
+
+            List<PhotoPost> list = postService.GetNew( ctx.owner.Id, 10 );
+            foreach (PhotoPost x in list) {
+
+                block.Set( "x.Link", alink.ToAppData( x ) );
+                block.Set( "x.Title", x.Title );
+                block.Set( "x.Description", x.Description );
+
+                block.Set( "x.Pic", x.ImgThumbUrl );
+                block.Set( "x.PicM", x.ImgMediumUrl );
+                block.Set( "x.PicO", x.ImgUrl );
+                block.Set( "x.PicS", x.ImgSmallUrl );
+
+
+                block.Next();
+            }
+        }
+
+
+        private void bindAdminLink() {
+            set( "friendsPhotoLink", to( new Admin.PhotoController().Friends, -1 ) );
+            set( "myLink", to( new Admin.MyController().My ) );
+            set( "categoryAdmin", to( new Admin.AlbumController().List ) );
+            set( "categoryAdd", to( new Admin.AlbumController().Add ) );
+            set( "uploadLink", to( new Admin.PostController().Add ) );
         }
 
         private void bindComments( String blockName ) {
 
-            IBlock commentblock = getBlock( blockName );
-            //List<PhotoPostComment> newComments = commentService.GetNew( ctx.owner.Id, ctx.app.Id, 7 );
-            List<PhotoPostComment> newComments = PhotoPostComment.find( "AppId=" + ctx.app.Id ).list( 7 );
-            if (ctx.app.Id == 0) {
-                String tblc = Entity.GetInfo( typeof( PhotoPostComment ) ).TableName;
-                String tblp = Entity.GetInfo( typeof( PhotoPost ) ).TableName;
-                String sql = "select a.* from " + tblc + " a, " + tblp + " b where a.AppId=" + ctx.app.Id + " and a.RootId=b.Id and b.OwnerId=" + ctx.owner.Id;
+            IBlock block = getBlock( blockName );
 
-                EntityInfo ei = Entity.GetInfo( typeof( PhotoPostComment ) );
-                sql = ei.Dialect.GetLimit( sql, 7 );
-                
-                newComments = db.findBySql<PhotoPostComment>( sql );
+            List<OpenComment> comments = commentService.GetByApp( typeof( PhotoPost ), ctx.app.Id, 7 );
+
+            foreach (OpenComment x in comments) {
+                block.Set( "comment.Title", strUtil.SubString( x.Content, 14 ) );
+                block.Set( "comment.Url", to( new PostController().Show, x.TargetDataId ) + "#comments" );
+                block.Next();
             }
 
-            foreach (PhotoPostComment comment in newComments) {
-                commentblock.Set( "comment.Title", strUtil.SubString( comment.Content, 14 ) );
-                commentblock.Set( "comment.Url", to( new PostController().Show, comment.RootId ) + "#comments" );
-                commentblock.Next();
-            }
-
-            String commentMoreLink = PhotoCommentController.GetCommentMoreLink( newComments.Count, ctx );
-            set( "commentMoreLink", commentMoreLink );
+            String lnkMore = PhotoCommentController.GetCommentMoreLink( comments.Count, ctx );
+            set( "commentMoreLink", lnkMore );
 
         }
 

@@ -4,14 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
-using wojilu.Serialization;
 using wojilu.Web.Mvc;
-using wojilu.Common.Feeds.Interface;
+
+using wojilu.Common;
 using wojilu.Common.Msg.Service;
 using wojilu.Common.Msg.Enum;
-using wojilu.Common;
+
 
 namespace wojilu.Apps.Forum.Domain {
 
@@ -55,13 +54,13 @@ namespace wojilu.Apps.Forum.Domain {
             dic["userLink"] = Link.ToMember( topic.Creator );
             dic["body"] = strUtil.ParseHtml( topic.Content, 100 );
 
-            _shareData = JSON.DicToString( dic );
+            _shareData = Json.ToString( dic );
 
             return _shareData;
         }
 
         public void addNotification( String creator, String creatorLink ) {
-            int receiverId = this.topic.Creator.Id;
+            long receiverId = this.topic.Creator.Id;
 
             //String msg = "<a href=\"" + creatorLink + "\">" + creator + "</a> 分享了你的帖子 <a href=\"" + alink.ToAppData( topic ) + "\">" + topic.Title + "</a>";
             String shareYourInfo = alang.get( typeof( ForumApp ), "shareYourInfo" );

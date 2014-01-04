@@ -5,19 +5,19 @@
 using System;
 
 using wojilu.ORM;
-using wojilu.Common.AppBase;
-using wojilu.Common.Jobs;
-using wojilu.Common.AppBase.Interface;
-using wojilu.Serialization;
 using wojilu.Common;
+using wojilu.Common.AppBase;
+using wojilu.Common.AppBase.Interface;
+using wojilu.Common.Comments;
+
 
 namespace wojilu.Apps.Blog.Domain {
 
 
     [Serializable]
-    public class BlogApp : ObjectBase<BlogApp>, IApp, IAccessStatus, IHits {
+    public class BlogApp : ObjectBase<BlogApp>, IApp, IAccessStatus, IHits, ICommentApp {
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerUrl { get; set; }
         public String OwnerType { get; set; }
 
@@ -33,7 +33,7 @@ namespace wojilu.Apps.Blog.Domain {
 
         public BlogSetting GetSettingsObj() {
             if (strUtil.IsNullOrEmpty( this.Settings )) return new BlogSetting();
-            BlogSetting s = JSON.ToObject<BlogSetting>( this.Settings );
+            BlogSetting s = Json.Deserialize<BlogSetting>( this.Settings );
             s.SetDefaultValue();
             return s;
         }

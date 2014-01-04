@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using wojilu.Web.Mvc;
@@ -23,7 +27,7 @@ namespace wojilu.Installer {
 
             MvcContext ctx = e.ctx;
 
-            if (ctx.url.Path.IndexOf( "/Installer/" ) <0) {
+            if (ctx.url.Path.ToLower().IndexOf( "/installer" ) <0) {
 
                 String installerUrl = "/Installer/Index" + MvcConfig.Instance.UrlExt;
                 ctx.setUrl( strUtil.Join( ctx.url.SiteAndAppPath, installerUrl ) );

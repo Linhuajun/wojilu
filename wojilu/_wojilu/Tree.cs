@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ namespace wojilu {
         /// <summary>
         /// 节点的 Id
         /// </summary>
-        int Id { get; set; }
+        long Id { get; set; }
 
         /// <summary>
         /// 节点的名称
@@ -40,7 +40,7 @@ namespace wojilu {
         /// <summary>
         /// 上级节点的 Id
         /// </summary>
-        int ParentId { get; set; }
+        long ParentId { get; set; }
     }
 
     /// <summary>
@@ -48,6 +48,10 @@ namespace wojilu {
     /// </summary>
     public interface INodeBinder {
         String Bind( INode node );
+        Boolean IsOpen( INode node );
+        String GetTarget( INode node );
+        String GetUrl( INode node );
+        string GetName( INode node );
     }
 
     /// <summary>
@@ -180,6 +184,9 @@ namespace wojilu {
         internal int getOutdentCount() {
             return getPrev().getDepth() - getDepth();
         }
+
+
+
     }
 
     /// <summary>
@@ -204,7 +211,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public Node<T> FindById( int id ) {
+        public Node<T> FindById( long id ) {
             return getById( id );
         }
 
@@ -213,7 +220,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public Node<T> FindParent( int id ) {
+        public Node<T> FindParent( long id ) {
             Node<T> proxy = getById( id );
             if (proxy == null) return default( Node<T> );
             return proxy.getParent();
@@ -224,7 +231,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public List<Node<T>> FindPath( int id ) {
+        public List<Node<T>> FindPath( long id ) {
 
             List<Node<T>> nodePath = new List<Node<T>>();
 
@@ -260,7 +267,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public List<Node<T>> FindChildren( int id ) {
+        public List<Node<T>> FindChildren( long id ) {
             Node<T> proxy = getById( id );
             if (proxy == null) return new List<Node<T>>();
             return proxy.getChildren();
@@ -304,7 +311,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public T GetById( int id ) {
+        public T GetById( long id ) {
             Node<T> proxy = getById( id );
             if (proxy != null) return proxy.getNode();
             return default( T );
@@ -315,7 +322,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public int GetDepth( int id ) {
+        public int GetDepth( long id ) {
             Node<T> proxy = getById( id );
             if (proxy != null) return proxy.getDepth();
             return 0;
@@ -326,7 +333,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public T GetParent( int id ) {
+        public T GetParent( long id ) {
             Node<T> proxy = getById( id );
             if (proxy == null) return default( T );
             Node<T> parentProxy = proxy.getParent();
@@ -339,7 +346,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public List<T> GetPath( int id ) {
+        public List<T> GetPath( long id ) {
 
             List<T> nodePath = new List<T>();
 
@@ -367,7 +374,7 @@ namespace wojilu {
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public List<T> GetChildren( int id ) {
+        public List<T> GetChildren( long id ) {
             Node<T> proxy = getById( id );
             if (proxy == null) return new List<T>();
             List<Node<T>> children = proxy.getChildren();
@@ -420,7 +427,7 @@ namespace wojilu {
         /// <param name="dropName">下拉列表name</param>
         /// <param name="selectValue">当前选定的值</param>
         /// <returns></returns>
-        public String DropList( String dropName, int selectValue ) {
+        public String DropList( String dropName, long selectValue ) {
             return DropList( dropName, selectValue, 0, null );
         }
 
@@ -432,13 +439,13 @@ namespace wojilu {
         /// <param name="nodeId">当select用于设置父节点之时，此参数表示将节点自己排除在下拉列表之外，防止将自己作为自己的父节点</param>
         /// <param name="rootSelectName">根节点(并不存在，但你可以给它取个名称)</param>
         /// <returns></returns>
-        public String DropList( String dropName, int selectValue, int nodeId, String rootSelectName ) {
+        public String DropList( String dropName, long selectValue, long nodeId, String rootSelectName ) {
 
             List<Node<T>> list = this.FindAllOrdered();
 
             StringBuilder builder = new StringBuilder();
             builder.AppendFormat( "<select name=\"{0}\" id=\"{0}\">", dropName );
-            int selval = getSelectedValue( dropName, selectValue );
+            long selval = getSelectedValue( dropName, selectValue );
 
             if (strUtil.HasText( rootSelectName )) {
                 String strSel = selectValue == 0 ? "selected" : "";
@@ -471,7 +478,7 @@ namespace wojilu {
             return builder.ToString();
         }
 
-        private static int getSelectedValue( String dropName, int val ) {
+        private static long getSelectedValue( String dropName, long val ) {
             if (CurrentRequest.getHttpMethod().Equals( "POST" )) {
                 return cvt.ToInt( CurrentRequest.getForm( dropName ) );
             }
@@ -487,6 +494,46 @@ namespace wojilu {
             return RenderList( treeId, true, null, 0 );
         }
 
+        public List<zNode> GetZNodeList( INodeBinder binder) {
+
+            List<zNode> results = new List<zNode>();
+
+            List<Node<T>> list = this.FindAllOrdered();
+
+            for (int i = 0; i < list.Count; i++) {
+
+                Node<T> node = list[i];
+                if (node.getParent() != null) continue;
+                results.Add( getZNode( node, binder ) );
+            }
+
+            return results;
+        }
+
+        private zNode getZNode( Node<T> node, INodeBinder binder ) {
+
+            zNode x = new zNode();
+
+            String name = binder.GetName( node.getNode() );
+            if (strUtil.IsNullOrEmpty( name )) name = node.getNode().Name;
+
+            x.name = name;
+            x.url = binder.GetUrl( node.getNode() );
+            x.open = binder.IsOpen( node.getNode() );
+            x.target = binder.GetTarget( node.getNode() );
+
+            if (node.getChildren().Count>0) {
+
+                foreach (Node<T> sub in node.getChildren()) {
+                    zNode subZ = getZNode( sub, binder );
+                    x.AddSub( subZ );
+                }
+
+            }
+
+            return x;
+        }
+
         /// <summary>
         /// 获取树状结构的 html
         /// </summary>
@@ -495,7 +542,7 @@ namespace wojilu {
         /// <param name="binder"></param>
         /// <param name="currentNodeId"></param>
         /// <returns></returns>
-        public String RenderList( String treeId, Boolean showChildren, INodeBinder binder, int currentNodeId ) {
+        public string RenderList(string treeId, bool showChildren, INodeBinder binder, long currentNodeId) {
 
             List<Node<T>> list = this.FindAllOrdered();
 
@@ -552,7 +599,7 @@ namespace wojilu {
             return builder.ToString();
         }
 
-        private String getListClass( Boolean showChildren, int currentNodeId, Node<T> node ) {
+        private String getListClass( Boolean showChildren, long currentNodeId, Node<T> node ) {
 
             String cls = "";
 
@@ -567,7 +614,7 @@ namespace wojilu {
             return cls.Trim();
         }
 
-        private String getDisplayCls( Boolean showChildren, int currentNodeId, int nodeId ) {
+        private String getDisplayCls( Boolean showChildren, long currentNodeId, long nodeId ) {
 
             if (showChildren) return "";
 
@@ -582,7 +629,7 @@ namespace wojilu {
             return " class=\"hide\"";
         }
 
-        private Boolean isOpenedNode( int currentNodeId, int nodeId, Boolean showChildren ) {
+        private Boolean isOpenedNode( long currentNodeId, long nodeId, Boolean showChildren ) {
 
             if (showChildren) return true;
 
@@ -595,7 +642,7 @@ namespace wojilu {
 
         //----------------------------------------------------------------
 
-        private Node<T> getById( int id ) {
+        private Node<T> getById( long id ) {
 
             if (getIdCache().ContainsKey( id ) == false) return default( Node<T> );
 
@@ -605,14 +652,14 @@ namespace wojilu {
         //----------------------------------------------------------------
 
         private List<Node<T>> _proxyList;
-        private Dictionary<int, Node<T>> _idcache;
+        private Dictionary<long, Node<T>> _idcache;
         private List<Node<T>> _roots;
 
         private List<Node<T>> getNodeList() {
             return _proxyList;
         }
 
-        private Dictionary<int, Node<T>> getIdCache() {
+        private Dictionary<long, Node<T>> getIdCache() {
             return _idcache;
         }
 
@@ -623,7 +670,7 @@ namespace wojilu {
         private void initProxyList() {
 
             _proxyList = new List<Node<T>>();
-            _idcache = new Dictionary<int, Node<T>>();
+            _idcache = new Dictionary<long, Node<T>>();
             _roots = new List<Node<T>>();
 
             // 缓存id

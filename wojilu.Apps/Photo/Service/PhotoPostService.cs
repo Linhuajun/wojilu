@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -22,6 +22,11 @@ using wojilu.Members.Users.Service;
 
 using wojilu.Apps.Photo.Domain;
 using wojilu.Apps.Photo.Interface;
+using wojilu.Drawing;
+using System.Drawing;
+using wojilu.Apps.Photo.Helper;
+using wojilu.Members.Interface;
+using wojilu.Common.Microblogs;
 
 namespace wojilu.Apps.Photo.Service {
 
@@ -39,26 +44,46 @@ namespace wojilu.Apps.Photo.Service {
             followerService = new FollowerService();
         }
 
-        public virtual DataPage<PhotoPost> GetPostPage( int ownerId, int appId, int pageSize ) {
+        public virtual String GetFeedMsg( List<PhotoPost> imgs ) {
+
+            int photoCount = imgs.Count;
+            String photoHtml = "";
+            foreach (PhotoPost post in imgs) {
+                photoHtml += string.Format( "<a href=\"{0}\" class=\"feed-pic-item\"><img src=\"{1}\"/></a> ", alink.ToAppData( post ), post.ImgThumbUrl );
+            }
+
+            PhotoPost data = imgs[0];
+            long albumId = data.PhotoAlbum.Id;
+
+            PhotoAlbum album = db.find<PhotoAlbum>( "Id=" + albumId ).first();
+            IMember owner = (IMember)ndb.findById( ObjectContext.GetType( data.OwnerType ), data.OwnerId );
+            String lnkAlbum = Link.To( owner, "/Photo/Photo", "Album", albumId, data.AppId );
+            String actionName = string.Format( "‰∏ä‰º†‰∫Ü{0}Âº†ÂõæÁâáÂà∞‰∏ìËæë", photoCount );
+
+            // msg
+            return MbTemplate.GetFeed( actionName, album.Name, lnkAlbum, photoHtml, null );
+        }
+
+        public virtual DataPage<PhotoPost> GetPostPage(long ownerId, long appId, int pageSize) {
             return db.findPage<PhotoPost>( "OwnerId=" + ownerId + " and AppId=" + appId, pageSize );
         }
 
-        public virtual DataPage<PhotoPost> GetPostPageByAlbum( int ownerId, int appId, int albumId, int pageSize ) {
+        public virtual DataPage<PhotoPost> GetPostPageByAlbum(long ownerId, long appId, long albumId, int pageSize) {
             if (albumId == 0) {
                 return db.findPage<PhotoPost>( "OwnerId=" + ownerId + " and PhotoAlbum.Id=" + albumId, pageSize );
             }
             return db.findPage<PhotoPost>( "OwnerId=" + ownerId + " and AppId=" + appId + " and PhotoAlbum.Id=" + albumId, pageSize );
         }
 
-        private PhotoPost GetById( int id ) {
+        private PhotoPost GetById(long id) {
             return db.findById<PhotoPost>( id );
         }
 
-        public virtual PhotoPost GetById_Admin( int id ) {
+        public virtual PhotoPost GetById_Admin(long id) {
             return db.findById<PhotoPost>( id );
         }
 
-        public virtual PhotoPost GetById( int id, int ownerId ) {
+        public virtual PhotoPost GetById(long id, long ownerId) {
             PhotoPost post = GetById( id );
             if (post == null) return null;
             if (post.OwnerId != ownerId) return null;
@@ -69,7 +94,7 @@ namespace wojilu.Apps.Photo.Service {
             return post;
         }
 
-        public virtual DataPage<PhotoPost> GetSingle( int ownerId, int id ) {
+        public virtual DataPage<PhotoPost> GetSingle(long ownerId, long id) {
 
 
             DataPage<PhotoPost> list = new DataPage<PhotoPost>();
@@ -90,15 +115,15 @@ namespace wojilu.Apps.Photo.Service {
             return list;
         }
 
-        private int getPreCount( int ownerId, int albumId, int id ) {
+        private int getPreCount(long ownerId, long albumId, long id) {
             return db.count<PhotoPost>( "OwnerId=" + ownerId + " and CategoryId=" + albumId + " and Id>" + id );
         }
 
-        public virtual int GetCountByUser( int userId ) {
+        public virtual int GetCountByUser(long userId) {
             return db.count<PhotoPost>( "OwnerId=" + userId + " and SaveStatus=" + SaveStatus.Normal );
         }
 
-        private int GetPostCount( int ownerId, int albumId ) {
+        private int GetPostCount(long ownerId, long albumId) {
             return db.count<PhotoPost>( "OwnerId=" + ownerId + " and CategoryId=" + albumId );
         }
 
@@ -122,7 +147,7 @@ namespace wojilu.Apps.Photo.Service {
             HitsJob.Add( post );
         }
 
-        public virtual DataPage<PhotoPost> GetFriendsPhoto( int userId, int friendId ) {
+        public virtual DataPage<PhotoPost> GetFriendsPhoto(long userId, long friendId) {
 
             String condition;
             if (friendId > 0)
@@ -138,36 +163,36 @@ namespace wojilu.Apps.Photo.Service {
             return db.findPage<PhotoPost>( condition );
         }
 
-        public virtual List<IBinderValue> GetMyNew( int count, int userId ) {
+        public virtual List<IBinderValue> GetMyNew(int count, long userId) {
             return SysPhotoService.populatePhoto( GetNew( userId, count ) );
         }
 
-        public virtual DataPage<PhotoPost> GetByUser( int userId, int pageSize ) {
+        public virtual DataPage<PhotoPost> GetByUser(long userId, int pageSize) {
             return PhotoPost.findPage( "OwnerId=" + userId, pageSize );
         }
 
-        public virtual DataPage<PhotoPost> GetShowByUser( int userId, int pageSize ) {
+        public virtual DataPage<PhotoPost> GetShowByUser(long userId, int pageSize) {
             return PhotoPost.findPage( "SysCategoryId>0 and  SaveStatus=" + SaveStatus.Normal + " and OwnerId=" + userId, pageSize );
         }
 
-        public virtual DataPage<PhotoPost> GetShowByUser( int userId, int categoryId, int pageSize ) {
+        public virtual DataPage<PhotoPost> GetShowByUser(long userId, long categoryId, int pageSize) {
             return PhotoPost.findPage( "SysCategoryId>0 and CategoryId=" + categoryId + " and SaveStatus=" + SaveStatus.Normal + " and OwnerId=" + userId, pageSize );
         }
 
-        public virtual void UpdateAlbum( int categoryId, String ids, int ownerId, int appId ) {
+        public virtual void UpdateAlbum(long categoryId, string ids, long ownerId, long appId) {
 
             String condition = string.Format( "Id in ({0}) and OwnerId={1}", ids, ownerId );
             db.updateBatch<PhotoPost>( "set CategoryId=" + categoryId + ", AppId=" + appId, condition );
         }
 
-        public virtual void DeleteTrue( String ids, int ownerId ) {
+        public virtual void DeleteTrue(string ids, long ownerId) {
             if (cvt.IsIdListValid( ids ) == false) return;
             String condition = string.Format( "Id in ({0}) and OwnerId={1}", ids, ownerId );
             List<PhotoPost> list = db.find<PhotoPost>( condition ).list();
 
             DeletePosts( ids, list );
 
-            // Õ≥º∆
+            // ÁªüËÆ°
             User user = User.findById( ownerId );
             if (user != null) {
                 user.Pins = PhotoPost.count( "OwnerId=" + ownerId );
@@ -175,7 +200,7 @@ namespace wojilu.Apps.Photo.Service {
             }
         }
 
-        public void DeletePosts( String ids, List<PhotoPost> list ) {
+        public virtual void DeletePosts( String ids, List<PhotoPost> list ) {
             foreach (PhotoPost post in list) {
                 db.delete( post );
                 if (CanDeleteImg( post )) {
@@ -186,22 +211,22 @@ namespace wojilu.Apps.Photo.Service {
             pickedService.DeletePhoto( ids );
         }
 
-        public Boolean CanDeleteImg( PhotoPost post ) {
-            // ‘≠ ºÕº∆¨
+        public virtual Boolean CanDeleteImg( PhotoPost post ) {
+            // ÂéüÂßãÂõæÁâá
             if (post.RootId == 0) {
-                return noRepins( post ); //  «∑Ò”–∆‰À˚»À ’ºØ
+                return noRepins( post ); // ÊòØÂê¶ÊúâÂÖ∂‰ªñ‰∫∫Êî∂ÈõÜ
             }
-            // ÷ª «◊™∑¢: ‘≠ ºÕº∆¨¥Ê‘⁄
+            // Âè™ÊòØËΩ¨Âèë: ÂéüÂßãÂõæÁâáÂ≠òÂú®
             else if (isRootExits( post.RootId )) {
                 return false;
             }
-            // ÷ª «◊™∑¢
+            // Âè™ÊòØËΩ¨Âèë
             else {
-                return isLastRepin( post );  //ø¥ «∑Ò «◊Ó∫Û“ª∏ˆ◊™∑¢ 
+                return isLastRepin( post );  //ÁúãÊòØÂê¶ÊòØÊúÄÂêé‰∏Ä‰∏™ËΩ¨Âèë 
             }
         }
 
-        private bool isRootExits( int rootId ) {
+        private bool isRootExits(long rootId) {
             return this.GetById_Admin( rootId ) != null;
         }
 
@@ -213,7 +238,7 @@ namespace wojilu.Apps.Photo.Service {
             return PhotoPost.find( "RootId=" + post.Id ).first() == null;
         }
 
-        public Result Update( PhotoPost post ) {
+        public virtual Result Update( PhotoPost post ) {
             return db.update( post );
         }
 
@@ -232,17 +257,46 @@ namespace wojilu.Apps.Photo.Service {
 
             Result result = db.insert( post );
             if (result.IsValid) {
+
+                updatePhotoSize( post );
+
                 this.updateCountApp( app );
                 this.updateCountAlbum( post.PhotoAlbum );
 
-                String msg = string.Format( "…œ¥´Õº∆¨ <a href=\"{0}\">{1}</a>£¨µ√µΩΩ±¿¯", alink.ToAppData( post ), post.Title );
+                String msg = string.Format( "‰∏ä‰º†ÂõæÁâá <a href=\"{0}\">{1}</a>ÔºåÂæóÂà∞Â•ñÂä±", alink.ToAppData( post ), post.Title );
                 incomeService.AddIncome( post.Creator, UserAction.Photo_CreatePost.Id, msg );
 
             }
             return result;
         }
 
-        public virtual Result CreatePost( Result uploadResult, String photoName, int albumId, MvcContext ctx ) {
+        // ‰øùÂ≠òÂõæÁâáÂ§ßÂ∞èÁ≠â‰ø°ÊÅØ
+        private void updatePhotoSize( PhotoPost post ) {
+
+            String photoPath = post.DataUrl;
+            if (strUtil.IsNullOrEmpty( photoPath )) return;
+            if (photoPath.ToLower().StartsWith( "http://" )) return;
+            if (photoPath.StartsWith( "/" )) return;
+
+            Dictionary<String, PhotoInfo> dic = new Dictionary<String, PhotoInfo>();
+            foreach (KeyValuePair<String, ThumbInfo> kv in ThumbConfig.GetPhotoConfig()) {
+
+                String xpath = Img.GetThumbPath( strUtil.Join( sys.Path.DiskPhoto, photoPath ), kv.Key );
+                String thumbPath = PathHelper.Map( xpath );
+
+                Size size = Img.GetPhotoSize( thumbPath );
+
+                dic.Add( kv.Key, new PhotoInfo { Width=size.Width, Height=size.Height } );
+            }
+
+            String str = ObjectContext.Create<PhotoInfoHelper>().ConvertString( dic );
+            if (strUtil.IsNullOrEmpty( str )) return;
+
+            post.SizeInfo = str;
+            post.update();
+        }
+
+        public virtual Result CreatePost(Result uploadResult, string photoName, long albumId, MvcContext ctx) {
 
             String path = uploadResult.Info.ToString();
             if (strUtil.IsNullOrEmpty( photoName )) {
@@ -270,7 +324,7 @@ namespace wojilu.Apps.Photo.Service {
             return result;
         }
 
-        private PhotoAlbum getAlbum( int albumId, User user ) {
+        private PhotoAlbum getAlbum(long albumId, User user) {
             PhotoAlbum album;
             if (albumId > 0) {
                 album = getAlbumById( albumId );
@@ -284,11 +338,11 @@ namespace wojilu.Apps.Photo.Service {
             return album;
         }
 
-        private PhotoAlbum getAlbumById( int albumId ) {
+        private PhotoAlbum getAlbumById(long albumId) {
             return db.findById<PhotoAlbum>( albumId );
         }
 
-        private PhotoAlbum getDefaultPhotoAlbum( int userId ) {
+        private PhotoAlbum getDefaultPhotoAlbum(long userId) {
             return db.find<PhotoAlbum>( "IsDefault=1 and OwnerId=" + userId ).first();
         }
 
@@ -303,7 +357,7 @@ namespace wojilu.Apps.Photo.Service {
             return album;
         }
 
-        private PhotoAlbum createDefaultAlbum( User user, int appId ) {
+        private PhotoAlbum createDefaultAlbum(User user, long appId) {
             PhotoAlbum album = new PhotoAlbum();
             album.Name = alang.get( typeof( PhotoApp ), "defaultAlbum" );
             album.IsDefault = 1;
@@ -314,7 +368,7 @@ namespace wojilu.Apps.Photo.Service {
             return album;
         }
 
-        private int getDefaultPhotoAppId( int userId ) {
+        private long getDefaultPhotoAppId(long userId) {
             PhotoApp photo = db.find<PhotoApp>( "OwnerId=" + userId ).first();
             if (photo == null) {
                 throw new Exception( "the photo app is not found" );
@@ -339,27 +393,27 @@ namespace wojilu.Apps.Photo.Service {
             db.update( album, "DataCount" );
         }
 
-        public List<PhotoPost> GetByAlbum( int albumId, int count ) {
+        public virtual List<PhotoPost> GetByAlbum(long albumId, int count) {
             return PhotoPost.find( "CategoryId=" + albumId + " and SaveStatus=" + SaveStatus.Normal ).list( count );
         }
 
-        public List<PhotoPost> GetNew( int userId, int count ) {
+        public virtual List<PhotoPost> GetNew(long userId, int count) {
             if (count <= 0) count = 10;
             return db.find<PhotoPost>( "Creator.Id=" + userId + " and SysCategoryId>0 and AppId>0 and SaveStatus=" + SaveStatus.Normal ).list( count );
         }
 
-        public List<PhotoPost> GetNew( int count ) {
+        public virtual List<PhotoPost> GetNew( int count ) {
             if (count <= 0) count = 10;
             return db.find<PhotoPost>( "SysCategoryId>0 and SaveStatus=" + SaveStatus.Normal ).list( count );
         }
 
-        public DataPage<PhotoPost> GetFollowing( int userId, int pageSize ) {
+        public virtual DataPage<PhotoPost> GetFollowing(long userId, int pageSize) {
             String ids = followerService.GetFollowingIds( userId );
             ids = strUtil.HasText( ids ) ? ids + "," + userId : userId.ToString();
             return PhotoPost.findPage( "OwnerId in (" + ids + ") and SaveStatus=" + SaveStatus.Normal, pageSize );
         }
 
-        public bool IsPin( int userId, PhotoPost x ) {
+        public virtual bool IsPin(long userId, PhotoPost x) {
 
             String condition = "OwnerId=" + userId + " and ";
             condition += x.RootId > 0
@@ -373,7 +427,7 @@ namespace wojilu.Apps.Photo.Service {
 
 
 
-        public void SavePin( PhotoPost x, PhotoPost photo, String tagList ) {
+        public virtual void SavePin( PhotoPost x, PhotoPost photo, String tagList ) {
 
 
             populatePostInfo( photo, x );
@@ -381,7 +435,7 @@ namespace wojilu.Apps.Photo.Service {
 
             photo.insert();
             photo.Tag.Save( tagList );
-            // TODO ∂ØÃ¨œ˚œ¢
+            // TODO Âä®ÊÄÅÊ∂àÊÅØ
 
             x.Pins = PhotoPost.count( "RootId=" + x.Id + " or ParentId=" + x.Id );
             x.update( "Pins" );

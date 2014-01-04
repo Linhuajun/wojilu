@@ -1,31 +1,29 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
 using System;
-using System.IO;
+using System.Collections.Generic;
+
+using wojilu.Apps.Photo.Interface;
+using wojilu.Apps.Photo.Service;
+
+using wojilu.Common;
+using wojilu.Common.Microblogs.Domain;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Microblogs.Service;
+
+using wojilu.Members.Users.Domain;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
-using wojilu.Web.Utils;
-using wojilu.Members.Users.Domain;
-using wojilu.Common.Microblogs.Service;
-using wojilu.Common.Microblogs.Domain;
-using wojilu.Common.Microblogs.Interface;
-using wojilu.Apps.Photo.Domain;
-using wojilu.Apps.Photo.Interface;
-using wojilu.Apps.Photo.Service;
-using wojilu.Web.Controller.Users.Admin;
-using System.Collections.Generic;
-using wojilu.Serialization;
-using wojilu.Common;
 
 namespace wojilu.Web.Controller.Microblogs {
 
     public class MicroblogSaveController : ControllerBase {
 
-        public IMicroblogService microblogService { get; set; }
-        public IPhotoPostService postService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
 
         public MicroblogSaveController() {
             microblogService = new MicroblogService();
@@ -34,16 +32,16 @@ namespace wojilu.Web.Controller.Microblogs {
 
 
         [Login, HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
-            if (Component.IsClose( typeof( MicroblogApp ) )) {
-                actionContent( "∂‘≤ª∆£¨Œ¢≤©π¶ƒ‹‘›Õ£‘À––" );
-                return;
-            }
+            //if (Component.IsClose( typeof( MicroblogApp ) )) {
+            //    content( "ÂØπ‰∏çËµ∑ÔºåÂæÆÂçöÂäüËÉΩÊöÇÂÅúËøêË°å" );
+            //    return;
+            //}
 
-            String content = ctx.Post( "Content" );
-            if (strUtil.IsNullOrEmpty( content )) {
-                actionContent( lang( "exContent" ) );
+            String blogContent = ctx.Post( "Content" );
+            if (strUtil.IsNullOrEmpty( blogContent )) {
+                content( lang( "exContent" ) );
                 return;
             }
 
@@ -52,7 +50,7 @@ namespace wojilu.Web.Controller.Microblogs {
             User user = ctx.viewer.obj as User;
 
             Microblog blog = new Microblog();
-            blog.Content = content;
+            blog.Content = blogContent;
             blog.Ip = ctx.Ip;
             blog.User = user;
             blog.Pic = picUrl;
@@ -81,12 +79,12 @@ namespace wojilu.Web.Controller.Microblogs {
             dic.Add( "SrcType", "shareBox" );
             dic.Add( "ForwardUrl", "" );
 
-            echoJson( JsonString.Convert( dic ) );
+            echoJson( dic );
         }
 
         private void returnOneBlogHtml( Microblog blog ) {
 
-            // º”‘ÿ◊Ó–¬Œ¢≤©html∆¨∂Œ
+            // Âä†ËΩΩÊúÄÊñ∞ÂæÆÂçöhtmlÁâáÊÆµ
             Dictionary<String, Object> dic = new Dictionary<String, Object>();
             dic.Add( "IsValid", true );
             dic.Add( "SrcType", "mbHome" );
@@ -96,7 +94,7 @@ namespace wojilu.Web.Controller.Microblogs {
             String html = getOneBlogHtml( blog );
             dic.Add( "Info", html );
 
-            echoJson( JsonString.Convert( dic ) );
+            echoJson( dic );
         }
 
 
@@ -110,12 +108,16 @@ namespace wojilu.Web.Controller.Microblogs {
             ctx.SetItem( "_microblogVoList", volist );
             ctx.SetItem( "_showUserFace", true );
 
+            if (ctx.Post( "fromPage" ) == "microblogPage") {
+                ctx.SetItem( "_showType", "microblog" );
+            }
+
             return loadHtml( new Microblogs.MicroblogController().bindBlogs );
         }
 
         private void setVideoInfo( Microblog blog ) {
 
-            int videoId = ctx.PostInt( "videoId" );
+            long videoId = ctx.PostLong( "videoId" );
 
             if (videoId <= 0) return;
 
@@ -127,6 +129,33 @@ namespace wojilu.Web.Controller.Microblogs {
             blog.PicUrl = mvt.PicUrl;
         }
 
+
+        [HttpDelete, DbTransaction]
+        public virtual void Delete( long id ) {
+
+            Microblog blog = microblogService.GetById( id );
+            if (blog == null) {
+                throw new NullReferenceException( lang( "exDataNotFound" ) );
+            }
+
+            if (hasPermission( blog ) == false) {
+                echoError( lang( "exNoPermission" ) );
+                return;
+            }
+
+            microblogService.Delete( blog );
+
+            echoAjaxOk();
+        }
+
+        private bool hasPermission( Microblog blog ) {
+
+            if (ctx.viewer.IsLogin == false) return false;
+
+            if (blog.User.Id == ctx.viewer.Id) return true;
+            if (ctx.viewer.IsAdministrator()) return true;
+            return false;
+        }
 
 
     }

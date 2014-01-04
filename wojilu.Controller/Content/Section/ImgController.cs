@@ -15,6 +15,7 @@ using wojilu.Common.AppBase.Interface;
 using wojilu.Web.Controller.Content.Utils;
 using wojilu.Common.AppBase;
 using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Section {
 
@@ -22,47 +23,32 @@ namespace wojilu.Web.Controller.Content.Section {
     [App( typeof( ContentApp ) )]
     public partial class ImgController : ControllerBase, IPageSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentImgService imgService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentImgService imgService { get; set; }
 
         public ImgController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
             imgService = new ContentImgService();
-            ctService = new ContentCustomTemplateService();
         }
 
-        public void AdminSectionShow( int sectionId ) {
-        }
-
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void SectionShow( int sectionId ) {
+        public virtual void SectionShow( long sectionId ) {
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
                 throw new Exception( lang( "exDataNotFound" ) + "=>page section:" + sectionId );
             }
 
-            TemplateUtil.loadTemplate( this, s, ctService );
-            List<ContentPost> posts = postService.GetBySection( ctx.app.Id, sectionId );
+            List<ContentPost> posts = postService.GetBySection( sectionId );
             bindSectionShow( s, posts );
         }
 
-        public void Show( int postId ) {
+        public virtual void Show( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
                 return;
             }
-
-            postService.AddHits( post );
-
-            Page.Title = post.Title;
-            Page.Keywords = post.Tag.TextString;
 
             int currentPage = ctx.route.page;
             DataPage<ContentImg> imgPage = imgService.GetImgPage( postId, currentPage );
@@ -71,16 +57,7 @@ namespace wojilu.Web.Controller.Content.Section {
         }
 
 
-        public void List( int sectionId ) {
-            bindPostInfos( sectionId, false );
-        }
-
-        public void Archive( int sectionId ) {
-            view( "List" );
-            bindPostInfos( sectionId, true );
-        }
-
-        private void bindPostInfos( int sectionId, Boolean isArchive ) {
+        public virtual void List( long sectionId ) {
 
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             if (section == null) {
@@ -94,18 +71,10 @@ namespace wojilu.Web.Controller.Content.Section {
             ContentSetting s = app.GetSettingsObj();
 
             String cpLink = clink.toSection( sectionId, ctx );
-            String apLink = clink.toArchive( sectionId, ctx );
             Boolean isMakeHtml = HtmlHelper.IsMakeHtml( ctx );
+            DataPage<ContentPost> posts = postService.GetPageBySection( sectionId, s.ListPostPerPage );
 
-            DataPage<ContentPost> posts;
-            if (isArchive) {
-                posts = postService.GetPageBySectionArchive( section.Id, s.ListPostPerPage );
-                set( "page", posts.GetArchivePage( cpLink, apLink, 3, isMakeHtml ) );
-            }
-            else {
-                posts = postService.GetPageBySection( sectionId, s.ListPostPerPage );
-                set( "page", posts.GetRecentPage( cpLink, apLink, 3, isMakeHtml ) );
-            }
+            set( "page", posts.GetPageBar( cpLink, isMakeHtml ) );
 
             bindPosts( section, posts );
         }

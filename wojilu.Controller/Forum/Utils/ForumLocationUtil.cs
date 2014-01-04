@@ -28,7 +28,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
         public static String GetBoard( List<ForumBoard> boards, MvcContext ctx ) {
             StringBuilder sb = getBuilder( boards, ctx );
             int length = separator.Length + 1;
-            sb.Remove( sb.Length - length, separator.Length+1 );
+            sb.Remove( sb.Length - length, separator.Length + 1 );
             appendEnd( sb );
             return sb.ToString();
         }
@@ -91,7 +91,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
         public static String GetTopic( List<ForumBoard> boards, ForumTopic topic, MvcContext ctx ) {
             StringBuilder sb = getBuilder( boards, ctx );
             String url = LinkUtil.appendListPageToTopic( alink.ToAppData( topic ), ctx );
-            sb.AppendFormat( "<div class=\"pull-left\"><a href=\"{0}\">" + alang( ctx, "pTopic" ) + ": {1}</a></div>", url, topic.Title );
+            sb.AppendFormat( "<div class=\"pull-left\"><a href=\"{0}\">" + alang( ctx, "pTopic" ) + ": {1}</a></div>", url, strUtil.CutString( topic.Title, 35 ) );
 
             appendEnd( sb );
             return sb.ToString();
@@ -161,7 +161,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
 
                 String homePath = strUtil.Join( sys.Path.Skin, "site/new/home.png" );
                 sb.AppendFormat( "<div class=\"pull-left dropdown\"><img src=\"{0}\" /> ", homePath );
-                sb.AppendFormat( "<a class=\"dropdown-toggle\" data-toggle=\"dropdown\" href=\"{0}\">{1} <span class=\"caret\"></span></a>", ctx.link.To( new ForumController().Index ), ((AppContext)ctx.app).UserApp.Name );
+                sb.AppendFormat( "<a class=\"dropdown-toggle\" data-toggle=\"dropdown\" data-hover=\"dropdown\" href=\"{0}\">{1} <span class=\"caret\"></span></a>", ctx.link.To( new ForumController().Index ), ((AppContext)ctx.app).UserApp.Name );
 
                 addLocationMenu( sb, ctx );
                 sb.Append( "</div>" );

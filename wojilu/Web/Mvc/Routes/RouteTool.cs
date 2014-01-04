@@ -29,7 +29,14 @@ namespace wojilu.Web.Mvc.Routes {
     /// </summary>
     public class RouteTool {
 
-        internal static readonly char[] Separator = new char[] { '/' };
+        private static readonly ILog logger = LogManager.GetLogger( typeof( RouteTool ) );
+
+        public static readonly char[] Separator = getSeparator();
+
+        private static char[] getSeparator() {
+            if (MvcConfig.Instance.UrlSeparator == "/") return new char[] { '/' };
+            return new char[] { '/', MvcConfig.Instance.UrlSeparator[0] };
+        }
 
         public static Route Recognize( MvcContext context ) {
             String url = context.url.ToString();
@@ -50,6 +57,11 @@ namespace wojilu.Web.Mvc.Routes {
             if (strUtil.IsNullOrEmpty( cleanUrl ) || cleanUrl.ToLower().Equals( "default" )) {
                 cleanUrl = "default";
             }
+
+            logger.Info( "RecognizePath begin, clearnUrl=" + cleanUrl );
+
+            Route x = LinkMap.Parse( cleanUrl );
+            if (x != null) return x;
 
             if (cleanUrl.StartsWith( "/" )) cleanUrl = strUtil.TrimStart( cleanUrl, "/" );
 
@@ -98,7 +110,9 @@ namespace wojilu.Web.Mvc.Routes {
 
             String path;
 
-            if (urlPath.StartsWith( "http://" )) {
+            if (urlPath.StartsWith( "http://" ) ||
+                urlPath.StartsWith( "https://" )
+                ) {
                 UriBuilder builder = new UriBuilder( urlPath );
                 path = builder.Path;
             }
@@ -195,7 +209,7 @@ namespace wojilu.Web.Mvc.Routes {
                 if (strUtil.IsNullOrEmpty( val )) continue;
 
                 // 如果条件不符合，跳过此条route
-                if (setting.getRequirements().match( item.getName(), val ) == false) return null; 
+                if (setting.getRequirements().match( item.getName(), val ) == false) return null;
 
                 result.setItem( item.getName(), val );
             }
@@ -238,8 +252,8 @@ namespace wojilu.Web.Mvc.Routes {
             if (result.getItem( "query" ) != null) result.setQuery( result.getItem( "query" ) );
             if (result.getItem( "owner" ) != null) result.setOwner( result.getItem( "owner" ) );
             if (result.getItem( "ownertype" ) != null) result.setOwnerType( result.getItem( "ownertype" ) );
-            if (result.getItem( "id" ) != null) result.setId( cvt.ToInt( result.getItem( "id" ) ) );
-            if (result.getItem( "appid" ) != null) result.setAppId( cvt.ToInt( result.getItem( "appid" ) ) );
+            if (result.getItem( "id" ) != null) result.setId( cvt.ToLong( result.getItem( "id" ) ) );
+            if (result.getItem( "appid" ) != null) result.setAppId( cvt.ToLong( result.getItem( "appid" ) ) );
 
             int page = 1;
             if (result.getItem( "page" ) != null) {

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,49 +20,49 @@ using System.Text;
 namespace wojilu.Web.Mvc.Attr {
 
     /// <summary>
-    /// http ·½·¨
+    /// http æ–¹æ³•
     /// </summary>
     public interface IHttpMethod {
         String GetString();
     }
 
     /// <summary>
-    /// µ±Ç° action Ö»ÄÜ½ÓÊÜ GET ·½·¨
+    /// å½“å‰ action åªèƒ½æ¥å— GET æ–¹æ³•
     /// </summary>
     [Serializable, AttributeUsage( AttributeTargets.Method )]
     public class HttpGetAttribute : Attribute, IHttpMethod {
         public String GetString() {
-            return "GET";
+            return HttpMethod.Get;
         }
     }
 
     /// <summary>
-    /// µ±Ç° action Ö»ÄÜ½ÓÊÜ POST ·½·¨
+    /// å½“å‰ action åªèƒ½æ¥å— POST æ–¹æ³•
     /// </summary>
     [Serializable, AttributeUsage( AttributeTargets.Method )]
     public class HttpPostAttribute : Attribute, IHttpMethod {
         public String GetString() {
-            return "POST";
+            return HttpMethod.Post;
         }
     }
 
     /// <summary>
-    /// µ±Ç° action Ö»ÄÜ½ÓÊÜ PUT ·½·¨
+    /// å½“å‰ action åªèƒ½æ¥å— PUT æ–¹æ³•
     /// </summary>
     [Serializable, AttributeUsage( AttributeTargets.Method )]
     public class HttpPutAttribute : Attribute, IHttpMethod {
         public String GetString() {
-            return "PUT";
+            return HttpMethod.Put;
         }
     }
 
     /// <summary>
-    /// µ±Ç° action Ö»ÄÜ½ÓÊÜ DELETE ·½·¨
+    /// å½“å‰ action åªèƒ½æ¥å— DELETE æ–¹æ³•
     /// </summary>
     [Serializable, AttributeUsage( AttributeTargets.Method )]
     public class HttpDeleteAttribute : Attribute, IHttpMethod {
         public String GetString() {
-            return "DELETE";
+            return HttpMethod.Delete;
         }
     }
 

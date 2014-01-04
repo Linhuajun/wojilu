@@ -13,22 +13,14 @@ namespace wojilu.Web.Controller.Content.Binder {
 
     public class RankBinderController : ControllerBase, ISectionBinder {
 
-        public IContentCustomTemplateService ctService { get; set; }
-
-        public RankBinderController() {
-            ctService = new ContentCustomTemplateService();
-        }
-
-        public void Bind( ContentSection section, IList serviceData ) {
-
-            TemplateUtil.loadTemplate( this, section, ctService );
+        public virtual void Bind( ContentSection section, IList serviceData ) {
 
             IBlock block = base.getBlock( "list" );
 
             int i = 1;
             foreach (IBinderValue item in serviceData) {
 
-                BinderUtils.bindMashupData( block, item, i );
+                BinderUtils.bindMashupData( block, item, i, ctx );
                 block.Next();
                 i++;
             }

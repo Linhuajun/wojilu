@@ -1,14 +1,20 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
+
 using wojilu.Apps.Content.Domain;
 using wojilu.Apps.Content.Interface;
 using wojilu.Apps.Content.Service;
-using wojilu.Web.Controller.Content.Caching;
-using wojilu.Serialization;
+
 using wojilu.Members.Sites.Domain;
+using wojilu.Web.Controller.Content.Utils;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Admin {
 
@@ -17,8 +23,8 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( HtmlController ) );
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public HtmlController() {
             postService = new ContentPostService();
@@ -28,78 +34,116 @@ namespace wojilu.Web.Controller.Content.Admin {
         public override void CheckPermission() {
             if (ctx.owner.obj is Site == false) {
                 echoError( "没有权限，目前只支持网站生成html页面" );
-            }                
+            }
         }
 
-        public void Index() {
+        public virtual void Index() {
 
-            bindHtmlDir();
+            bindHtmlSetting();
 
             set( "lnkMakeAll", to( MakeAll ) );
             set( "lnkMakeDetailAll", to( MakeDetailAll ) );
             set( "lnkMakeSectionAll", to( MakeSectionAll ) );
             set( "lnkMakeHome", to( MakeHomePage ) );
-            set( "lnkMakeSidebar", to( MakeSidebar ) );
 
             IBlock sectionBlock = getBlock( "sections" );
             List<ContentSection> sections = sectionService.GetByApp( ctx.app.Id );
             foreach (ContentSection section in sections) {
+
+                if (section.ServiceId > 0) continue;
+
                 sectionBlock.Set( "section.Name", section.Title );
                 sectionBlock.Set( "lnkMakeSection", to( MakeSection, section.Id ) );
                 sectionBlock.Set( "lnkMakeDetail", to( MakeDetailBySection, section.Id ) );
+                sectionBlock.Set( "lnkStaticList", clink.toSection( section.Id ) );
                 sectionBlock.Next();
             }
-
         }
 
-        private void bindHtmlDir() {
-            ContentApp app = ctx.app.obj as ContentApp;
-            ContentSetting s = app.GetSettingsObj();
-
-            String htmlDir = HtmlHelper.GetlAppStaticDir( app.Id );
-            htmlDir = htmlDir.TrimStart( '/' ).TrimEnd( '/' );
-
-            set( "htmlDir", htmlDir );
-
-            set( "host", ctx.url.SiteAndAppPath );
-            set( "editHtmlDirLink", to( EditHtmlDir ) );
-
-        }
-
-        public void EditHtmlDir() {
-
-            target( SaveHtmlDir );
+        private void bindHtmlSetting() {
 
             ContentApp app = ctx.app.obj as ContentApp;
             ContentSetting s = app.GetSettingsObj();
 
-            String htmlDir = HtmlHelper.GetlAppStaticDir( app.Id );
-            htmlDir = htmlDir.TrimStart( '/' ).TrimEnd( '/' );
+            String htmlPath = HomeMaker.GetAppPath( app.Id );
+            htmlPath = htmlPath.TrimStart( '/' ).TrimEnd( '/' );
 
-            set( "htmlDir", htmlDir );
+            set( "htmlPath", htmlPath );
+
+            set( "host", ctx.url.SiteAndAppPath );
+            set( "editHtmlDirLink", to( EditHtmlPath ) );
+
+            String lnkHtmlHome = strUtil.Join( ctx.url.SiteAndAppPath, htmlPath );
+
+            set( "lnkHtmlHome", lnkHtmlHome );
+            set( "lnkOriginalHome", alink.ToApp( app ) );
+
+            String chkAutoHtml = s.IsAutoHtml == 1 ? "checked=\"checked\"" : "";
+            set( "chkAutoHtml", chkAutoHtml );
+            set( "lnkEditAutoHtml", to( EditAutoHtml ) );
+        }
+
+        public virtual void EditAutoHtml() {
+            target( SaveAutoHtml );
+            ContentApp app = ctx.app.obj as ContentApp;
+            ContentSetting s = app.GetSettingsObj();
+            String chkAutoHtml = s.IsAutoHtml == 1 ? "checked=\"checked\"" : "";
+            set( "chkAutoHtml", chkAutoHtml );
+        }
+
+        [HttpPost]
+        public virtual void SaveAutoHtml() {
+
+            ContentApp app = ctx.app.obj as ContentApp;
+            ContentSetting s = app.GetSettingsObj();
+            s.IsAutoHtml = ctx.PostIsCheck( "IsAutoHtml" );
+
+            app.Settings = Json.ToString( s );
+            app.update();
+
+            echoToParentPart( lang( "opok" ) );
+        }
+
+        public virtual void EditHtmlPath() {
+
+            target( SaveHtmlPath );
+
+            ContentApp app = ctx.app.obj as ContentApp;
+            ContentSetting s = app.GetSettingsObj();
+
+            String htmlPath = HomeMaker.GetAppPath( app.Id ).TrimStart( '/' );
+
+            set( "htmlPath", htmlPath );
 
             set( "host", ctx.url.SiteAndAppPath );
 
         }
 
-        public void SaveHtmlDir() {
+        [HttpPost]
+        public virtual void SaveHtmlPath() {
 
-            String htmlDir = strUtil.SubString( ctx.Post( "htmlDir" ), 30 );
-            if (strUtil.IsNullOrEmpty( htmlDir )) {
+            String htmlPath = strUtil.SubString( ctx.Post( "htmlPath" ), 30 );
+            if (strUtil.IsNullOrEmpty( htmlPath )) {
                 echoError( "请填写内容" );
                 return;
             }
 
-            if (HtmlHelper.IsHtmlDirError( htmlDir, ctx.errors )) {
+            ContentApp app = ctx.app.obj as ContentApp;
+            ContentSetting s = app.GetSettingsObj();
+
+            if (htmlPath == s.StaticPath) {
+                echoError( "您没有修改目录名称" );
+                return;
+            }
+
+            if (HtmlHelper.IsHtmlDirError( htmlPath, ctx.errors )) {
                 echoError();
                 return;
             }
 
-            ContentApp app = ctx.app.obj as ContentApp;
-            ContentSetting s = app.GetSettingsObj();
-            s.StaticDir = htmlDir;
+            s.StaticPath = htmlPath;
 
-            app.Settings = JsonString.ConvertObject( s );
+            app.Settings = Json.ToString( s );
             app.update();
 
             echoToParentPart( lang( "opok" ) );
@@ -108,7 +152,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         private int htmlCount = 0;
 
-        public void MakeAll() {
+        public virtual void MakeAll() {
             view( "MakeDone" );
 
             MakeSectionAll();
@@ -119,32 +163,36 @@ namespace wojilu.Web.Controller.Content.Admin {
             echo( "生成所有静态页面成功，共 " + htmlCount + " 篇" );
         }
 
-        public void MakeSidebar() {
-            view( "MakeDone" );
-            HtmlHelper.MakeSidebarHtml( ctx );
-            echo( "生成侧栏页成功" );
-
+        private void MakeSidebar() {
+            HtmlMaker.GetSidebar().Process( ctx.app.Id );
             htmlCount += 1;
         }
 
-        public void MakeHomePage() {
-            HtmlHelper.MakeAppHtml( ctx );
+        public virtual void MakeHomePage() {
+            HtmlMaker.GetHome().Process( ctx.app.Id );
             echo( "生成首页成功" );
         }
 
-        public void MakeSectionAll() {
+        public virtual void MakeSectionAll() {
 
             view( "MakeDone" );
 
             ContentApp app = ctx.app.obj as ContentApp;
 
+            MakeSidebar();
+
+            // 最近列表页
+            HtmlMaker.GetRecent().ProcessAll( app.Id );
+            logger.Info( "make recent html" );
+
+            // 区块列表页
             int count = 0;
             List<ContentSection> sections = sectionService.GetByApp( ctx.app.Id );
             foreach (ContentSection section in sections) {
 
-                int recordCount = postService.GetCountBySection( section.Id );
+                int recordCount = postService.CountBySection( section.Id );
 
-                count += HtmlHelper.MakeListHtml( ctx, app, section.Id, recordCount );
+                count += HtmlMaker.GetList().ProcessAll( section.Id, recordCount );
                 logger.Info( "make section html, sectionId=" + section.Id );
             }
 
@@ -152,10 +200,11 @@ namespace wojilu.Web.Controller.Content.Admin {
             echo( "生成所有列表页成功，共 " + htmlCount + " 篇" );
         }
 
-        public void MakeDetailAll() {
+        public virtual void MakeDetailAll() {
 
             view( "MakeDone" );
 
+            MakeSidebar();
 
             List<ContentPost> list = postService.GetByApp( ctx.app.Id );
             makeDetail( list );
@@ -164,23 +213,28 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
 
-        public void MakeSection( int sectionId ) {
+        public virtual void MakeSection( long sectionId ) {
 
             view( "MakeDone" );
 
-            ContentApp app = ctx.app.obj as ContentApp;
-            int recordCount = postService.GetCountBySection( sectionId );
+            MakeSidebar();
 
-            int listCount = HtmlHelper.MakeListHtml( ctx, app, sectionId, recordCount );
+            ContentApp app = ctx.app.obj as ContentApp;
+            int recordCount = postService.CountBySection( sectionId );
+
+            int listCount = HtmlMaker.GetList().ProcessAll( sectionId, recordCount );
             echo( "生成列表页成功，共 " + listCount + " 篇" );
 
         }
 
-        public void MakeDetailBySection( int sectionId ) {
+        public virtual void MakeDetailBySection( long sectionId ) {
 
             view( "MakeDone" );
 
-            List<ContentPost> list = postService.GetBySection( sectionId );
+            MakeSidebar();
+
+            List<ContentPost> list = postService.GetAllBySection( sectionId );
+            makeDetail( list );
             echo( "生成详细页成功，共 " + list.Count + " 篇" );
         }
 
@@ -189,8 +243,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         private void makeDetail( List<ContentPost> list ) {
             foreach (ContentPost post in list) {
-                ctx.SetItem( "_currentContentPost", post );
-                HtmlHelper.MakeDetailHtml( ctx );
+                HtmlMaker.GetDetail().Process( post );
                 logger.Info( "make detail html, postId=" + post.Id );
             }
 

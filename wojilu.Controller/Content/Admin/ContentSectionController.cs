@@ -30,10 +30,10 @@ namespace wojilu.Web.Controller.Content.Admin {
     [App( typeof( ContentApp ) )]
     public partial class ContentSectionController : ControllerBase {
 
-        public IContentSectionService sectionService { get; set; }
-        public IContentSectionTypeService sectionTypeService { get; set; }
-        public IContentSectionTemplateService templateService { get; set; }
-        public IFeedSourceService feedService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentSectionTypeService sectionTypeService { get; set; }
+        public virtual IContentSectionTemplateService templateService { get; set; }
+        public virtual IFeedSourceService feedService { get; set; }
 
         public ContentSectionController() {
             sectionService = new ContentSectionService();
@@ -42,7 +42,7 @@ namespace wojilu.Web.Controller.Content.Admin {
             feedService = new FeedSourceService();
         }
 
-        public void Add( int columnId ) {
+        public virtual void Add( long columnId ) {
 
             target( Create, columnId );
 
@@ -54,7 +54,7 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Create( int columnId ) {
+        public virtual void Create( long columnId ) {
             ContentSection section = ContentValidator.SetSectionValueAndValidate( columnId, ctx );
             if (errors.HasErrors) {
                 run( Add, columnId );
@@ -67,7 +67,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         //-------------------------------------------------------------------------
 
-        public void AddAuto( int columnId ) {
+        public virtual void AddAuto( long columnId ) {
 
             target( AddAutoTwo, columnId );
 
@@ -76,21 +76,21 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void AddAutoTwo( int columnId ) {
+        public virtual void AddAutoTwo( long columnId ) {
 
             target( AddAutoThree, columnId );
 
-            int serviceId = ctx.PostInt( "serviceId" );
+            long serviceId = ctx.PostLong( "serviceId" );
             Service service = ServiceContext.Get( serviceId );
             bindServiceInfo( serviceId, service );
         }
 
 
         [HttpPost, DbTransaction]
-        public void AddAutoThree( int columnId ) {
+        public virtual void AddAutoThree( long columnId ) {
             target( CreateAuto, columnId );
-            int serviceId = ctx.PostInt( "serviceId" );
-            int templateId = ctx.PostInt( "templateId" );
+            long serviceId = ctx.PostLong( "serviceId" );
+            long templateId = ctx.PostLong( "templateId" );
             Service service = ServiceContext.Get( serviceId );
             ContentSectionTemplate template = templateService.GetById( templateId );
             template = checkJsonTemplate( template );
@@ -108,7 +108,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void CreateAuto( int columnId ) {
+        public virtual void CreateAuto( long columnId ) {
             ContentSection section = ContentValidator.SetSectionValueAndValidate( columnId, ctx );
             if (errors.HasErrors) {
                 run( AddAutoThree, columnId );
@@ -124,12 +124,12 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         //-------------------------------------------------------------------------
 
-        public void AddFeed( int layoutId ) {
+        public virtual void AddFeed( long layoutId ) {
             target( CreateFeed, layoutId );
         }
 
         [HttpPost, DbTransaction]
-        public void CreateFeed( int layoutId ) {
+        public virtual void CreateFeed( long layoutId ) {
 
             String rssUrl = ctx.Post( "Url" );
             if (strUtil.IsNullOrEmpty( rssUrl )) {
@@ -156,7 +156,7 @@ namespace wojilu.Web.Controller.Content.Admin {
             section.ServiceId = 18;
 
             // 仅使用单列列表模板
-            section.TemplateId = 2; 
+            section.TemplateId = 2;
             sectionService.Insert( section );
 
 
@@ -170,20 +170,20 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         //-------------------------------------------------------------------------
 
-        public void EditRowUI( int iRow ) {
+        public virtual void EditRowUI( long iRow ) {
             target( SaveRowUI, iRow );
-            String name = "#row"+iRow;
+            String name = "#row" + iRow;
             bindCssForm( name );
         }
 
         [HttpPost, DbTransaction]
-        public void SaveRowUI( int iRow ) {
+        public virtual void SaveRowUI( long iRow ) {
             String name = "#row" + iRow;
-            Dictionary<string, string> result = CssFormUtil.getPostValues(ctx);
+            Dictionary<string, string> result = CssFormUtil.getPostValues( ctx );
             updateValues( name, result );
         }
 
-        public void EditUI( int layoutId ) {
+        public virtual void EditUI( long layoutId ) {
 
             target( SaveUI, layoutId );
 
@@ -192,7 +192,7 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveUI( int layoutId ) {
+        public virtual void SaveUI( long layoutId ) {
 
             String name = getCoulumnName( layoutId );
             Dictionary<string, string> result = CssFormUtil.getPostValues( ctx );
@@ -200,7 +200,7 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
 
-        private static String getCoulumnName( int layoutId ) {
+        private static String getCoulumnName( long layoutId ) {
             String layoutStr = layoutId.ToString();
             int rowId = cvt.ToInt( layoutStr.Substring( 0, layoutStr.Length - 1 ) );
             int columnId = cvt.ToInt( layoutStr.Substring( layoutStr.Length - 1, 1 ) );
@@ -210,21 +210,36 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
 
-        public void EditSectionUI( int sectionId ) {
+        public virtual void EditSectionUI( long sectionId ) {
 
             target( SaveSectionUI, sectionId );
-            String name = "#section"+sectionId;
+            String name = "#section" + sectionId;
             bindCssForm( name );
+
+            ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
+
+            set( "x.CssClass", section.CssClass );
+            set( "cssClassSaveLink", to( SaveCssClass, sectionId ) );
+        }
+
+        public virtual void SaveCssClass( long sectionId ) {
+            String cssClass = strUtil.CutString( ctx.Post( "cssClass" ), 50 );
+
+            ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
+            section.CssClass = cssClass;
+            sectionService.Update( section );
+
+            echoRedirect( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void SaveSectionUI( int sectionId ) {
+        public virtual void SaveSectionUI( long sectionId ) {
             String name = "#section" + sectionId;
             Dictionary<string, string> result = CssFormUtil.getPostValues( ctx );
             updateValues( name, result );
         }
 
-        public void EditSectionTitleUI( int sectionId ) {
+        public virtual void EditSectionTitleUI( long sectionId ) {
 
             target( SaveSectionTitleUI, sectionId );
             String name = "#sectionTitle" + sectionId;
@@ -232,14 +247,14 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveSectionTitleUI( int sectionId ) {
+        public virtual void SaveSectionTitleUI( long sectionId ) {
             String name = "#sectionTitle" + sectionId;
             Dictionary<string, string> result = CssFormUtil.getPostValues( ctx );
             updateValues( name, result );
         }
 
         //
-        public void EditSectionContentUI( int sectionId ) {
+        public virtual void EditSectionContentUI( long sectionId ) {
 
             target( SaveSectionContentUI, sectionId );
             String name = "#sectionContent" + sectionId;
@@ -247,7 +262,7 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveSectionContentUI( int sectionId ) {
+        public virtual void SaveSectionContentUI( long sectionId ) {
             String name = "#sectionContent" + sectionId;
             Dictionary<string, string> result = CssFormUtil.getPostValues( ctx );
             updateValues( name, result );
@@ -263,7 +278,7 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
         [NonVisit]
-        public void CssForm() {
+        public virtual void CssForm() {
             Dictionary<string, string> values = ctx.GetItem( "cssValues" ) as Dictionary<string, string>;
             bind( "v", values );
         }
@@ -282,7 +297,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             ContentSection section = sectionService.GetById( id, ctx.app.Id );
             if (section == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
@@ -294,28 +309,28 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         //-------------------------------------------------------------------------
 
-        public void Combine( int sectionId ) {
+        public virtual void Combine( long sectionId ) {
             target( SaveCombine, sectionId );
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             List<ContentSection> sections = sectionService.GetForCombine( section );
             dropList( "targetSection", sections, "Title=Id", 0 );
         }
 
-        public void SaveCombine( int sectionId ) {
-            int targetSectionId = ctx.PostInt( "targetSection" );
+        public virtual void SaveCombine( long sectionId ) {
+            long targetSectionId = ctx.PostLong( "targetSection" );
             sectionService.CombineSections( sectionId, targetSectionId );
             echoToParentPart( lang( "opok" ) );
         }
 
-        public void RemoveSection( int sectionId ) {
-            int targetSectionId = ctx.GetInt( "targetSection" );
+        public virtual void RemoveSection( long sectionId ) {
+            long targetSectionId = ctx.GetLong( "targetSection" );
             sectionService.RemoveSection( targetSectionId, sectionId );
             echoToParentPart( lang( "opok" ) );
         }
 
         //-------------------------------------------------------------------------
 
-        public void EditEffect( int sectionId ) {
+        public virtual void EditEffect( long sectionId ) {
             target( SaveEffect, sectionId );
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
 
@@ -328,14 +343,14 @@ namespace wojilu.Web.Controller.Content.Admin {
             radioList( "marquee", dic, section.GetMarquee() );
         }
 
-        public void SaveEffect( int sectionId ) {
+        public virtual void SaveEffect( long sectionId ) {
 
             String marquee = ctx.Post( "marquee" );
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             section.SetMarquee( marquee );
             echoToParentPart( lang( "opok" ) );
         }
-        
+
         //-------------------------------------------------------------------------
 
 

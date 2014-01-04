@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +20,11 @@ using System.Collections;
 namespace wojilu.Common.Security {
 
     /// <summary>
-    /// ½ÇÉ«½Ó¿Ú
+    /// è§’è‰²æ¥å£
     /// </summary>
     public interface IRole {
 
-        int Id { get; set; }
+        long Id { get; set; }
         String Name { get; set; }
 
         IRole Role { get; set; }

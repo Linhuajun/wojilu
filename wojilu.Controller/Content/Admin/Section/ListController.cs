@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -23,11 +23,11 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
     [App( typeof( ContentApp ) )]
-    public partial class ListController : ControllerBase, IPageSection {
+    public partial class ListController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IAttachmentService attachService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IAttachmentService attachService { get; set; }
 
         public ListController() {
             postService = new ContentPostService();
@@ -35,7 +35,8 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             attachService = new AttachmentService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -52,34 +53,29 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( new Common.PostController().Edit, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
-            IList posts = postService.GetBySection( ctx.app.Id, sectionId );
+        public virtual String GetSectionIcon( long sectionId ) {
+            return "";
+        }
+
+        public virtual void AdminSectionShow( long sectionId ) {
+            List<ContentPost> posts = GetSectionPosts( sectionId );
             bindSectionShow( sectionId, posts );
         }
 
-
-        public void AdminList( int sectionId ) {
+        public virtual void AdminList( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            DataPage<ContentPost> posts = postService.GetBySectionAndCategory( section.Id, ctx.GetInt( "categoryId" ) );
+            DataPage<ContentPost> posts = postService.GetPageBySectionAndCategory( section.Id, ctx.GetLong( "categoryId" ) );
 
             bindAdminList( section, posts );
         }
-        
-        [HttpDelete, DbTransaction]
-        public void Delete( int postId ) {
-            ContentPost post = postService.GetById( postId, ctx.owner.Id );
-            if (post == null) {
-                echo( lang( "exDataNotFound" ) );
-                return;
-            }
 
-            postService.Delete( post );
-            echoRedirectPart( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
-
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
+            return postService.GetBySection( sectionId, s.ListCount );
         }
 
     }

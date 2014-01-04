@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ using wojilu.Web.Mvc;
 namespace wojilu {
 
     /// <summary>
-    /// 系统路径
+    /// 系统路径(路径末尾有斜杠"/")
     /// </summary>
     /// <remarks>所有的路径末尾都有斜杠"/"，以区别于没有斜杠作后缀的文件名</remarks>
     public class SysPath {
@@ -73,7 +73,7 @@ namespace wojilu {
 
         public String Editor { get { return StaticPath.Instance.Editor; } }
         public String Img { get { return StaticPath.Instance.Img; } }
-        public String ImgStar { get { return strUtil.Join( Img, "Star/" ); } }
+        public String ImgStar { get { return strUtil.Join( Img, "star/" ); } }
         public String Js { get { return StaticPath.Instance.Js; } }
         public String Skin { get { return StaticPath.Instance.Skin; } }
         public String Css { get { return StaticPath.Instance.Css; } }
@@ -82,6 +82,11 @@ namespace wojilu {
         /************************************* 方法 *********************************************/
 
         public String GetPhotoOriginal( String relativeUrl ) {
+
+            if (strUtil.IsNullOrEmpty( relativeUrl )) return null;
+            if (relativeUrl.ToLower().StartsWith( "http://" )) return relativeUrl;
+            if (relativeUrl.StartsWith( "/" )) return relativeUrl;
+
             if (strUtil.IsNullOrEmpty( relativeUrl )) return "";
             if (relativeUrl.StartsWith( sys.Path.Photo )) return relativeUrl;
             return strUtil.Join( sys.Path.Photo, relativeUrl );
@@ -92,7 +97,27 @@ namespace wojilu {
         }
 
         public String GetPhotoThumb( String relativeUrl, ThumbnailType ttype ) {
+
+            if (strUtil.IsNullOrEmpty( relativeUrl )) return null;
+            if (relativeUrl.ToLower().StartsWith( "http://" )) return relativeUrl;
+            if (relativeUrl.StartsWith( "/" )) return relativeUrl;
+
             return wojilu.Drawing.Img.GetThumbPath( GetPhotoOriginal( relativeUrl ), ttype );
+        }
+
+        /// <summary>
+        /// 获取图片的缩略图
+        /// </summary>
+        /// <param name="relativeUrl"></param>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        public String GetPhotoThumb( String relativeUrl, String suffix ) {
+
+            if (strUtil.IsNullOrEmpty( relativeUrl )) return null;
+            if (relativeUrl.ToLower().StartsWith( "http://" )) return relativeUrl;
+            if (relativeUrl.StartsWith( "/" )) return relativeUrl;
+
+            return wojilu.Drawing.Img.GetThumbPath( GetPhotoOriginal( relativeUrl ), suffix );
         }
 
         public String GetPhotoRelative( String originalUrl ) {
@@ -115,6 +140,16 @@ namespace wojilu {
 
         public String GetAvatarThumb( String relativeUrl ) {
             return GetAvatarThumb( relativeUrl, ThumbnailType.Small );
+        }
+
+        public String GetAvatarThumb( String relativeUrl, String suffix ) {
+
+            if (strUtil.IsNullOrEmpty( relativeUrl )) return null;
+            if (relativeUrl.ToLower().StartsWith( "http://" )) return relativeUrl;
+            if (relativeUrl.StartsWith( "/" )) return relativeUrl;
+
+            String originalAvatar = GetAvatarOriginal( relativeUrl );
+            return wojilu.Drawing.Img.GetThumbPath( originalAvatar, suffix );
         }
 
         public String GetAvatarThumb( String relativeUrl, ThumbnailType ttype ) {

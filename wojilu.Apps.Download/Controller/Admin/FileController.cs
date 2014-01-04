@@ -14,16 +14,17 @@ namespace wojilu.Web.Controller.Download.Admin {
     [App( typeof( DownloadApp ) )]
     public class FileController : ControllerBase {
 
-        public void List() {
+        public virtual void List() {
 
             set( "addLink", to( Add ) );
+            set( "lnkCateShow", to( new Admin.SubCategoryController().Files ) );
 
             DataPage<FileItem> pages = FileItem.GetPage( ctx.app.Id );
             bindList( "list", "data", pages.Results, bindLink );
             set( "page", pages.PageBar );
         }
 
-        public void Category( int id ) {
+        public virtual void Category( long id ) {
 
             FileCategory cat = FileCategory.GetById( id );
             if (cat.IsThumbView == 1) {
@@ -33,19 +34,20 @@ namespace wojilu.Web.Controller.Download.Admin {
                 view( "List" );
             }
             set( "addLink", to( Add ) );
+            set( "lnkCateShow", to( new Admin.SubCategoryController().Files ) );
 
             DataPage<FileItem> pages = FileItem.GetPage( ctx.app.Id, id );
             bindList( "list", "data", pages.Results, bindLink );
             set( "page", pages.PageBar );
         }
 
-        private void bindLink( IBlock block, int id ) {
+        private void bindLink( IBlock block, long id ) {
             block.Set( "data.LinkEdit", to( Edit, id ) );
             block.Set( "data.LinkDelete", to( Delete, id ) );
             block.Set( "data.PreviewPicLink", to( new UploadController().PreviewPic, id ) );
         }
 
-        public void Add() {
+        public virtual void Add() {
 
             target( Create );
 
@@ -54,7 +56,6 @@ namespace wojilu.Web.Controller.Download.Admin {
             dropList( "fileItem.Lang", FileLang.GetAll(), "Name=Name", "" );
             set( "subCategoriesJson", FileCategory.GetSubCatsJson() );
             checkboxList( "fileItem.PlatformIds", Platform.GetAll(), "Name=Id", "" );
-            editor( "fileItem.Description", "", "200px" );
 
             set( "authInfo", AdminSecurityUtils.GetAuthCookieJson( ctx ) );
             set( "uploadLink", to( SaveUpload ) );
@@ -73,24 +74,27 @@ namespace wojilu.Web.Controller.Download.Admin {
 
 
         [HttpPost]
-        public void SaveUpload() {
+        public virtual void SaveUpload() {
 
 
             Result result = Uploader.SaveFile( ctx.GetFileSingle() );
 
             if (result.HasErrors) {
-                echoText( result.ErrorsText );
+                echoError( result );
                 return;
             }
 
             String fileName = result.Info.ToString();
             String fileUrl = strUtil.Join( sys.Path.Photo, fileName ); // 获取文件完整路径
-            echoText( fileUrl );
+            Dictionary<String, String> dic = new Dictionary<String, String>();
+            dic.Add( "IsValid", "true" );
+            dic.Add( "FileUrl", fileUrl );
 
+            echoJson( dic );
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             FileItem fi = ctx.PostValue<FileItem>();
             if (ctx.HasErrors) {
@@ -112,10 +116,10 @@ namespace wojilu.Web.Controller.Download.Admin {
 
             FileItem.CreateFile( fi );
 
-            echoRedirectPart( lang( "opok" ), to( List ) );
+            redirect( List );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( Update, id );
 
@@ -129,7 +133,7 @@ namespace wojilu.Web.Controller.Download.Admin {
             set( "subCategoriesJson", FileCategory.GetSubCatsJson() );
             checkboxList( "fileItem.PlatformIds", Platform.GetAll(), "Name=Id", f.PlatformIds );
 
-            editor( "fileItem.Description", f.Description, "200px" );
+            set( "fileItem.Description", f.Description );
 
             set( "authInfo", AdminSecurityUtils.GetAuthCookieJson( ctx ) );
             set( "uploadLink", to( SaveUpload ) );
@@ -138,17 +142,18 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             FileItem f = FileItem.findById( id );
             f = ctx.PostValue( f ) as FileItem;
             if (f.Rank > 5) f.Rank = 0;
             f.update();
-            echoRedirectPart( lang( "opok" ), to( List ) );
+
+            redirect( List );
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             FileItem f = FileItem.findById( id );
             FileItem.DeleteFile( f );
             redirect( List );

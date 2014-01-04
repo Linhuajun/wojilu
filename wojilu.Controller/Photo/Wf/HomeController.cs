@@ -1,31 +1,36 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+
 using wojilu.Web.Mvc;
+using wojilu.Web.Mvc.Attr;
+
+using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Interface;
 using wojilu.Members.Users.Service;
+
 using wojilu.Apps.Photo.Interface;
 using wojilu.Apps.Photo.Service;
 using wojilu.Apps.Photo.Domain;
-using wojilu.Members.Users.Domain;
-using wojilu.Common.AppBase;
-using wojilu.Web.Mvc.Attr;
-using wojilu.Web.Controller.Common;
-using wojilu.Web.Context;
+using wojilu.Apps.Photo;
+
 
 namespace wojilu.Web.Controller.Photo.Wf {
 
     [App( typeof( PhotoApp ) )]
     public class HomeController : ControllerBase {
 
-        public IUserService userService { get; set; }
-        public IPhotoAlbumService categoryService { get; set; }
-        public IPhotoPostService postService { get; set; }
-        public IPickedService pickedService { get; set; }
-        public IPhotoService photoService { get; set; }
-        public ISysPhotoService sysPostService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IPhotoAlbumService categoryService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IPickedService pickedService { get; set; }
+        public virtual IPhotoService photoService { get; set; }
+        public virtual ISysPhotoService sysPostService { get; set; }
 
-        public PhotoLikeService likeService { get; set; }
+        public virtual PhotoLikeService likeService { get; set; }
 
         public HomeController() {
             userService = new UserService();
@@ -42,138 +47,11 @@ namespace wojilu.Web.Controller.Photo.Wf {
         public override void Layout() {
         }
 
-        [Data( typeof( PhotoPost ) )]
-        public void Post( int id ) {
+        public virtual void Index() {
 
-
-            PhotoPost x = ctx.Get<PhotoPost>();
-            postService.AddtHits( x );
-
-            WebUtils.pageTitle( this, x.Title );
-            Page.Keywords = x.Tag.TextString;
-
-            User owner = x.Creator;
-
-            if (ctx.viewer.IsFollowing( owner.Id )) {
-                set( "lblFollow", "已经关注" );
-                set( "clsFollow", "btnUnFollow" );
-            }
-            else {
-                set( "lblFollow", "关注" );
-                set( "clsFollow", "btnFollow" );
-            }
-
-            Boolean isLiked = likeService.IsLiked( ctx.viewer.Id, id );
-
-            List<int> ids = new List<int>();
-            if (isLiked) {
-                ids.Add( id );
-            }
-
-            PhotoBinder.BindPostSingleFull( ctx, base.utils.getCurrentView(), x, ids );
-            set( "lnkPrevNext", getPreNextHtml( x ) );
-
-            bindAlbumPosts( x );
-            bindOtherPosts();
-
-            String commentUrl = t2( new wojilu.Web.Controller.Open.CommentController().List )
-                + "?url=" + PhotoLink.ToPost( x.Id )
-                + "&dataType=" + typeof( PhotoPost ).FullName
-                + "&dataTitle=" + x.Title
-                + "&dataUserId=" + x.Creator.Id
-                + "&dataId=" + x.Id;
-            set( "thisUrl", commentUrl );
-        }
-
-        public String getPreNextHtml( PhotoPost post ) {
-
-            PhotoPost prev = postService.GetPre( post );
-            PhotoPost next = postService.GetNext( post );
-
-            String prenext;
-            if (prev == null && next == null)
-                prenext = "";
-            else if (prev == null)
-                prenext = "<a href=\"" + PhotoLink.ToPost( next.Id ) + "\">" + alang( "nextPhoto" ) + "</a> ";
-            else if (next == null)
-                prenext = "<a href=\"" + PhotoLink.ToPost( prev.Id ) + "\">" + alang( "prevPhoto" ) + "</a> ";
-            else
-                prenext = "<a href=\"" + PhotoLink.ToPost( prev.Id ) + "\">" + alang( "prevPhoto" ) + "</a> | <a href=\"" + PhotoLink.ToPost( next.Id ) + "\">" + alang( "nextPhoto" ) + "</a>";
-            return prenext;
-        }
-
-        private void bindAlbumPosts( PhotoPost post ) {
-
-            IBlock block = getBlock( "cposts" );
-            if (post.PhotoAlbum == null) return;
-
-            List<PhotoPost> list = postService.GetByAlbum( post.PhotoAlbum.Id, 9 );
-            foreach (PhotoPost x in list) {
-                PhotoBinder.BindPostSingle( ctx, block, x, new List<int>() );
-                block.Next();
-            }
-
-        }
-
-        private void bindOtherPosts() {
-            List<PhotoPost> list = postService.GetNew( 15 );
-            IBlock block = getBlock( "xposts" );
-            foreach (PhotoPost x in list) {
-                PhotoBinder.BindPostSingle( ctx, block, x, new List<int>() );
-                block.Next();
-            }
-        }
-
-        //-------------------------------------------------------------------------------------------
-
-        [Login]
-        public void Add() {
-
-            User u = ctx.viewer.obj as User;
-
-            PhotoApp app = photoService.GetByUser( u.Id );
-            if (app == null) {
-                echoError( "请先添加PhotoApp" );
-                return;
-            }
-
-            redirectUrl( Link.To( u, new Photo.Admin.PostController().Add, app.Id ) );
-        }
-
-
-        [Login]
-        public void Following() {
-
-            view( "Index" );
-
-            // 从第二页开始，是ajax获取，所以不需要多余的layout内容
-            if (CurrentRequest.getCurrentPage() > 1) {
-                HideLayout( typeof( wojilu.Web.Controller.LayoutController ) );
-                HideLayout( typeof( wojilu.Web.Controller.Photo.LayoutController ) );
-                HideLayout( typeof( wojilu.Web.Controller.Photo.Wf.LayoutController ) );
-            }
-
-            // 1) 超过最大滚页数，则不再自动翻页
-            int maxPage = 10;
-            if (CurrentRequest.getCurrentPage() > maxPage) {
-                echoText( "." );
-                return;
-            }
-
-            // 关注的图片
-            DataPage<PhotoPost> list = postService.GetFollowing( ctx.viewer.Id, 20 );
-
-            // 2) 或者超过实际页数，也不再自动翻页
-            if (CurrentRequest.getCurrentPage() > list.PageCount && list.PageCount > 0) {
-                echoText( "." );
-                return;
-            }
-
-            PhotoBinder.BindPhotoList( this, list, ctx.viewer.Id );
-        }
-
-
-        public void Index() {
+            ctx.Page.Title = PhotoAppSetting.Instance.MetaTitle;
+            ctx.Page.Keywords = PhotoAppSetting.Instance.MetaKeywords;
+            ctx.Page.Description = PhotoAppSetting.Instance.MetaDescription;
 
             // 从第二页开始，是ajax获取，所以不需要多余的layout内容
             if (CurrentRequest.getCurrentPage() > 1) {
@@ -200,7 +78,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             PhotoBinder.BindPhotoList( this, list, ctx.viewer.Id );
         }
 
-        public void Category( int categoryId ) {
+        public virtual void Category( long categoryId ) {
 
             view( "Index" );
 
@@ -230,7 +108,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
         }
 
-        public void Hot() {
+        public virtual void Hot() {
 
             view( "Index" );
 
@@ -260,7 +138,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
         }
 
 
-        public void Pick() {
+        public virtual void Pick() {
 
             view( "Index" );
 
@@ -291,8 +169,144 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
         //------------------------------------------------------------------------------------------
 
+
+        [Login]
+        public virtual void Add() {
+
+            User u = ctx.viewer.obj as User;
+
+            PhotoApp app = photoService.GetByUser( u.Id );
+            if (app == null) {
+                echoError( "请先添加PhotoApp" );
+                return;
+            }
+
+            redirectUrl( Link.To( u, new Photo.Admin.PostController().Add, app.Id ) );
+        }
+
+
+        [Login]
+        public virtual void Following() {
+
+            view( "Index" );
+
+            // 从第二页开始，是ajax获取，所以不需要多余的layout内容
+            if (CurrentRequest.getCurrentPage() > 1) {
+                HideLayout( typeof( wojilu.Web.Controller.LayoutController ) );
+                HideLayout( typeof( wojilu.Web.Controller.Photo.LayoutController ) );
+                HideLayout( typeof( wojilu.Web.Controller.Photo.Wf.LayoutController ) );
+            }
+
+            // 1) 超过最大滚页数，则不再自动翻页
+            int maxPage = 10;
+            if (CurrentRequest.getCurrentPage() > maxPage) {
+                echoText( "." );
+                return;
+            }
+
+            // 关注的图片
+            DataPage<PhotoPost> list = postService.GetFollowing( ctx.viewer.Id, 20 );
+
+            // 2) 或者超过实际页数，也不再自动翻页
+            if (CurrentRequest.getCurrentPage() > list.PageCount && list.PageCount > 0) {
+                echoText( "." );
+                return;
+            }
+
+            PhotoBinder.BindPhotoList( this, list, ctx.viewer.Id );
+        }
+
+        //------------------------------------------------------------------------------------------
+
+        [Data( typeof( PhotoPost ) )]
+        public virtual void Post( long id ) {
+
+
+            PhotoPost x = ctx.Get<PhotoPost>();
+            postService.AddtHits( x );
+
+            ctx.Page.Title = x.Title;
+            ctx.Page.Keywords = x.Tag.TextString;
+
+            User owner = x.Creator;
+
+            if (ctx.viewer.IsFollowing( owner.Id )) {
+                set( "lblFollow", "已经关注" );
+                set( "clsFollow", "btnUnFollow" );
+            }
+            else {
+                set( "lblFollow", "关注" );
+                set( "clsFollow", "btnFollow" );
+            }
+
+            Boolean isLiked = likeService.IsLiked( ctx.viewer.Id, id );
+
+            List<long> ids = new List<long>();
+            if (isLiked) {
+                ids.Add( id );
+            }
+
+            PhotoBinder.BindPostSingleFull( ctx, base.utils.getCurrentView(), x, ids );
+            set( "lnkPrevNext", getPreNextHtml( x ) );
+
+            bindAlbumPosts( x );
+            bindOtherPosts();
+
+            String commentUrl = t2( new wojilu.Web.Controller.Open.CommentController().List )
+                + "?url=" + PhotoLink.ToPost( x.Id )
+                + "&dataType=" + typeof( PhotoPost ).FullName
+                + "&dataTitle=" + x.Title
+                + "&dataUserId=" + x.Creator.Id
+                + "&dataId=" + x.Id
+                + "&appId=" + x.AppId;
+            
+            set( "thisUrl", commentUrl );
+        }
+
+        public virtual String getPreNextHtml( PhotoPost post ) {
+
+            PhotoPost prev = postService.GetPre( post );
+            PhotoPost next = postService.GetNext( post );
+
+            String prenext;
+            if (prev == null && next == null)
+                prenext = "";
+            else if (prev == null)
+                prenext = "<a href=\"" + PhotoLink.ToPost( next.Id ) + "\">" + alang( "nextPhoto" ) + "</a> ";
+            else if (next == null)
+                prenext = "<a href=\"" + PhotoLink.ToPost( prev.Id ) + "\">" + alang( "prevPhoto" ) + "</a> ";
+            else
+                prenext = "<a href=\"" + PhotoLink.ToPost( prev.Id ) + "\">" + alang( "prevPhoto" ) + "</a> | <a href=\"" + PhotoLink.ToPost( next.Id ) + "\">" + alang( "nextPhoto" ) + "</a>";
+            return prenext;
+        }
+
+        private void bindAlbumPosts( PhotoPost post ) {
+
+            IBlock block = getBlock( "cposts" );
+            if (post.PhotoAlbum == null) return;
+
+            List<PhotoPost> list = postService.GetByAlbum( post.PhotoAlbum.Id, 9 );
+            foreach (PhotoPost x in list) {
+                PhotoBinder.BindPostSingle( ctx, block, x, new List<long>() );
+                block.Next();
+            }
+
+        }
+
+        private void bindOtherPosts() {
+            List<PhotoPost> list = postService.GetNew( 15 );
+            IBlock block = getBlock( "xposts" );
+            foreach (PhotoPost x in list) {
+                PhotoBinder.BindPostSingle( ctx, block, x, new List<long>() );
+                block.Next();
+            }
+        }
+
+
+        //------------------------------------------------------------------------------------------
+
         [HttpPost, Login, Data( typeof( PhotoPost ) )]
-        public void Like( int postId ) {
+        public virtual void Like( long postId ) {
 
             Boolean isLiked = likeService.IsLiked( ctx.viewer.Id, postId );
 
@@ -309,7 +323,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
         }
 
         [HttpPost, Login, Data( typeof( PhotoPost ) )]
-        public void UnLike( int postId ) {
+        public virtual void UnLike( long postId ) {
 
             Boolean isLiked = likeService.IsLiked( ctx.viewer.Id, postId );
 
@@ -327,7 +341,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
         }
 
         [Login, Data( typeof( PhotoPost ) )]
-        public void Repin( int postId ) {
+        public virtual void Repin( long postId ) {
 
             target( RepinSave, postId );
 
@@ -347,7 +361,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
         }
 
         [HttpPost, Login, Data( typeof( PhotoPost ) )]
-        public void RepinSave( int postId ) {
+        public virtual void RepinSave( long postId ) {
 
             PhotoPost x = ctx.Get<PhotoPost>();
             PhotoPost photo = getFormPosted();
@@ -359,7 +373,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
             PhotoPost photo = new PhotoPost();
 
-            PhotoAlbum album = categoryService.GetById( ctx.PostInt( "categoryId" ) );
+            PhotoAlbum album = categoryService.GetById( ctx.PostLong( "categoryId" ) );
 
             photo.PhotoAlbum = album;
             photo.Description = ctx.Post( "description" );
@@ -381,12 +395,12 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
 
         [Login]
-        public void AlbumAdd() {
+        public virtual void AlbumAdd() {
             target( AlbumSave );
         }
 
         [Login]
-        public void AlbumSave() {
+        public virtual void AlbumSave() {
 
             PhotoAlbum album = ctx.PostValue<PhotoAlbum>();
             if (ctx.HasErrors) {
@@ -405,7 +419,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             set( "cid", album.Id );
         }
 
-        private int getAlbumAppId( int userId ) {
+        private long getAlbumAppId( long userId ) {
             PhotoApp app = photoService.GetByUser( userId );
             if (app == null) return 0;
             return app.Id;

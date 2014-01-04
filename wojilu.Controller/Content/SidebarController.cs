@@ -15,13 +15,13 @@ namespace wojilu.Web.Controller.Content {
     [App( typeof( ContentApp ) )]
     public class SidebarController : ControllerBase {
 
-        public IContentPostService postService { get; set; }
+        public virtual IContentPostService postService { get; set; }
 
         public SidebarController() {
             postService = new ContentPostService();
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             ContentApp app = ctx.app.obj as ContentApp;
             ContentSetting s = app.GetSettingsObj();
@@ -35,8 +35,6 @@ namespace wojilu.Web.Controller.Content {
             List<ContentPost> videos = postService.GetRankPost( ctx.app.Id, s.RankVideos, PostCategory.Video );
             bindVideos( videos, "video" );
 
-            set( "adSidebarTop", AdItem.GetAdById( AdCategory.ArticleSidebarTop ) );
-            set( "adSidebarBottom", AdItem.GetAdById( AdCategory.ArticleSidebarBottom ) );
         }
 
 

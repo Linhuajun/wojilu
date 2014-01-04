@@ -15,7 +15,7 @@ namespace wojilu.Apps.Content.Domain {
 
         public static readonly int DefaultPostCount = 10;
 
-        public int AppId { get; set; }
+        public long AppId { get; set; }
         public int OrderId { get; set; }
 
         public int RowId { get; set; }
@@ -24,11 +24,16 @@ namespace wojilu.Apps.Content.Domain {
         public String Title { get; set; }
         public int HideTitle { get; set; }
 
+        // SEO
+        public String MetaKeywords { get; set; }
+        public String MetaDescription { get; set; }
+
+
         public String CombineIds { get; set; }
 
         public String MoreLink { get; set; }
 
-        public String CachePostIds { get; set; }
+        public String CssClass { get; set; } // 区块css类型class
 
         private int _listCount;
 
@@ -40,17 +45,20 @@ namespace wojilu.Apps.Content.Domain {
             set { _listCount = value; }
         }
 
-        public int CustomTemplateId { get; set; } // 自定义模板ID
+        public long CustomTemplateId { get; set; } // 自定义模板ID
 
 
         // 不使用 SOA ，直接使用controller产生内容
         public String SectionType { get; set; }
 
 
-        public int ServiceId { get; set; } // 调用哪个服务对象
-        public int TemplateId { get; set; } // 数据源对应的模板
-        // 需要给服务对象传递的参数(序列化的原始字符串，从0开始) 
-        // param0=3;param1=strA;param2=2234
+        public long ServiceId { get; set; } // 调用哪个服务对象
+        public long TemplateId { get; set; } // 数据源对应的模板
+
+        /// <summary>
+        /// 需要给服务对象传递的参数(序列化的原始字符串，从0开始) 
+        /// <para>param0=3;param1=strA;param2=2234</para>
+        /// </summary>
         public String ServiceParams { get; set; }
 
         private Dictionary<string, string> _paramValues;

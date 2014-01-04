@@ -8,21 +8,20 @@ using System.Collections.Generic;
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
 
-using wojilu.Common.AppBase.Interface;
+using wojilu.Common.AppBase;
+
 using wojilu.Apps.Content.Domain;
 using wojilu.Apps.Content.Interface;
 using wojilu.Apps.Content.Service;
-using wojilu.Members.Users.Domain;
-using wojilu.Common.AppBase;
 
 namespace wojilu.Web.Controller.Content.Section {
 
     [App( typeof( ContentApp ) )]
-    public partial class PollController : ControllerBase, IPageSection {
+    public class PollController : ControllerBase, IPageSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public ContentPollService pollService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual ContentPollService pollService { get; set; }
 
         public PollController() {
             postService = new ContentPostService();
@@ -30,145 +29,42 @@ namespace wojilu.Web.Controller.Content.Section {
             pollService = new ContentPollService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
+        public virtual void SectionShow( long sectionId ) {
+
+            ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
+            List<ContentPost> posts = postService.GetBySection( sectionId, section.ListCount );
+            List<ContentPoll> polls = pollService.GetByTopicList( posts );
+
+            IBlock block = getBlock( "list" );
+
+            foreach (ContentPost x in posts) {
+
+                block.Set( "postId", x.Id );
+                block.Set( "lnkPoll", to( new wojilu.Web.Controller.Content.Common.PollController().Show, x.Id ) );
+                block.Next();
+            }
         }
 
-        public void AdminSectionShow( int sectionId ) {
-        }
-
-        public void SectionShow( int sectionId ) {
-
-            set( "pollSectionLink", to( SectionDetail, sectionId ) );
-
-            //ContentPoll c = pollService.GetRecentPoll( ctx.app.Id, sectionId );
-            //if (c == null) {
-            //    actionContent( "" );
-            //    return;
-            //}
-
-            //bindPollDetail( sectionId, c );
-        }
-
-
-        public void SectionDetail( int sectionId ) {
-
-            ContentPoll c = pollService.GetRecentPoll( ctx.app.Id, sectionId );
-            if (c == null) {
-                actionContent( "" );
-                return;
-            }
-
-            bindPollDetail( sectionId, c );
-
-
-        }
-
-        public void Vote( int pollId ) {
-
-            int sectionId = ctx.GetInt( "sectionId" );
-
-            ContentPoll poll = pollService.GetById( pollId );
-            if (poll == null) {
-                actionContent( lang( "exPollNotFound" ) );
-                return;
-            }
-
-            ContentPost post = postService.GetById( poll.TopicId, ctx.owner.Id );
-            if (post == null || post.PageSection.Id != sectionId) {
-                actionContent( lang( "exPollNotFound" ) );
-                return;
-            }
-
-            if (poll.CheckHasVote( ctx.viewer.Id )) {
-                actionContent( alang( "exVoted" ) );
-                return;
-            }
-
-            String choice = ctx.Get( "pollOption" );
-            ContentPollResult pr = new ContentPollResult();
-            pr.User = (User)ctx.viewer.obj;
-            pr.PollId = poll.Id;
-            pr.Answer = choice;
-            pr.Ip = ctx.Ip;
-
-            //String lnkPoll = to( Show, poll.TopicId );
-            String lnkPoll = alink.ToAppData( post, ctx );
-
-            pollService.CreateResult( pr, lnkPoll );
-
-            String url = to( VoteResult, poll.Id ) + "?sectionId=" + sectionId;
-
-            echoRedirect( alang( "pollDone" ), url );
-        }
-
-        public void VoteResult( int pollId ) {
-
-            int sectionId = ctx.GetInt( "sectionId" );
-
-            ContentPoll poll = pollService.GetById( pollId );
-            if (poll == null) {
-                actionContent( lang( "exPollNotFound" ) );
-                return;
-            }
-
-            ctx.SetItem( "poll", poll );
-            ctx.SetItem( "sectionId", sectionId );
-
-            load( "voteResult", sectionPollResult );
-
-        }
-
-        public void Voter( int pollId ) {
-
-            int sectionId = ctx.GetInt( "sectionId" );
-
-            ContentPoll poll = pollService.GetById( pollId );
-            if (poll == null) {
-                actionContent( lang( "exPollNotFound" ) );
-                return;
-            }
-
-            ContentPost post = postService.GetById( poll.TopicId, ctx.owner.Id );
-            if( post == null ) {
-            //if (post == null || post.PageSection.Id != sectionId) {
-                actionContent( lang( "exPollNotFound" ) );
-                return;
-            }
-
-            bindVoterList( poll, sectionId );
-        }
-
-        public void List( int sectionId ) {
+        public virtual void List( long sectionId ) {
 
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             if (section == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
                 return;
             }
-            Page.Title = section.Title;
-            ctx.SetItem( "PageTitle", Page.Title );
 
-            DataPage<ContentPost> list = postService.GetPageBySection( sectionId, 10 );
-
-            List<ContentPoll> polls = pollService.GetByTopicList( list.Results );
-            ctx.SetItem( "sectionId", sectionId );
-
-            bindList( section, list, polls );
+            set( "section.Name", section.Title );
+            set( "pollList", loadHtml( new wojilu.Web.Controller.Content.Common.PollController().List, sectionId ) );
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             ContentPost post = postService.GetById( id, ctx.owner.Id );
-            ContentPoll poll = pollService.GetByTopicId( id, typeof( ContentPost ).FullName );
+            ContentPoll poll = pollService.GetByTopicId( id );
 
-            postService.AddHits( post );
-
-            Page.Title = post.Title;
-
-            bindDetail( post, poll );
-
+            set( "lnkPoll", to( new wojilu.Web.Controller.Content.Common.PollController().Show, post.Id ) );
         }
+
 
     }
 

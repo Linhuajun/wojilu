@@ -1,9 +1,8 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
 using System;
-using System.Web;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -18,25 +17,26 @@ using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Interface;
 using wojilu.Common.MemberApp.Interface;
 using wojilu.Web.Context;
+
+using wojilu.OAuth;
+
+using wojilu.Common;
 using wojilu.Members.Sites.Domain;
 using wojilu.Common.Money.Interface;
 using wojilu.Common.Money.Service;
-using wojilu.Common.Msg.Interface;
-using wojilu.Common.Msg.Service;
-using wojilu.Common.Money.Domain;
-using wojilu.Common;
 
 namespace wojilu.Web.Controller.Users.Admin {
 
 
     public partial class UserProfileController : ControllerBase {
 
-        public IUserService userService { get; set; }
-        public IMemberAppService userAppService { get; set; }
-        public IAppInstallerService appinfoService { get; set; }
-        public IUserTagService userTagService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IMemberAppService userAppService { get; set; }
+        public virtual IAppInstallerService appinfoService { get; set; }
+        public virtual IUserTagService userTagService { get; set; }
 
-        public ICurrencyService currencyService { get; set; }
+        public virtual ICurrencyService currencyService { get; set; }
+        public virtual IUserConnectService connectService { get; set; }
 
         public UserProfileController() {
             userService = new UserService();
@@ -45,17 +45,20 @@ namespace wojilu.Web.Controller.Users.Admin {
 
             userTagService = new UserTagService();
             currencyService = new CurrencyService();
+            connectService = new UserConnectService();
         }
 
         public override void Layout() {
+
             set( "viewer.ProfileUrl", to( Profile ) );
             set( "viewer.InterestUrl", to( Interest ) );
             set( "viewer.ContactLink", to( Contact ) );
             set( "viewer.TagUrl", to( Tag ) );
-
-
+            set( "viewer.AccountBind", to( BindAccount ) );
             set( "viewer.FaceUrl", to( Face ) );
             set( "viewer.PwdUrl", to( Pwd ) );
+
+            set( "viewer.LogoutUrl", to( new wojilu.Web.Controller.MainController().Logout ) );
 
             Boolean isUserPrivacyClose = Component.IsClose( typeof( UserPrivacy ) );
             if (isUserPrivacyClose) {
@@ -66,11 +69,52 @@ namespace wojilu.Web.Controller.Users.Admin {
                 set( "viewer.PrivacyLink", to( Privacy ) );
                 set( "privacyLinkStyle", "" );
             }
+        }
+
+        public virtual void Index() {
+        }
+
+        public virtual void BindAccount() {
+
+
+            List<AuthConnectConfig> list = AuthConnectConfig.GetAll();
+
+            IBlock block = getBlock( "list" );
+
+            foreach (AuthConnectConfig x in list) {
+
+                if (x.IsStop == 1) continue;
+
+                block.Set( "connect.Logo", x.LogoM );
+                block.Set( "connect.Name", x.Name );
+
+                IBlock yBlock = block.GetBlock( "bind" );
+                IBlock xBlock = block.GetBlock( "unbind" );
+
+                String q = "?connectType=" + x.TypeFullName;
+
+                UserConnect c = connectService.GetConnectInfo( ctx.viewer.Id, x.TypeFullName );
+                if (c != null) {
+                    yBlock.Set( "connect.Uid", c.Uid );
+                    yBlock.Set( "connect.Name", c.Name );
+                    yBlock.Set( "connect.UnBindLink", to( new ConnectController().UnBind ) + q );
+                    yBlock.Set( "connect.SyncLink", to( new ConnectController().Sync ) + q );
+                    yBlock.Set( "connect.CheckSync", c.NoSync == 0 ? "checked=\"checked\"" : "" );
+                    yBlock.Next();
+                }
+                else {
+                    xBlock.Set( "connect.BindLink", to( new ConnectController().Bind ) + q );
+                    xBlock.Next();
+                }
+
+                block.Next();
+            }
 
         }
-        //----------------------------------------------------------------------------------------------------------
 
-        public void Face() {
+        //-----------------------------------------------------------------------------------
+
+        public virtual void Face() {
 
             target( FaceSave );
             User user = ctx.owner.obj as User;
@@ -78,7 +122,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void FaceSave() {
+        public virtual void FaceSave() {
 
             User user = ctx.owner.obj as User;
 
@@ -104,25 +148,26 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
 
-        //----------------------------------------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------
 
-        public void Interest() {
+        public virtual void Interest() {
             target( InterestSave );
             User user = ctx.owner.obj as User;
             bindInterest( user );
         }
 
         [HttpPost, DbTransaction]
-        public void InterestSave() {
+        public virtual void InterestSave() {
             User user = ctx.owner.obj as User;
             SaveInterest( user );
             db.update( user.Profile );
             echoRedirect( lang( "opok" ) );
         }
-        //----------------------------------------------------------------------------------------------------------
+
+        //-----------------------------------------------------------------------------------
 
 
-        public void Tag() {
+        public virtual void Tag() {
             target( SaveTag );
 
             List<UserTagShip> us = userTagService.GetPage( ctx.owner.Id );
@@ -138,11 +183,11 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
 
-        public void SaveTag() {
+        public virtual void SaveTag() {
 
             String tagList = strUtil.SubString( ctx.Post( "tagList" ), 30 );
             if (strUtil.IsNullOrEmpty( tagList )) {
-                echoError( "ÇëÌîÐ´ÄÚÈÝ" );
+                echoError( "è¯·å¡«å†™å†…å®¹" );
                 return;
             }
 
@@ -150,7 +195,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             echoRedirect( lang( "opok" ), Tag );
         }
 
-        public void DeleteTag( int id ) {
+        public virtual void DeleteTag( long id ) {
             UserTagShip u = userTagService.GetById( id );
             if (u != null) {
                 userTagService.DeleteUserTag( u );
@@ -158,20 +203,20 @@ namespace wojilu.Web.Controller.Users.Admin {
                 echoAjaxOk();
             }
             else {
-                echoText( "±êÇ©²»´æÔÚ" );
+                echoText( "æ ‡ç­¾ä¸å­˜åœ¨" );
             }
         }
 
 
 
-        public void Profile() {
+        public virtual void Profile() {
             target( ProfileSave );
             User user = ctx.owner.obj as User;
             bindProfile( user );
         }
 
         [HttpPost, DbTransaction]
-        public void ProfileSave() {
+        public virtual void ProfileSave() {
             User user = ctx.owner.obj as User;
             SaveProfile( user, ctx );
             db.update( user );
@@ -179,13 +224,29 @@ namespace wojilu.Web.Controller.Users.Admin {
             echoRedirect( lang( "opok" ) );
         }
 
-        public void Contact() {
+        public virtual void Contact() {
             target( ContactSave );
             User user = ctx.owner.obj as User;
             bindContact( user );
+
+            IBlock yblock = getBlock( "ymail" );
+            IBlock xblock = getBlock( "xmail" );
+            if (strUtil.HasText( user.Email )) {
+
+                yblock.Set( "m.Email", user.Email );
+                yblock.Set( "lnkEditEmail", to( Email ) );
+                yblock.Next();
+
+            }
+            else {
+
+                xblock.Set( "lnkAddEmail", to( AddEmail ) );
+                xblock.Next();
+            }
+
         }
 
-        public void ContactSave() {
+        public virtual void ContactSave() {
             User user = ctx.owner.obj as User;
             saveContact( user );
             db.update( user );
@@ -193,9 +254,82 @@ namespace wojilu.Web.Controller.Users.Admin {
             echoRedirect( lang( "opok" ) );
         }
 
-        //----------------------------------------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------
 
-        public void Pwd() {
+        public virtual void AddEmail() {
+            target( CreateEmail );
+        }
+
+        [HttpPost]
+        public virtual void CreateEmail() {
+
+            User user = ctx.owner.obj as User;
+            if (strUtil.HasText( user.Email )) {
+                echoError( "å·²æœ‰emailï¼Œæ— æ³•åˆ›å»º" );
+                return;
+            }
+
+            String email = strUtil.CutString( ctx.Post( "Email" ), 30 );
+
+            if (strUtil.IsNullOrEmpty( email )) {
+                errors.Add( lang( "exEmail" ) );
+            }
+            else if (RegPattern.IsMatch( email, RegPattern.Email ) == false) {
+                errors.Add( lang( "exUserMail" ) );
+            }
+            else if (userService.IsEmailExist( email )) {
+                errors.Add( lang( "exEmailFound" ) );
+            }
+
+            if (ctx.HasErrors) { echoError(); return; }
+
+            Result result = userService.CreateEmail( user, email );
+            echoResult( result );
+        }
+
+        public virtual void Email() {
+            target( SaveEmail );
+            User user = ctx.owner.obj as User;
+            set( "userEmail", user.Email );
+        }
+
+        [HttpPost]
+        public virtual void SaveEmail() {
+
+            String pwd = ctx.Post( "Pwd" );
+            String email = strUtil.CutString( ctx.Post( "Email" ), 30 );
+
+            User user = ctx.owner.obj as User;
+
+            if (strUtil.IsNullOrEmpty( pwd )) {
+                errors.Add( "è¯·å¡«å†™å¯†ç " );
+            }
+            else if (strUtil.IsNullOrEmpty( email )) {
+                errors.Add( lang( "exEmail" ) );
+            }
+            else if (RegPattern.IsMatch( email, RegPattern.Email ) == false) {
+                errors.Add( lang( "exUserMail" ) );
+            }
+            else if (userService.IsPwdCorrect( user, pwd ) == false) {
+                errors.Add( lang( "exPwdError" ) );
+            }
+            else if (userService.IsEmailExist( email )) {
+                errors.Add( lang( "exEmailFound" ) );
+            }
+
+            if (ctx.HasErrors) { echoError(); return; }
+
+            userService.UpdateEmailAndResetConfirmStatus( user, email );
+
+            if (config.Instance.Site.EnableEmail) {
+                echoToParent( lang( "opok" ), to( new Common.ActivationController().SendEmailButton ) );
+            }
+            else {
+                echoToParentPart( lang( "opok" ) );
+            }
+        }
+
+        public virtual void Pwd() {
             view( "Pwd" );
 
             User user = ctx.owner.obj as User;
@@ -205,14 +339,12 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void PwdSave() {
+        public virtual void PwdSave() {
 
             String opwd = ctx.Post( "OldPwd" );
 
             String pwd1 = ctx.Post( "NewPwd" );
             String pwd2 = ctx.Post( "NewPwd2" );
-
-            if (strUtil.IsNullOrEmpty( opwd )) errors.Add( lang( "exPwdOriginal" ) );
 
             if (strUtil.IsNullOrEmpty( pwd1 )) {
                 errors.Add( lang( "exPwdNew" ) );
@@ -224,20 +356,20 @@ namespace wojilu.Web.Controller.Users.Admin {
             User user = ctx.owner.obj as User;
             if (userService.IsPwdCorrect( user, opwd ) == false) errors.Add( lang( "exPwdError" ) );
 
-            if (errors.HasErrors) { echoError(); return; }
+            if (ctx.HasErrors) { echoError(); return; }
 
             userService.UpdatePwd( user, pwd1 );
 
-            echoRedirect( lang( "opok" ), Pwd );
+            echoRedirect( lang( "opok" ) );
         }
 
-        //----------------------------------------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------
 
-        public void Privacy() {
+        public virtual void Privacy() {
 
             Boolean isUserPrivacyClose = Component.IsClose( typeof( UserPrivacy ) );
             if (isUserPrivacyClose) {
-                echo( "¶Ô²»Æð£¬±¾¹¦ÄÜÒÑ¾­Í£ÓÃ" );
+                echo( "å¯¹ä¸èµ·ï¼Œæœ¬åŠŸèƒ½å·²ç»åœç”¨" );
                 return;
             }
 
@@ -268,11 +400,11 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
 
-        public void EditPermission( int id ) {
+        public virtual void EditPermission( long id ) {
 
             Boolean isUserPrivacyClose = Component.IsClose( typeof( UserPrivacy ) );
             if (isUserPrivacyClose) {
-                echo( "¶Ô²»Æð£¬±¾¹¦ÄÜÒÑ¾­Í£ÓÃ" );
+                echo( "å¯¹ä¸èµ·ï¼Œæœ¬åŠŸèƒ½å·²ç»åœç”¨" );
                 return;
             }
 
@@ -296,11 +428,11 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "app.Id", info.Id );
         }
 
-        public void SavePermission( int id ) {
+        public virtual void SavePermission( long id ) {
 
             Boolean isUserPrivacyClose = Component.IsClose( typeof( UserPrivacy ) );
             if (isUserPrivacyClose) {
-                echo( "¶Ô²»Æð£¬±¾¹¦ÄÜÒÑ¾­Í£ÓÃ" );
+                echo( "å¯¹ä¸èµ·ï¼Œæœ¬åŠŸèƒ½å·²ç»åœç”¨" );
                 return;
             }
 
@@ -312,7 +444,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             echoToParentPart( lang( "opok" ) );
         }
 
-        private AppInstaller getAppInfo( int appInfoId ) {
+        private AppInstaller getAppInfo( long appInfoId ) {
             AppInstaller appinfo = appinfoService.GetById( appInfoId );
             if (appinfo == null) {
                 throw new Exception( lang( "exAppNotFound" ) );
@@ -321,11 +453,11 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
 
-        public void SavePrivacy() {
+        public virtual void SavePrivacy() {
 
             Boolean isUserPrivacyClose = Component.IsClose( typeof( UserPrivacy ) );
             if (isUserPrivacyClose) {
-                echo( "¶Ô²»Æð£¬±¾¹¦ÄÜÒÑ¾­Í£ÓÃ" );
+                echo( "å¯¹ä¸èµ·ï¼Œæœ¬åŠŸèƒ½å·²ç»åœç”¨" );
                 return;
             }
 
@@ -358,7 +490,8 @@ namespace wojilu.Web.Controller.Users.Admin {
 
         }
 
-        //----------------------------------------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------
+
 
 
         internal void SaveInterest( User m ) {
@@ -404,24 +537,60 @@ namespace wojilu.Web.Controller.Users.Admin {
                 m.Profile.OtherInfo = ctx.Post( "OtherInfo" );
             }
 
-            int descMaxLength = 5000; // ¼ò½é×î¶à5000×Ö
-            int sigMaxLength = 1000; // Ç©Ãû×î¶à1000×Ö
+            if (ctx.viewer != null && ctx.viewer.IsAdministrator()) {
 
-            m.Profile.Description = ctx.PostHtml( "Description", "a,br,strong" );
-            if (m.Profile.Description.Length > descMaxLength) m.Profile.Description = strUtil.ParseHtml( m.Profile.Description, descMaxLength );
+                m.Profile.Description = ctx.PostHtmlAll( "Description" );
+                m.Signature = ctx.PostHtmlAll( "Signature" );
+            }
+            else {
 
-            m.Signature = ctx.PostHtml( "Signature", "a,br,strong" );
-            if (m.Signature.Length > sigMaxLength) m.Signature = strUtil.ParseHtml( m.Signature, sigMaxLength );
+                saveDescriptionAndSignature( m, ctx );
+            }
         }
 
-        private void saveContact( User m ) {
+        private static void saveDescriptionAndSignature( User m, MvcContext ctx ) {
 
+            Dictionary<String, String> tags = new Dictionary<String, String>();
+            tags.Add( "a", "href,target" );
+            tags.Add( "br", "" );
+            tags.Add( "strong", "" );
 
-            String email = ctx.Post( "Email" );
-            if (m.Email.Equals( email ) == false) {
-                m.Email = email;
-                m.IsEmailConfirmed = 0;
+            String desc = ctx.PostHtml( "Description", tags );
+
+            if (strUtil.CountString( desc.ToLower(), "<br" ) <= 3) { // è¶…è¿‡3æ¬¡æ¢è¡Œæ— æ•ˆï¼Œä¸ä¿å­˜
+
+                if (desc.Length >= config.Instance.Site.UserDescriptionMin) {
+                    if (desc.Length > config.Instance.Site.UserDescriptionMax) {
+                        m.Profile.Description = strUtil.ParseHtml( desc, config.Instance.Site.UserDescriptionMax );
+                    }
+                    else {
+                        m.Profile.Description = desc;
+                    }
+                }
+
             }
+
+            String sign = ctx.PostHtml( "Signature", tags );
+
+            if (strUtil.CountString( sign.ToLower(), "<br" ) <= 3) { // è¶…è¿‡3æ¬¡æ¢è¡Œæ— æ•ˆï¼Œä¸ä¿å­˜
+
+
+                if (sign.Length >= config.Instance.Site.UserSignatureMin) {
+                    if (sign.Length > config.Instance.Site.UserSignatureMax) {
+                        m.Signature = strUtil.ParseHtml( sign, config.Instance.Site.UserSignatureMax );
+                    }
+                    else {
+                        m.Signature = sign;
+                    }
+                }
+
+            }
+
+        }
+
+
+
+        private void saveContact( User m ) {
 
 
             m.Profile.EmailNotify = ctx.PostInt( "EmailNotify" );

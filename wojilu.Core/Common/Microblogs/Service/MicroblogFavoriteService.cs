@@ -6,14 +6,23 @@ using wojilu.Members.Users.Domain;
 
 namespace wojilu.Common.Microblogs.Service {
 
-    public class MicroblogFavoriteService {
+    public interface IMicroblogFavoriteService {
+        DataPage<MicroblogFavorite> GetFavoritePage( long ownerId, int pageSize );
+        DataPage<Microblog> GetBlogPage( long ownerId, int pageSize );
+        void SaveFavorite( long userId, Microblog blog );
+        void CancelFavorite( long userId, Microblog blog );
+        List<MicroblogVo> CheckFavorite( List<Microblog> list, long viewId );
+        bool IsFavorite( User user, long blogId );
+    }
+
+    public class MicroblogFavoriteService : IMicroblogFavoriteService {
 
 
-        public DataPage<MicroblogFavorite> GetFavoritePage( int ownerId, int pageSize ) {
+        public virtual DataPage<MicroblogFavorite> GetFavoritePage( long ownerId, int pageSize ) {
             return db.findPage<MicroblogFavorite>( "UserId=" + ownerId, pageSize );
         }
 
-        public DataPage<Microblog> GetBlogPage( int ownerId, int pageSize ) {
+        public virtual DataPage<Microblog> GetBlogPage( long ownerId, int pageSize ) {
             DataPage<MicroblogFavorite> list = GetFavoritePage( ownerId, pageSize );
 
             List<Microblog> mlist = new List<Microblog>();
@@ -21,15 +30,10 @@ namespace wojilu.Common.Microblogs.Service {
                 mlist.Add( mf.Microblog );
             }
 
-            DataPage<Microblog> results = new DataPage<Microblog>();
-            results.CopyStats( list );
-            results.Results = mlist;
-
-            return results;
+            return list.Convert<Microblog>( mlist );
         }
 
-
-        public void SaveFavorite( int userId, Microblog blog ) {
+        public virtual void SaveFavorite( long userId, Microblog blog ) {
 
             MicroblogFavorite f = MicroblogFavorite.find( "UserId=" + userId + " and MicroblogId=" + blog.Id ).first();
             if (f != null) return;
@@ -41,7 +45,7 @@ namespace wojilu.Common.Microblogs.Service {
             mf.insert();
         }
 
-        public void CancelFavorite( int userId, Microblog blog ) {
+        public virtual void CancelFavorite( long userId, Microblog blog ) {
             MicroblogFavorite f = MicroblogFavorite.find( "UserId=" + userId + " and MicroblogId=" + blog.Id ).first();
             if (f == null) return;
 
@@ -50,7 +54,7 @@ namespace wojilu.Common.Microblogs.Service {
         }
 
 
-        public List<MicroblogVo> CheckFavorite( List<Microblog> list, int viewId ) {
+        public virtual List<MicroblogVo> CheckFavorite( List<Microblog> list, long viewId ) {
 
 
             List<MicroblogVo> mvList = new List<MicroblogVo>();
@@ -90,7 +94,7 @@ namespace wojilu.Common.Microblogs.Service {
         }
 
 
-        public bool IsFavorite( User user, int blogId ) {
+        public virtual bool IsFavorite( User user, long blogId ) {
             return MicroblogFavorite.find( "UserId=" + user.Id + " and MicroblogId=" + blogId ).first() != null;
         }
 

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,12 +25,12 @@ using wojilu.Reflection;
 namespace wojilu.ORM {
 
     /// <summary>
-    /// ÊµÌåÀàµÄÔªÊı¾İĞÅÏ¢
+    /// å®ä½“ç±»çš„å…ƒæ•°æ®ä¿¡æ¯
     /// </summary>
     [Serializable]
     public class EntityInfo {
 
- 
+
         private Assembly _assembly;
 
         private List<EntityInfo> _childEntityList = new List<EntityInfo>();
@@ -54,12 +54,12 @@ namespace wojilu.ORM {
         private IDatabaseDialect _dialect;
 
         /// <summary>
-        /// ÊµÌåÀàÔÚ dbconfig ÅäÖÃÎÄ¼şÖĞËù¶ÔÓ¦µÄÊı¾İ¿âÃû³Æ
+        /// å®ä½“ç±»åœ¨ dbconfig é…ç½®æ–‡ä»¶ä¸­æ‰€å¯¹åº”çš„æ•°æ®åº“åç§°
         /// </summary>
         public String Database { get; set; }
 
         /// <summary>
-        /// Êı¾İ¿âÀàĞÍ
+        /// æ•°æ®åº“ç±»å‹
         /// </summary>
         public DatabaseType DbType {
             get {
@@ -71,7 +71,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ÊµÌåÀàµÄ dialect
+        /// å®ä½“ç±»çš„ dialect
         /// </summary>
         public IDatabaseDialect Dialect {
             get {
@@ -100,7 +100,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ËùÊôµÄ³ÌĞò¼¯
+        /// æ‰€å±çš„ç¨‹åºé›†
         /// </summary>
         public Assembly Assembly {
             get { return _assembly; }
@@ -108,7 +108,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ËùÓĞÊµÌåÀàÊôĞÔµÄ EntityInfo µÄÁĞ±í
+        /// æ‰€æœ‰å®ä½“ç±»å±æ€§çš„ EntityInfo çš„åˆ—è¡¨
         /// </summary>
         public List<EntityInfo> ChildEntityList {
             get { return _childEntityList; }
@@ -116,7 +116,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ¶ÔÓ¦µÄÊı¾İ±íÖĞµÄËùÓĞÁĞµÄÃû³Æ
+        /// å¯¹åº”çš„æ•°æ®è¡¨ä¸­çš„æ‰€æœ‰åˆ—çš„åç§°
         /// </summary>
         public String ColumnList {
             get { return _columnList; }
@@ -124,7 +124,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// Ö»ÊÇÊµÌåĞÔÖÊµÄÊôĞÔµÄÁĞ±í£¬±ÈÈç BlogPost µÄÄ³¸öÊôĞÔÊÇ BlogCategory ÕâÑùµÄÊµÌåÀàĞÍ
+        /// åªæ˜¯å®ä½“æ€§è´¨çš„å±æ€§çš„åˆ—è¡¨ï¼Œæ¯”å¦‚ BlogPost çš„æŸä¸ªå±æ€§æ˜¯ BlogCategory è¿™æ ·çš„å®ä½“ç±»å‹
         /// </summary>
         public List<EntityPropertyInfo> EntityPropertyList {
             get { return _entityPropertyList; }
@@ -132,7 +132,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ËùÓĞÊôĞÔµÄÁĞ±í(ÊôĞÔÒÑ¾­·â×°³ÉEntityPropertyInfo)
+        /// æ‰€æœ‰å±æ€§çš„åˆ—è¡¨(å±æ€§å·²ç»å°è£…æˆEntityPropertyInfo)
         /// </summary>
         public List<EntityPropertyInfo> PropertyListAll {
             get { return _PropertyListAll; }
@@ -140,7 +140,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ËùÓĞĞèÒª±£´æµÄÊôĞÔ
+        /// æ‰€æœ‰éœ€è¦ä¿å­˜çš„å±æ€§
         /// </summary>
         public List<EntityPropertyInfo> SavedPropertyList {
             get { return _savedPropertyList; }
@@ -148,7 +148,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ÊµÌåÀàÈ«Ãû£¬±ÈÈç wojilu.apps.BlogApp
+        /// å®ä½“ç±»å…¨åï¼Œæ¯”å¦‚ wojilu.apps.BlogApp
         /// </summary>
         public String FullName {
             get { return _fullName; }
@@ -156,7 +156,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ÊµÌåÀàÔÚ±íµ¥ÖĞµÄÃû³Æ£¬ÓÃÓÚ±íµ¥´úÂë×Ô¶¯Éú³É
+        /// å®ä½“ç±»åœ¨è¡¨å•ä¸­çš„åç§°ï¼Œç”¨äºè¡¨å•ä»£ç è‡ªåŠ¨ç”Ÿæˆ
         /// </summary>
         public String Label {
             get { return _label; }
@@ -164,7 +164,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ÊµÌåÀàÃû³Æ£¬µÈÍ¬ÓÚtype.Name£¬±ÈÈçBlogApp
+        /// å®ä½“ç±»åç§°ï¼Œç­‰åŒäºtype.Nameï¼Œæ¯”å¦‚BlogApp
         /// </summary>
         public String Name {
             get { return _name; }
@@ -172,20 +172,19 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// µ±Ç°ÊµÌåÀàµÄ¸¸Àà£¬Èç¹ûËüÊÇ¼Ì³ĞÓÚÄ³¸ö»ùÀàµÄ»°
+        /// å½“å‰å®ä½“ç±»çš„çˆ¶ç±»ï¼Œå¦‚æœå®ƒæ˜¯ç»§æ‰¿äºæŸä¸ªåŸºç±»çš„è¯
         /// </summary>
         public EntityInfo Parent {
             get {
                 if (Type.BaseType.IsAbstract || OrmHelper.IsEntityBase( Type.BaseType )) {// 1029
                     return null;
                 }
-
-                return (MappingClass.Instance.ClassList[Type.BaseType.FullName] as EntityInfo);
+                return Entity.GetInfo( Type.BaseType.FullName );
             }
         }
 
         /// <summary>
-        /// ÊµÌåÀà¶ÔÓ¦µÄÊı¾İ±íÃû³Æ
+        /// å®ä½“ç±»å¯¹åº”çš„æ•°æ®è¡¨åç§°
         /// </summary>
         public String TableName {
             get { return _tableName; }
@@ -193,7 +192,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ÊµÌåÀà¶ÔÓ¦µÄType
+        /// å®ä½“ç±»å¯¹åº”çš„Type
         /// </summary>
         public Type Type {
             get { return _type; }
@@ -201,13 +200,6 @@ namespace wojilu.ORM {
         }
 
 
-        private static String addPrefixToTableName( String tableName ) {
-            if (strUtil.HasText( DbConfig.Instance.TablePrefix )) {
-                tableName = tableName.Replace( "[", "" ).Replace( "]", "" );
-                tableName = DbConfig.Instance.TablePrefix + tableName;
-            }
-            return tableName;
-        }
 
         internal void AddPropertyToHashtable( EntityPropertyInfo p ) {
             _propertyHashTable[p.Name] = p;
@@ -229,7 +221,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ¸ù¾İÀàĞÍType£¬³õÊ¼»¯EntityInfo£»×¢Òâ£ºÒòÎª²»ÊÇ´Ó»º´æÖĞÈ¡£¬ËùÒÔËÙ¶È½ÏÂı
+        /// æ ¹æ®ç±»å‹Typeï¼Œåˆå§‹åŒ–EntityInfoï¼›æ³¨æ„ï¼šå› ä¸ºä¸æ˜¯ä»ç¼“å­˜ä¸­å–ï¼Œæ‰€ä»¥é€Ÿåº¦è¾ƒæ…¢
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
@@ -241,7 +233,7 @@ namespace wojilu.ORM {
             info.Name = t.Name;
             info.FullName = t.FullName;
 
-            info.TableName = addPrefixToTableName( GetTableName( t ) );
+            info.TableName = GetTableName( t );
             info.Database = getDatabase( t );
 
             checkCustomMapping( info );
@@ -274,15 +266,15 @@ namespace wojilu.ORM {
 
                 MappingInfo mi = map[info.Type.FullName];
 
-                if (strUtil.HasText( mi.Table )) info.TableName = mi.Table;
-                if (strUtil.HasText( mi.Database )) info.Database = mi.Database;
+                if (strUtil.HasText( mi.table )) info.TableName = mi.table;
+                if (strUtil.HasText( mi.database )) info.Database = mi.database;
 
             }
 
         }
 
         /// <summary>
-        /// »ñÈ¡Ä³¸öÊôĞÔÔÚÊı¾İ¿âÖĞ¶ÔÓ¦µÄÊı¾İÁĞÃû³Æ
+        /// è·å–æŸä¸ªå±æ€§åœ¨æ•°æ®åº“ä¸­å¯¹åº”çš„æ•°æ®åˆ—åç§°
         /// </summary>
         /// <param name="propertyName"></param>
         /// <returns></returns>
@@ -297,7 +289,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// »ñÈ¡Ä³¸öÊôĞÔµÄÔªÊı¾İĞÅÏ¢(ÒÑ·â×°³ÉEntityPropertyInfo)
+        /// è·å–æŸä¸ªå±æ€§çš„å…ƒæ•°æ®ä¿¡æ¯(å·²å°è£…æˆEntityPropertyInfo)
         /// </summary>
         /// <param name="propertyName"></param>
         /// <returns></returns>
@@ -306,7 +298,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ¸ù¾İcolumnÃû³Æ£¬»ñÈ¡»ñÈ¡Ä³¸öÊôĞÔµÄÔªÊı¾İĞÅÏ¢(ÒÑ·â×°³ÉEntityPropertyInfo)
+        /// æ ¹æ®columnåç§°ï¼Œè·å–è·å–æŸä¸ªå±æ€§çš„å…ƒæ•°æ®ä¿¡æ¯(å·²å°è£…æˆEntityPropertyInfo)
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
@@ -315,7 +307,7 @@ namespace wojilu.ORM {
         }
 
         /// <summary>
-        /// ¸ù¾İÊôĞÔµÄÀàĞÍ£¬±ÈÈçBlogCategory£¬»ñÈ¡·ûºÏÒªÇóµÄµÚÒ»¸öÊôĞÔµÄÃû³Æ
+        /// æ ¹æ®å±æ€§çš„ç±»å‹ï¼Œæ¯”å¦‚BlogCategoryï¼Œè·å–ç¬¦åˆè¦æ±‚çš„ç¬¬ä¸€ä¸ªå±æ€§çš„åç§°
         /// </summary>
         /// <param name="propertyType"></param>
         /// <returns></returns>
@@ -346,9 +338,26 @@ namespace wojilu.ORM {
         private static String GetTableName( Type t ) {
             TableAttribute attribute = ReflectionUtil.GetAttribute( t, typeof( TableAttribute ) ) as TableAttribute;
             if (attribute == null) {
-                return t.Name;
+                return addPrefixToTableName( t.Name );
             }
-            return attribute.TableName;
+
+            String tblName = strUtil.IsNullOrEmpty( attribute.TableName ) ? t.Name : attribute.TableName;
+
+            if (attribute.IsSkipTablePrefix) {
+                return tblName;
+            }
+            else {
+                return addPrefixToTableName( tblName );
+            }
+        }
+
+
+        private static String addPrefixToTableName( String tableName ) {
+            if (strUtil.HasText( DbConfig.Instance.TablePrefix )) {
+                tableName = tableName.Replace( "[", "" ).Replace( "]", "" );
+                tableName = DbConfig.Instance.TablePrefix + tableName;
+            }
+            return tableName;
         }
 
 

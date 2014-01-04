@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ using wojilu.Web.Context;
 namespace wojilu.Web.Mvc {
 
     /// <summary>
-    /// mvc ´¦ÀíÁ÷³ÌÖĞµÄÊÂ¼ş·¢²¼Õß
+    /// mvc å¤„ç†æµç¨‹ä¸­çš„äº‹ä»¶å‘å¸ƒè€…
     /// </summary>
     public class MvcEventPublisher {
 
@@ -32,6 +32,8 @@ namespace wojilu.Web.Mvc {
         }
 
         public event EventHandler<MvcEventArgs> Begin_ProcessMvc;
+
+        public event EventHandler<MvcEventArgs> Begin_UrlRewrite;
 
         public event EventHandler<MvcEventArgs> Begin_ParseRoute;
         public event EventHandler<MvcEventArgs> Begin_InitContext;
@@ -53,6 +55,11 @@ namespace wojilu.Web.Mvc {
         public virtual void BeginProcessMvc( MvcContext ctx ) {
             EventHandler<MvcEventArgs> handler = this.Begin_ProcessMvc;
             if (handler != null) handler( this, new MvcEventArgs( "BeginProcessMvc", ctx ) );
+        }
+
+        public virtual void BeginUrlRewrite( MvcContext ctx ) {
+            EventHandler<MvcEventArgs> handler = this.Begin_UrlRewrite;
+            if (handler != null) handler( this, new MvcEventArgs( "BeginUrlRewrite", ctx ) );
         }
 
         public virtual void BeginParseRoute( MvcContext ctx ) {

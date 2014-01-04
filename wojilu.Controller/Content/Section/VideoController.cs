@@ -20,37 +20,26 @@ namespace wojilu.Web.Controller.Content.Section {
     [App( typeof( ContentApp ) )]
     public partial class VideoController : ControllerBase, IPageSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public VideoController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
-            ctService = new ContentCustomTemplateService();
         }
 
-        public void AdminSectionShow( int sectionId ) {
-        }
-
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void SectionShow( int sectionId ) {
+        public virtual void SectionShow( long sectionId ) {
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
                 throw new Exception( lang( "exDataNotFound" ) + "=>page section:" + sectionId );
             }
 
-            TemplateUtil.loadTemplate( this, s, ctService );
-
-            List<ContentPost> posts = this.postService.GetBySection( ctx.app.Id, sectionId );
+            List<ContentPost> posts = this.postService.GetBySection( sectionId );
 
             bindSectionShow( s, posts );
         }
 
-        public void List( int sectionId ) {
+        public virtual void List( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             if (section == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
@@ -61,12 +50,12 @@ namespace wojilu.Web.Controller.Content.Section {
             ContentApp app = ctx.app.obj as ContentApp;
             ContentSetting s = app.GetSettingsObj();
 
-            DataPage<ContentPost> posts = postService.GetBySectionAndCategory( section.Id, ctx.GetInt( "categoryId" ), s.ListVideoPerPage );
+            DataPage<ContentPost> posts = postService.GetPageBySectionAndCategory( section.Id, ctx.GetLong( "categoryId" ), s.ListVideoPerPage );
 
             bindPosts( section, posts );
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             ContentPost post = postService.GetById( id, ctx.owner.Id );
 
@@ -74,8 +63,6 @@ namespace wojilu.Web.Controller.Content.Section {
                 echoRedirect( lang( "exDataNotFound" ) );
                 return;
             }
-
-            postService.AddHits( post );
 
             bindShow( post );
         }

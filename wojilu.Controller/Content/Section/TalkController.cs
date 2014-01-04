@@ -21,35 +21,25 @@ namespace wojilu.Web.Controller.Content.Section {
     [App( typeof( ContentApp ) )]
     public partial class TalkController : ControllerBase, IPageSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public TalkController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
-            ctService = new ContentCustomTemplateService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void AdminSectionShow( int sectionId ) {
-        }
-
-        public void SectionShow( int sectionId ) {
+        public virtual void SectionShow( long sectionId ) {
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
                 throw new Exception( lang( "exDataNotFound" ) + "=>page section:" + sectionId );
             }
 
-            TemplateUtil.loadTemplate( this, s, ctService );
-            List<ContentPost> posts = this.postService.GetBySection( ctx.app.Id, sectionId );
+            List<ContentPost> posts = this.postService.GetBySection( sectionId );
             bindSectionShow( s, posts );
         }
 
-        public void List( int sectionId ) {
+        public virtual void List( long sectionId ) {
             ContentSection section = this.sectionService.GetById( sectionId, ctx.app.Id );
             if (section == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
@@ -58,9 +48,20 @@ namespace wojilu.Web.Controller.Content.Section {
 
             set( "section.Title", section.Title );
             Page.Title = section.Title;
-            DataPage<ContentPost> posts = this.postService.GetBySectionAndCategory( section.Id, ctx.GetInt( "categoryId" ) );
+            DataPage<ContentPost> posts = this.postService.GetPageBySectionAndCategory( section.Id, ctx.GetLong( "categoryId" ) );
 
             bindPosts( posts );
+        }
+
+        public virtual void Show( long postId ) {
+
+            ContentPost post = postService.GetById( postId, ctx.owner.Id );
+            if (post == null) {
+                echo( lang( "exDataNotFound" ) );
+                return;
+            }
+
+            bind( "x", post );
         }
 
     }

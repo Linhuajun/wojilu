@@ -36,25 +36,24 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <TargetFrameworkProfile />
+    <ProductVersion>10.0.0</ProductVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>bin\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugSymbols>true</DebugSymbols>
-    <NoStdLib>false</NoStdLib>
     <Optimize>false</Optimize>
     <WarningLevel>4</WarningLevel>
     <DebugType>full</DebugType>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>bin\Debug\wojilu.Core.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>bin\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TRACE</DefineConstants>
-    <DebugSymbols>false</DebugSymbols>
-    <NoStdLib>false</NoStdLib>
     <Optimize>true</Optimize>
     <WarningLevel>4</WarningLevel>
     <DebugType>none</DebugType>
@@ -86,23 +85,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\AD.cs" />
-    <Compile Include="Common\AppBase\ExtData.cs" />
-    <Compile Include="Common\AppBase\Interface\IApp.cs" />
-    <Compile Include="Common\AppBase\Interface\IAppData.cs" />
-    <Compile Include="Common\AppBase\Interface\IAppInstaller.cs" />
-    <Compile Include="Common\AppBase\Interface\IAppStats.cs" />
-    <Compile Include="Common\AppBase\Interface\IExtViewService.cs" />
-    <Compile Include="Common\AppInstall\Domain\AppCloseMode.cs" />
-    <Compile Include="Common\AppInstall\Domain\AppInstaller.cs" />
-    <Compile Include="Common\AppInstall\Domain\AppInstallerStatus.cs" />
-    <Compile Include="Common\AppInstall\Domain\AppMemberShip.cs" />
-    <Compile Include="Common\AppInstall\Interface\IAppInstallerService.cs" />
-    <Compile Include="Common\Comments\CommentService.cs" />
-    <Compile Include="Common\Comments\ICommentService.cs" />
+    <Compile Include="Common\Apps\AppBase\ExtObject.cs" />
+    <Compile Include="Common\Apps\AppBase\Interface\IApp.cs" />
+    <Compile Include="Common\Apps\AppBase\Interface\IAppData.cs" />
+    <Compile Include="Common\Apps\AppBase\Interface\IAppInstaller.cs" />
+    <Compile Include="Common\Apps\AppBase\Interface\IAppStats.cs" />
+    <Compile Include="Common\Apps\AppBase\Interface\IExtViewService.cs" />
+    <Compile Include="Common\Apps\AppInstall\Domain\AppCloseMode.cs" />
+    <Compile Include="Common\Apps\AppInstall\Domain\AppInstaller.cs" />
+    <Compile Include="Common\Apps\AppInstall\Domain\AppInstallerStatus.cs" />
+    <Compile Include="Common\Apps\AppInstall\Domain\AppMemberShip.cs" />
+    <Compile Include="Common\Apps\AppInstall\Interface\IAppInstallerService.cs" />
     <Compile Include="Common\Comments\ICommentTarget.cs" />
-    <Compile Include="Common\Comments\IFeedComment.cs" />
+    <Compile Include="Common\Comments\IOpenCommentService.cs" />
     <Compile Include="Common\Comments\OpenCommentCount.cs" />
     <Compile Include="Common\Comments\OpenCommentService.cs" />
+    <Compile Include="Common\Comments\ICommentApp.cs" />
     <Compile Include="Common\Component\Component.cs" />
     <Compile Include="Common\Component\ComponentStatus.cs" />
     <Compile Include="Common\Feeds\Domain\FeedApp.cs" />
@@ -110,9 +108,26 @@
     <Compile Include="Common\Feeds\Interface\IFeedService.cs" />
     <Compile Include="Common\Feeds\Interface\IShareService.cs" />
     <Compile Include="Common\Comments\OpenComment.cs" />
+    <Compile Include="Common\Microblogs\Domain\MicroblogLike.cs" />
+    <Compile Include="Common\Microblogs\Interface\ILike.cs" />
+    <Compile Include="Common\Microblogs\MbTemplate.cs" />
+    <Compile Include="Common\Themes\ITheme.cs" />
+    <Compile Include="Common\Microblogs\MicroblogAppSetting.cs" />
+    <Compile Include="Common\Microblogs\Service\SysMicroblogCommentService.cs" />
+    <Compile Include="Common\Picks\Domain\DataPickBase.cs" />
+    <Compile Include="Common\Picks\Domain\ImgPickBase.cs" />
+    <Compile Include="Common\Picks\Service\DataPickService.cs" />
+    <Compile Include="Common\Picks\Interface\IPickPost.cs" />
+    <Compile Include="Common\Picks\Domain\MergedData.cs" />
     <Compile Include="Common\Polls\Service\PollHelper.cs" />
+    <Compile Include="Common\Themes\IThemeService.cs" />
+    <Compile Include="Common\Themes\ThemeService.cs" />
     <Compile Include="Common\Upload\TempUploadFileService.cs" />
     <Compile Include="Common\Upload\TempUploadFile.cs" />
+    <Compile Include="Common\Upload\UserFile.cs" />
+    <Compile Include="Common\Upload\UserFileService.cs" />
+    <Compile Include="Members\Groups\GroupHelper.cs" />
+    <Compile Include="Members\Groups\GroupSetting.cs" />
     <Compile Include="Members\Users\Domain\Invites\UserInviteApp.cs" />
     <Compile Include="Common\Jobs\HitsItem.cs" />
     <Compile Include="Common\Jobs\HitsJob.cs" />
@@ -170,8 +185,8 @@
     <Compile Include="Common\Spider\Service\SpiderTemplateService.cs" />
     <Compile Include="Common\Spider\Service\SportImportService.cs" />
     <Compile Include="Common\Tag\IAppTag.cs" />
-    <Compile Include="Common\MemberApp\Interface\IMemberApp.cs" />
-    <Compile Include="Common\MemberApp\Interface\IMemberAppService.cs" />
+    <Compile Include="Common\Apps\MemberApp\Interface\IMemberApp.cs" />
+    <Compile Include="Common\Apps\MemberApp\Interface\IMemberAppService.cs" />
     <Compile Include="Members\Groups\Domain\GroupInvite.cs" />
     <Compile Include="Members\Groups\Domain\GroupLog.cs" />
     <Compile Include="Members\Groups\GroupInitHelper.cs" />
@@ -199,6 +214,7 @@
     <Compile Include="Members\Users\Domain\Security\UserPermission.cs" />
     <Compile Include="Members\Users\Domain\Security\UserPrivacy.cs" />
     <Compile Include="Members\Users\Domain\Skin\SkinApp.cs" />
+    <Compile Include="Members\Users\Domain\UserErrorPic.cs" />
     <Compile Include="Members\Users\Domain\UserHome.cs" />
     <Compile Include="Members\Users\Domain\UserLinks.cs" />
     <Compile Include="Members\Users\Interface\IUserTagService.cs" />
@@ -221,10 +237,11 @@
     <Compile Include="Members\Users\Service\BlacklistService.cs" />
     <Compile Include="Members\Users\Interface\IBlacklistService.cs" />
     <Compile Include="Members\Users\Service\InviteService.cs" />
+    <Compile Include="Members\Users\Interface\IUserErrorPicService.cs" />
     <Compile Include="Members\Users\Service\Jobs\SpaceVisitJob.cs" />
     <Compile Include="Members\Users\Service\Jobs\SpaceVisitJobItem.cs" />
     <Compile Include="Members\Users\Service\Jobs\VisitItem.cs" />
-    <Compile Include="Common\AppBase\AccessStatusUtil.cs">
+    <Compile Include="Common\Apps\AppBase\AccessStatusUtil.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Common\Menus\FooterMenu.cs" />
@@ -232,6 +249,7 @@
     <Compile Include="Common\Menus\MenuServiceBase.cs" />
     <Compile Include="Members\Sites\Service\SiteMenuService.cs" />
     <Compile Include="Members\Users\Service\SysUserService.cs" />
+    <Compile Include="Members\Users\Service\UserErrorPicService.cs" />
     <Compile Include="Members\Users\Service\UserLogService.cs" />
     <Compile Include="Members\Users\Service\UserMenuService.cs" />
     <Compile Include="Members\Groups\Service\GroupMenuService.cs" />
@@ -239,7 +257,6 @@
     <Compile Include="Members\Groups\Service\GroupAppService.cs" />
     <Compile Include="Members\Sites\Service\SiteAppService.cs" />
     <Compile Include="Members\Users\Service\UserAppService.cs" />
-    <Compile Include="Common\Comments\CommentAdminService.cs" />
     <Compile Include="Common\Visitor\IDataVisitor.cs" />
     <Compile Include="Common\Visitor\VisitorService.cs" />
     <Compile Include="Members\Groups\Domain\GroupSkin.cs" />
@@ -273,20 +290,19 @@
     <Compile Include="Common\Msg\Service\NotificationService.cs" />
     <Compile Include="Common\Feeds\Service\ShareService.cs" />
     <Compile Include="Common\Skins\ISkin.cs" />
-    <Compile Include="Common\Pages\Domain\PageComment.cs" />
     <Compile Include="Members\Users\Service\LoginService.cs" />
     <Compile Include="Members\Users\UserInitHelper.cs" />
     <Compile Include="Members\Users\Utils\LoginUtil.cs" />
-    <Compile Include="Common\AppInstall\Domain\AppCategory.cs">
+    <Compile Include="Common\Apps\AppInstall\Domain\AppCategory.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Common\AppInstall\Service\AppInstallerService.cs">
+    <Compile Include="Common\Apps\AppInstall\Service\AppInstallerService.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Common\Tag\AppTagService.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Common\AppBase\AppFactory.cs">
+    <Compile Include="Common\Apps\AppBase\AppFactory.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Common\Categories\CategoryBase.cs">
@@ -313,7 +329,7 @@
     <Compile Include="Members\Users\Domain\UserApp.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Common\MemberApp\MemberAppServiceBase.cs">
+    <Compile Include="Common\Apps\MemberApp\MemberAppServiceBase.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Members\Users\Domain\UserMenu.cs">
@@ -325,13 +341,7 @@
     <Compile Include="Members\Groups\Domain\GroupCategory.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Members\Groups\Domain\GroupIndex.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Common\Comments\IComment.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Common\AppBase\PageSettingLink.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Members\Users\Domain\Skin\SpaceSkin.cs">
@@ -346,7 +356,7 @@
     <Compile Include="Common\Skins\SkinStatus.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="AssemblyInfo.cs">
+    <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Members\Sites\Domain\SiteActionConfig.cs" />
@@ -357,6 +367,19 @@
     <Compile Include="Members\Sites\Domain\Setting\SettingList.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="OAuth\AuthConnectConfig.cs" />
+    <Compile Include="OAuth\AuthConnectFactory.cs" />
+    <Compile Include="OAuth\Connects\QQWeibo\QQWeiboConnect.cs" />
+    <Compile Include="OAuth\Connects\QQWeibo\QQWeiboJobHelper.cs" />
+    <Compile Include="OAuth\Connects\QQWeibo\QQWeiboSync.cs" />
+    <Compile Include="OAuth\Connects\QQ\QQConnect.cs" />
+    <Compile Include="OAuth\Connects\QQ\QQSync.cs" />
+    <Compile Include="OAuth\Connects\Weibo\WeiboConnect.cs" />
+    <Compile Include="OAuth\Connects\Weibo\WeiboSync.cs" />
+    <Compile Include="OAuth\ExpirationChecker.cs" />
+    <Compile Include="OAuth\IUserConnectService.cs" />
+    <Compile Include="OAuth\UserConnect.cs" />
+    <Compile Include="OAuth\UserConnectService.cs" />
     <Compile Include="Web\Context\ContextInit.cs" />
     <Compile Include="Web\Context\Helper\IInitHelper.cs" />
     <Compile Include="Web\Context\Helper\InitHelperFactory.cs" />
@@ -384,7 +407,7 @@
     <Compile Include="Web\Mvc\HtmlLink.cs" />
     <Compile Include="Web\Mvc\LinkConverter.cs" />
     <Compile Include="Web\Mvc\MockContext.cs" />
-    <Compile Include="Web\Mvc\PageCache.cs" />
+    <Compile Include="Web\Mvc\CorePageCache.cs" />
     <Compile Include="Web\Url\UrlConverter.cs" />
     <Compile Include="Members\Users\Domain\User.cs" />
     <Compile Include="Web\Context\ViewerContext.cs">

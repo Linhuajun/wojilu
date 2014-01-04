@@ -12,13 +12,14 @@ using wojilu.Common.AppBase.Interface;
 using wojilu.Common.Feeds.Interface;
 using wojilu.Common.AppBase;
 using wojilu.Common.Tags;
+using wojilu.Common.Comments;
 
 namespace wojilu.Common.Pages.Domain {
 
     [Serializable]
-    public class Page : ObjectBase<Page>, IAppData, INode, IShareData, ISort {
+    public class Page : ObjectBase<Page>, IAppData, INode, IShareData, ISort, ICommentTarget {
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         public String OwnerUrl { get; set; }
 
@@ -48,8 +49,18 @@ namespace wojilu.Common.Pages.Domain {
 
         public int IsShowHistory { get; set; } // 是否公开版本历史
 
-        public int UpdatingId { get; set; } // 正在编辑的用户
+        public long UpdatingId { get; set; } // 正在编辑的用户
         public DateTime UpdatingTime { get; set; } // 正在编辑的最后时间
+
+        /// <summary>
+        /// 是否收缩节点。如果是父节点，默认0表示不收缩(也就是展开节点)
+        /// </summary>
+        public int IsCollapse { get; set; }
+
+        /// <summary>
+        /// 是否作为纯文本节点(不作为链接)。默认父节点是可以点击，有链接内容的。如果IsTextNode设置为1，则没有链接不可点击。
+        /// </summary>
+        public int IsTextNode { get; set; }
 
 
         [NotSave]
@@ -62,11 +73,19 @@ namespace wojilu.Common.Pages.Domain {
             get { return this.IsAllowReply == 1 ? "√" : "×"; }
         }
 
+        [NotSave]
+        public String IsCollapseStr {
+            get {
+                if (this.ParentId > 0) return "";
+                return this.IsCollapse == 1 ? "-" : "+"; 
+            }
+        }
+
 
         // IAppData接口(用于comment)
 
         [NotSave]
-        public int AppId { get; set; }
+        public long AppId { get; set; }
         [NotSave]
         public int AccessStatus { get; set; }
         [NotSave]
@@ -75,7 +94,7 @@ namespace wojilu.Common.Pages.Domain {
         public String CreatorUrl { get; set; }
 
         // tree 接口
-        public int ParentId { get; set; }
+        public long ParentId { get; set; }
 
         [NotSave]
         public String Name {
@@ -104,6 +123,9 @@ namespace wojilu.Common.Pages.Domain {
             }
         }
 
+        public Type GetAppType() {
+            return null;
+        }
 
     }
 

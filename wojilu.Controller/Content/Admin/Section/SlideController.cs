@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -13,21 +13,22 @@ using wojilu.Apps.Content.Interface;
 using wojilu.Apps.Content.Service;
 using wojilu.Apps.Content.Enum;
 using wojilu.Common.AppBase;
+using wojilu.Web.Controller.Content.Utils;
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
     [App( typeof( ContentApp ) )]
-    public partial class SlideController : ControllerBase, IPageSection {
+    public partial class SlideController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public SlideController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -43,16 +44,25 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( new Common.PostController().Edit, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
+        public virtual String GetSectionIcon( long sectionId ) {
+            return BinderUtils.iconPic;
+        }
+
+        public virtual void AdminSectionShow( long sectionId ) {
 
             int imgcat = PostCategory.Img;
-            List<ContentPost> posts = this.postService.GetBySection( ctx.app.Id, sectionId, 3 );
+            List<ContentPost> posts = GetSectionPosts( sectionId );
             ContentPost first = posts.Count > 0 ? posts[0] : null;
 
             bindSectionShow( sectionId, imgcat, posts, first );
+        }
+
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            return this.postService.GetBySection( sectionId, 3 );
         }
 
     }

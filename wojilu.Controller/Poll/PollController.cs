@@ -20,7 +20,7 @@ namespace wojilu.Web.Controller.Poll {
     [App( typeof( PollApp ) )]
     public class PollController : ControllerBase {
 
-        public PollDataService pollService { get; set; }
+        public virtual PollDataService pollService { get; set; }
 
         public PollController() {
             pollService = new PollDataService();
@@ -36,15 +36,15 @@ namespace wojilu.Web.Controller.Poll {
             }
         }
 
-        public void Index() {
+        public virtual void Index() {
 
-            WebUtils.pageTitle( this, lang( "poll" ) );
+            ctx.Page.Title = lang( "poll" );
 
             DataPage<PollData> polls = pollService.GetPageByApp( ctx.app.Id );
             bindPollList( polls );
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
             PollData poll = pollService.GetById( id );
 
             pollService.AddHits( poll );
@@ -123,7 +123,7 @@ namespace wojilu.Web.Controller.Poll {
             set( "poll.ShowLink", to( Show, p.Id ) );
         }
 
-        public void sectionPollResult() {
+        public virtual void sectionPollResult() {
 
             PollData p = ctx.GetItem( "poll" ) as PollData;
 
@@ -156,16 +156,16 @@ namespace wojilu.Web.Controller.Poll {
         }
 
 
-        public void Vote( int pollId ) {
+        public virtual void Vote( long pollId ) {
 
             PollData poll = pollService.GetById( pollId );
             if (poll == null) {
-                actionContent( lang( "exPollNotFound" ) );
+                content( lang( "exPollNotFound" ) );
                 return;
             }
 
             if (poll.CheckHasVote( ctx.viewer.Id )) {
-                actionContent( alang( "exVoted" ) );
+                content( alang( "exVoted" ) );
                 return;
             }
 
@@ -184,11 +184,11 @@ namespace wojilu.Web.Controller.Poll {
             echoRedirect( lang( "pollDone" ), url );
         }
 
-        public void Voter( int pollId ) {
+        public virtual void Voter( long pollId ) {
 
             PollData poll = pollService.GetById( pollId );
             if (poll == null) {
-                actionContent( lang( "exPollNotFound" ) );
+                content( lang( "exPollNotFound" ) );
                 return;
             }
 
@@ -215,10 +215,20 @@ namespace wojilu.Web.Controller.Poll {
         }
 
         private void bindComment( PollData post ) {
-            ctx.SetItem( "createAction", to( new PollCommentController().Create, post.Id ) );
-            ctx.SetItem( "commentTarget", post );
-            load( "commentSection", new PollCommentController().ListAndForm );
+            set( "commentUrl", getCommentUrl( post ) );
         }
+
+        private string getCommentUrl( PollData post ) {
+
+            return t2( new wojilu.Web.Controller.Open.CommentController().List )
+                + "?url=" + alink.ToAppData( post, ctx )
+                + "&dataType=" + typeof( PollData ).FullName
+                + "&dataTitle=" + post.Title
+                + "&dataUserId=" + post.Creator.Id
+                + "&appId=" + post.AppId
+                + "&dataId=" + post.Id;
+        }
+
 
 
         private void bindVoterList( PollData poll ) {

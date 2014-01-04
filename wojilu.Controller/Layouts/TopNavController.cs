@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -7,36 +7,39 @@ using System.Collections;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
-using wojilu.Web.Controller.Users.Admin;
-using wojilu.Serialization;
+
+using wojilu.Config;
+
+using wojilu.Common;
+using wojilu.Common.Onlines;
+using wojilu.Common.MemberApp.Interface;
+
+using wojilu.Common.Msg.Interface;
+using wojilu.Common.Msg.Service;
+using wojilu.Common.Msg.Domain;
+using wojilu.Common.Money.Domain;
+using wojilu.Common.Money.Interface;
+using wojilu.Common.Money.Service;
+
+using wojilu.Common.Menus.Interface;
+using wojilu.Common.Microblogs.Domain;
+using wojilu.Common.Feeds.Domain;
 
 using wojilu.Members.Sites.Domain;
 using wojilu.Members.Sites.Service;
 using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Domain;
-using wojilu.Common.Onlines;
-using wojilu.Common.MemberApp.Interface;
-using wojilu.Common.Msg.Interface;
-using wojilu.Common.Msg.Service;
-using wojilu.Common.Menus.Interface;
-using wojilu.Common.Money.Domain;
-using wojilu.Common.Money.Interface;
-using wojilu.Common.Money.Service;
-using wojilu.Common;
-using wojilu.Common.Microblogs.Domain;
-using wojilu.Common.Msg.Domain;
-using wojilu.Common.Feeds.Domain;
-using wojilu.Config;
-using wojilu.Web.Controller.Security;
+
+using wojilu.Web.Controller.Users.Admin;
 
 namespace wojilu.Web.Controller.Layouts {
 
     public partial class TopNavController : ControllerBase {
 
-        public IMemberAppService userAppService { get; set; }
-        public IMessageService msgService { get; set; }
+        public virtual IMemberAppService userAppService { get; set; }
+        public virtual IMessageService msgService { get; set; }
         private IMenuService menuService { get; set; }
-        public ICurrencyService currencyService { get; set; }
+        public virtual ICurrencyService currencyService { get; set; }
 
         public TopNavController() {
             userAppService = new UserAppService();
@@ -45,28 +48,36 @@ namespace wojilu.Web.Controller.Layouts {
             currencyService = new CurrencyService();
         }
 
-        public void IndexNew() {
+        public virtual void IndexNew() {
             Index();
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             if (config.Instance.Site.TopNavDisplay == TopNavDisplay.Hide ||
-
-                (config.Instance.Site.RegisterType == RegisterType.Close && config.Instance.Site.TopNavDisplay == TopNavDisplay.NoRegHide)
-
+                (config.Instance.Site.RegisterType == RegisterType.Close &&
+                config.Instance.Site.TopNavDisplay == TopNavDisplay.NoRegHide)
                 ) {
-                utils.setCurrentView( new Template() );
+
+                content( @"<script>
+_run( function() {
+    require( [""wojilu.core.sitetop""], function( topnav ) {
+        topnav.init( '" + t2( Nav ) + @"');
+    });
+});
+</script>" );
+
                 return;
             }
-
 
             set( "site.Name", config.Instance.Site.SiteName );
             set( "site.Url", SystemInfo.SiteRoot );
 
             set( "LoginAction", Link.To( Site.Instance, new MainController().CheckLogin ) );
+            set( "loginLink", Link.To( Site.Instance, new MainController().Login ) );
             set( "RegLink", Link.To( Site.Instance, new RegisterController().Register ) );
             set( "resetPwdLink", Link.To( Site.Instance, new wojilu.Web.Controller.Common.ResetPwdController().StepOne ) );
+
 
             String emailCredit = getEmailConfirmCredit( 18 );
             String uploadCredit = getEmailConfirmCredit( 17 );
@@ -74,25 +85,24 @@ namespace wojilu.Web.Controller.Layouts {
             set( "emailCredit", emailCredit );
             set( "uploadCredit", uploadCredit );
 
-            set( "ValidationCode", Html.Captcha );
-
             //ajax
             //set( "navUrl", Link.T2( Site.Instance, Nav ) );
             set( "navUrl", t2( Nav ) );
         }
 
-        private string getEmailConfirmCredit( int actionId ) {
+        private string getEmailConfirmCredit( long actionId ) {
             // 获取当前操作action收入规则。
             // 这里获取的是中心货币，你也可以使用 GetRulesByAction(actionId) 获取其他所有货币的收入规则
-            KeyIncomeRule rule = currencyService.GetKeyIncomeRulesByAction( actionId );         
+            KeyIncomeRule rule = currencyService.GetKeyIncomeRulesByAction( actionId );
             return string.Format( "可奖励{0}{1}", rule.Income, rule.CurrencyUnit );
         }
 
         //------------------------------------------------------------------------------------------------------
 
-        public void Nav() {
+        public virtual void Nav() {
 
             // TODO 如果是在访问用户空间，则判断：是否好友、是否关注
+            // 游客登录信息：已被 RenderHelper 拦截
             echoJson( getLoginJsonString() );
         }
 
@@ -105,38 +115,39 @@ namespace wojilu.Web.Controller.Layouts {
 
             Dictionary<String, object> dic = new Dictionary<string, object>();
 
-            Dictionary<String, object> viewer = new Dictionary<string, object>();
-            viewer.Add( "Id", user.Id );
-            viewer.Add( "IsLogin", ctx.viewer.IsLogin );
-            viewer.Add( "IsAdministrator", ctx.viewer.IsAdministrator() );
-            viewer.Add( "IsInAdminGroup", SiteRole.IsInAdminGroup( ctx.viewer.obj.RoleId ) );
-            viewer.Add( "HasPic", user.HasUploadPic() );
-            viewer.Add( "EmailConfirm", user.IsEmailConfirmed == 1 );
-            viewer.Add( "IsAlertActivation", isAlertActivation );
-            viewer.Add( "IsAlertUserPic", config.Instance.Site.AlertUserPic );
+                Dictionary<String, object> viewer = new Dictionary<string, object>();
+                viewer.Add( "Id", user.Id );
+                viewer.Add( "IsLogin", ctx.viewer.IsLogin );
+                viewer.Add( "IsAdministrator", ctx.viewer.IsAdministrator() );
+                viewer.Add( "IsInAdminGroup", SiteRole.IsInAdminGroup( ctx.viewer.obj.RoleId ) );
+                viewer.Add( "HasPic", user.HasUploadPic() );
+                viewer.Add( "EmailConfirm", user.IsEmailConfirmed == 1 );
+                viewer.Add( "IsAlertActivation", isAlertActivation );
+                viewer.Add( "IsAlertUserPic", user.IsPicAlert() );
 
-            Dictionary<String, object> objViewer = new Dictionary<string, object>();
-            objViewer.Add( "Id", user.Id );
-            objViewer.Add( "Name", user.Name );
-            objViewer.Add( "FriendlyUrl", user.Url );
-            objViewer.Add( "Url", toUser( user ) );
-            objViewer.Add( "PicMedium", user.PicMedium );
+                    Dictionary<String, object> objViewer = new Dictionary<string, object>();
+                    objViewer.Add( "Id", user.Id );
+                    objViewer.Add( "Name", user.Name );
+                    objViewer.Add( "FriendlyUrl", user.Url );
+                    objViewer.Add( "Url", toUser( user ) );
+                    objViewer.Add( "PicMedium", user.PicM );
 
-            viewer.Add( "obj", objViewer );
+                viewer.Add( "obj", objViewer );
 
             dic.Add( "viewer", viewer );
             dic.Add( "viewerOwnerSame", isViewerOwnerSame );
 
-            Dictionary<String, object> owner = new Dictionary<string, object>();
-            owner.Add( "IsSite", ctx.owner.obj.GetType() == typeof( Site ) );
-            owner.Add( "Id", ctx.owner.Id );
+                Dictionary<String, object> owner = new Dictionary<string, object>();
+                owner.Add( "IsSite", ctx.owner.obj.GetType() == typeof( Site ) );
+                owner.Add( "Id", ctx.owner.Id );
 
             dic.Add( "owner", owner );
             dic.Add( "navInfo", loginNavInfo() );
             dic.Add( "online", getOnlineDic() );
 
-            return JsonString.Convert( dic );
+            return Json.ToString( dic );
         }
+
 
         public Dictionary<String, Object> loginNavInfo() {
 
@@ -150,7 +161,7 @@ namespace wojilu.Web.Controller.Layouts {
 
             dic.Add( "viewerName", user.Name );
             dic.Add( "viewerPicSmall", user.PicSmall );
-            dic.Add( "viewerFeeds", Link.To( user, new FeedController().My, -1 ) );
+            dic.Add( "viewerFeeds", Link.To( user, new HomeController().Index, -1 ) );
 
             dic.Add( "viewerSpace", toUser( user ) );
             dic.Add( "viewerMicroblogHome", Link.To( user, new Microblogs.My.MicroblogController().Home ) );
@@ -184,14 +195,19 @@ namespace wojilu.Web.Controller.Layouts {
 
             dic.Add( "viewerTemplateUrl", Link.To( user, new Users.Admin.SkinController().My ) );
 
-            dic.Add( "viewerMsg", Link.To( user, new MsgController().All ) );
+            dic.Add( "viewerMsg", Link.To( user, new MsgController().Index ) );
+
             dic.Add( "viewerNewMsgCount", this.getMsgCount() );
             dic.Add( "viewerNewNotificationCount", this.getNewNotificationCount() );
             dic.Add( "viewerNewMicroblogAtCount", this.getNewMicroblogAtCount() );
-
             dic.Add( "viewerSiteNotification", getSiteNotification() );
 
+            // 放在上面几个count的后面，因为要先CheckSiteMsg
+            dic.Add( "viewerNewMsgCountAll", getNewMsgCountAll() );
+
+            dic.Add( "viewerProfileIndexUrl", Link.To( user, new UserProfileController().Index ) );
             dic.Add( "viewerProfileUrl", Link.To( user, new UserProfileController().Profile ) );
+            dic.Add( "viewerBindUrl", Link.To( user, new UserProfileController().BindAccount ) );
             dic.Add( "viewerContactLink", Link.To( user, new UserProfileController().Contact ) );
             dic.Add( "viewerInterestUrl", Link.To( user, new UserProfileController().Interest ) );
             dic.Add( "viewerTagUrl", Link.To( user, new UserProfileController().Tag ) );
@@ -200,8 +216,8 @@ namespace wojilu.Web.Controller.Layouts {
 
             dic.Add( "viewerInviteLink", Link.To( user, new Users.Admin.InviteController().Index ) );
 
-            dic.Add( "uploadAvatarLink", Link.To( user, new Users.Admin.UserProfileController().Face ) );
-            dic.Add( "confirmEmailLink", Link.To( user, new UserProfileController().Contact ) );
+            dic.Add( "uploadAvatarLink", Link.To( user, new Users.Admin.AvatarController().NeedUserPic ) );
+            dic.Add( "confirmEmailLink", Link.To( Site.Instance, new Common.ActivationController().SendEmailButton ) );
 
             dic.Add( "viewerFriends", Link.To( user, new Users.Admin.Friends.FriendController().List, 0 ) );
             dic.Add( "viewerCurrency", Link.To( user, new Users.Admin.CreditController().My ) );
@@ -227,6 +243,8 @@ namespace wojilu.Web.Controller.Layouts {
 
             return dic;
         }
+
+
 
         private Dictionary<String, object> getOnlineDic() {
 
@@ -257,22 +275,9 @@ namespace wojilu.Web.Controller.Layouts {
         }
 
 
-        private string getSiteNotification() {
-
-            if (ctx.viewer.obj.Id != SiteRole.Administrator.Id) return "";
-
-            int newCount = new NotificationService().GetUnReadCount( Site.Instance.Id, typeof( Site ).FullName );
-            if (newCount <= 0) return "";
-
-            User user = (User)ctx.viewer.obj;
-
-            String lnk = Link.To( user, new Users.Admin.SiteNfController().List );
-            return string.Format( "<a href=\"{0}\">通知(<span id=\"siteNotificationText\">{1}</span>)</a>", lnk, newCount );
-        }
-
         //-------------------------------------------------------------------------------------------------------------
 
-        public void Header() {
+        public virtual void Header() {
 
             set( "site.Name", Site.Instance.Name );
             set( "site.Logo", config.Instance.Site.GetLogoHtml() );
@@ -307,16 +312,14 @@ namespace wojilu.Web.Controller.Layouts {
             for (int i = 0; i < list.Count; i++) {
 
                 String itemId = (i == list.Count - 1 ? "menuItemLast" : "menuItem" + i);
-                block.Set( "menu.ItemId", itemId );
-
                 IMenu menu = list[i];
 
-                String currentClass = "";
-                if (currentRootMenu != null && menu.Id == currentRootMenu.Id) currentClass = " class=\"currentRootMenu\" ";
-                block.Set( "menu.CurrentClass", currentClass );
+                block.Set( "menu.ItemId", itemId );
+                block.Set( "menu.CurrentClass", MenuHelper.getCurrentClass( menu, ctx.GetItem( "_moduleUrl" ), "current-site-menu" ) );
 
                 IBlock subNavBlock = block.GetBlock( "subNav" );
                 IBlock rootBlock = block.GetBlock( "rootNav" );
+
                 List<IMenu> subMenus = MenuHelper.getSubMenus( menus, menu );
 
                 if (subMenus.Count == 0) {
@@ -332,6 +335,7 @@ namespace wojilu.Web.Controller.Layouts {
 
             }
         }
+
 
 
         private IMenu bindSubMenus( List<IMenu> list ) {

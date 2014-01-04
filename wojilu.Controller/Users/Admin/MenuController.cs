@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -22,12 +22,11 @@ namespace wojilu.Web.Controller.Users.Admin {
             logService = new UserLogService();
         }
 
-
         public override void CheckPermission() {
 
             Boolean isUserMenuAdmin = Component.IsClose( typeof( UserMenuAdmin ) );
             if (isUserMenuAdmin) {
-                echo( "¶Ô²»Æğ£¬±¾¹¦ÄÜÒÑ¾­Í£ÓÃ" );
+                echo( "å¯¹ä¸èµ·ï¼Œæœ¬åŠŸèƒ½å·²ç»åœç”¨" );
             }
         }
 
@@ -36,7 +35,9 @@ namespace wojilu.Web.Controller.Users.Admin {
             logService.Add( (User)ctx.viewer.obj, msg, dataInfo, menu.GetType().FullName, ctx.Ip );
         }
 
-
+        public override String GetCommonLink() {
+            return to( new Users.Admin.MyLinkController().Index );
+        }
 
     }
 

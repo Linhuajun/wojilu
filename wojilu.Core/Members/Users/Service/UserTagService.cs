@@ -8,18 +8,18 @@ namespace wojilu.Members.Users.Service {
 
     public class UserTagService : IUserTagService {
 
-        public UserTagShip GetById( int id ) {
+        public virtual UserTagShip GetById(long id) {
             UserTagShip u = UserTagShip.findById( id );
             return u;
         }
 
-        public List<UserTagShip> GetPage( int ownerId ) {
+        public virtual List<UserTagShip> GetPage(long ownerId) {
             List<UserTagShip> us = UserTagShip.find( "UserId=" + ownerId ).list();
             return us;
         }
 
 
-        public void SaveTags( String tagList, int viewerId, User owner ) {
+        public virtual void SaveTags(string tagList, long viewerId, User owner) {
 
             String[] arrTags = tagList.Split( new char[] { ',', '，', '、' } );
 
@@ -53,7 +53,7 @@ namespace wojilu.Members.Users.Service {
         }
 
 
-        public void DeleteUserTag( UserTagShip u ) {
+        public virtual void DeleteUserTag( UserTagShip u ) {
             u.delete();
 
             int count = UserTagShip.count( "TagId=" + u.Tag.Id );
@@ -63,18 +63,13 @@ namespace wojilu.Members.Users.Service {
 
 
 
-        public UserTag GetTagById( int id ) {
+        public virtual UserTag GetTagById(long id) {
             return UserTag.findById( id );
         }
 
-        public DataPage<User> GetPageByTag( int tagId ) {
+        public virtual DataPage<User> GetPageByTag(long tagId) {
             DataPage<UserTagShip> list = UserTagShip.findPage( "TagId=" + tagId );
-            DataPage<User> results = new DataPage<User>();
-            results.CopyStats( list );
-
-            results.Results = populateUsers( list.Results );
-            return results;
-
+            return list.Convert<User>( populateUsers( list.Results ) );
         }
 
         private List<User> populateUsers( List<UserTagShip> list ) {
@@ -88,7 +83,7 @@ namespace wojilu.Members.Users.Service {
         }
 
 
-        public UserTag GetTagByName( string tName ) {
+        public virtual UserTag GetTagByName( string tName ) {
             if (strUtil.IsNullOrEmpty( tName )) return null;
 
             tName = strUtil.SqlClean( tName, 10 );

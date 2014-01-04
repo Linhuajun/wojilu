@@ -31,7 +31,7 @@ namespace wojilu.Web.Context {
 
         public ISecurity SecurityObject { get; set; }
 
-        private int _Id;
+        private long _Id;
         private IMenu _menu;
         private object _obj;
         private String _url;
@@ -43,11 +43,10 @@ namespace wojilu.Web.Context {
             ctx = wctx;
         }
 
-        public int Id {
+        public long Id {
             get { return this._Id; }
             set { this._Id = value; }
         }
-
 
         public object obj {
             get { return this._obj; }
@@ -56,7 +55,9 @@ namespace wojilu.Web.Context {
 
         public String Name {
             get {
-                return this.Menu == null ? null : this.Menu.Name;
+                if (this.Menu != null) return this.Menu.Name;
+                if (this.UserApp != null) return this.UserApp.Name;
+                return "";
             }
         }
         private Type _appType;

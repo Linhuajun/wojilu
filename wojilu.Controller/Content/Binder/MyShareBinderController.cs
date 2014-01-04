@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -19,18 +19,14 @@ namespace wojilu.Web.Controller.Content.Binder {
 
     public class MyShareBinderController : ControllerBase, ISectionBinder {
 
-        public FeedService feedService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual FeedService feedService { get; set; }
 
         public MyShareBinderController() {
             feedService = new FeedService();
-            ctService = new ContentCustomTemplateService();
         }
 
 
-        public void Bind( ContentSection section, IList serviceData ) {
-
-            TemplateUtil.loadTemplate( this, section, ctService );
+        public virtual void Bind( ContentSection section, IList serviceData ) {
 
             IBlock block = getBlock( "list" );
             foreach (Share share in serviceData) {

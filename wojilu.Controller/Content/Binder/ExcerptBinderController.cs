@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -17,31 +17,31 @@ namespace wojilu.Web.Controller.Content.Binder {
 
     public class ExcerptBinderController : ControllerBase, ISectionBinder {
 
-        public IContentCustomTemplateService ctService { get; set; }
-
-        public ExcerptBinderController() {
-            ctService = new ContentCustomTemplateService();
-        }
-
-        public void Bind( ContentSection section, IList serviceData ) {
-
-
-            TemplateUtil.loadTemplate( this, section, ctService );
+        public virtual void Bind( ContentSection section, IList serviceData ) {
 
             IBlock block = base.getBlock( "list" );
 
             foreach (IBinderValue item in serviceData) {
 
-
-                block.Set( "d.CreatorName", item.CreatorName );
-                block.Set( "d.CreatorLink", item.CreatorLink );
-                block.Set( "d.CreatorFace", item.CreatorPic );
-
-                block.Set( "d.Title", strUtil.CutString( item.Title, 20 ) );
-                block.Set( "d.LinkShow", item.Link );
-                block.Set( "d.Content", strUtil.ParseHtml( item.Content, 150 ) );
-
                 block.Bind( "d", item );
+
+                IBlock tcBlock = block.GetBlock( "titleAndContent" );
+                IBlock onlyBlock = block.GetBlock( "onlyTitle" );
+
+
+                if (strUtil.HasText( item.Content )) {
+                    tcBlock.Set( "d.Title", strUtil.CutString( item.Title, 20 ) );
+                    tcBlock.Set( "d.Content", strUtil.ParseHtml( item.Content, 150 ) );
+                    tcBlock.Set( "d.Created", item.Created );
+                    tcBlock.Bind( "c", item );
+                    tcBlock.Next();
+                }
+                else {
+                    onlyBlock.Set( "d.Title", item.Title );
+                    onlyBlock.Bind( "c", item );
+                    onlyBlock.Set( "d.Created", item.Created );
+                    onlyBlock.Next();
+                }
 
                 block.Next();
             }

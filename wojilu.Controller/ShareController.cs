@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using wojilu.Web.Mvc;
@@ -6,18 +10,19 @@ using wojilu.Web.Mvc.Attr;
 using wojilu.Common;
 using wojilu.Members.Users.Domain;
 using wojilu.Drawing;
+using wojilu.Common.Microblogs;
 
 namespace wojilu.Web.Controller {
 
     public class ShareController : ControllerBase {
 
         [Login]
-        public void Add() {
+        public virtual void Add() {
 
             // 使用owner  避免二级域名跨域
             set( "ActionLink", Link.To( ctx.owner.obj, new Microblogs.MicroblogSaveController().Create ) );
 
-            set( "mbTotalCount", config.Instance.Site.MicroblogContentMax );
+            set( "mbTotalCount", MicroblogAppSetting.Instance.MicroblogContentMax );
 
             String title = strUtil.CutString( ctx.Get( "title" ), 150 );
             String url = strUtil.CutString( ctx.Get( "url" ), 150 );
@@ -47,7 +52,7 @@ namespace wojilu.Web.Controller {
         }
 
         [Login, HttpPost, DbTransaction]
-        public void Save() {
+        public virtual void Save() {
 
 
         }

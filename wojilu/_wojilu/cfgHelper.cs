@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -230,7 +230,7 @@ namespace wojilu {
         public static void WriteToFile( Object obj, String fileName, char separator ) {
 
             Dictionary<String, String> dic = new Dictionary<String, String>();
-            PropertyInfo[] arrp = obj.GetType().GetProperties();
+            PropertyInfo[] arrp = obj.GetType().GetProperties( BindingFlags.Instance | BindingFlags.Public );
             foreach (PropertyInfo p in arrp) {
                 if (p.CanRead == false) continue;
                 Object val = p.GetValue( obj, null );

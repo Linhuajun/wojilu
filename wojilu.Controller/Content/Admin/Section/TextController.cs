@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -15,22 +15,24 @@ using wojilu.Apps.Content.Enum;
 using wojilu.Common.AppBase.Interface;
 using wojilu.Common.AppBase;
 using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Utils;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
     [App( typeof( ContentApp ) )]
-    public partial class TextController : ControllerBase, IPageSection {
+    public partial class TextController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public TextController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -46,31 +48,45 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
-        }
-
-        public void AdminSectionShow( int sectionId ) {
+        public virtual void AdminSectionShow( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             ContentPost textPost = postService.GetFirstPost( ctx.app.Id, sectionId );
 
             bindSectionShow( sectionId, textPost );
         }
 
-        public void AdminList( int sectionId ) {
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            ContentPost textPost = postService.GetFirstPost( ctx.app.Id, sectionId );
+            List<ContentPost> list = new List<ContentPost>();
+            list.Add( textPost );
+            return list;
+        }
+
+        public virtual void AdminList( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            DataPage<ContentPost> posts = postService.GetBySectionAndCategory( section.Id, ctx.GetInt( "categoryId" ) );
+            DataPage<ContentPost> posts = postService.GetPageBySectionAndCategory( section.Id, ctx.GetLong( "categoryId" ) );
             bindAdminList( section, posts );
         }
 
-        public void Add( int sectionId ) {
+
+
+        public virtual String GetEditLink( long postId ) {
+            return to( Edit, postId );
+        }
+
+        public virtual String GetSectionIcon( long sectionId ) {
+            return BinderUtils.iconText;
+        }
+
+        public virtual void Add( long sectionId ) {
             view( "Add" );
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             target( Create, sectionId );
-            bindAddInfo( section );
+            set( "section.Title", section.Title );
         }
 
         [HttpPost, DbTransaction]
-        public void Create( int sectionId ) {
+        public virtual void Create( long sectionId ) {
 
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
 
@@ -89,12 +105,12 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 postService.Insert( post, null );
                
                 echoToParentPart( lang( "opok" ) );
-                HtmlHelper.SetCurrentPost( ctx, post );
+                HtmlHelper.SetPostToContext( ctx, post );
             }
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int postId ) {
+        public virtual void Delete( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echo( lang( "exDataNotFound" ) );
@@ -102,11 +118,11 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             }
 
             postService.Delete( post );
-            echoRedirect( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
+            echoRedirectPart( lang( "opok" ) );
+            HtmlHelper.SetPostToContext( ctx, post );
         }
 
-        public void Edit( int postId ) {
+        public virtual void Edit( long postId ) {
             view( "Edit" );
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
@@ -115,11 +131,12 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             }
 
             target( Update, postId );
-            bindEditInfo( post );
+            set( "section.Title", post.SectionName );
+            set( "Content", post.Content );
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int postId ) {
+        public virtual void Update( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echo( lang( "exDataNotFound" ) );
@@ -135,7 +152,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 postService.Update( post, null );
 
                 echoToParentPart( lang( "opok" ) );
-                HtmlHelper.SetCurrentPost( ctx, post );
+                HtmlHelper.SetPostToContext( ctx, post );
             }
         }
 

@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -24,10 +24,10 @@ namespace wojilu.Web.Controller.Microblogs.My {
             set( "myCommentLink", to( new MicroblogCommentsController().My ) );
 
             set( "user.Name", user.Name );
-            set( "user.Pic", user.PicMedium );
+            set( "user.Pic", user.PicSX );
             set( "user.PicSmall", user.PicSmall );
 
-            set( "user.PicBig", user.PicBig );
+            set( "user.PicBig", user.PicM );
             set( "user.Link", getFullUrl( toUser( user ) ) );
             set( "user.MLink", getFullUrl( alink.ToUserMicroblog( user ) ) );
             set( "user.Signature", user.Signature );
@@ -50,15 +50,15 @@ namespace wojilu.Web.Controller.Microblogs.My {
             set( "followUrl", to( new wojilu.Web.Controller.Microblogs.MicroblogController().Follow ) );
             set( "cancelUrl", to( new wojilu.Web.Controller.Microblogs.MicroblogController().CancelFollow ) );
 
-            if (ctx.viewer.IsLogin == false) return "<div id=\"lblFollow\"><span>º”πÿ◊¢</span></div>";
+            if (ctx.viewer.IsLogin == false) return "<div id=\"lblFollow\"><span>Âä†ÂÖ≥Ê≥®</span></div>";
             if (ctx.viewer.Id == user.Id) return "";
             if (ctx.viewer.IsFriend( user.Id ))
-                return "<div id=\"cmdCancelFollow\"><span id=\"followed\">“— «∫√”—</span></div>";
+                return "<div id=\"cmdCancelFollow\"><span id=\"followed\">Â∑≤ÊòØÂ•ΩÂèã</span></div>";
 
             if (ctx.viewer.IsFollowing( user.Id ))
-                return "<div id=\"cmdCancelFollow\"><span id=\"followed\">“—πÿ◊¢</span><span id=\"cancelFollow\">»°œ˚πÿ◊¢</span></div>";
+                return "<div id=\"cmdCancelFollow\"><span id=\"followed\">Â∑≤ÂÖ≥Ê≥®</span><span id=\"cancelFollow\">ÂèñÊ∂àÂÖ≥Ê≥®</span></div>";
 
-            return "<div id=\"cmdFollow\"><span>º”πÿ◊¢</span></div>";
+            return "<div id=\"cmdFollow\"><span>Âä†ÂÖ≥Ê≥®</span></div>";
         }
 
         private void bindStats( User user ) {

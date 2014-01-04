@@ -34,17 +34,20 @@ namespace wojilu.Web.Controller.Admin.Members {
         public String Name { get; set; }
         public String Pwd { get; set; }
         public String Email { get; set; }
+
+        public String FriendlyUrl { get; set; }
     }
 
     public partial class UserController : ControllerBase {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( UserController ) );
 
-        public IUserService userService { get; set; }
-        public ISiteRoleService roleService { get; set; }
-        public IMessageService msgService { get; set; }
-        public IAdminLogService<SiteLog> logService { get; set; }
-        public IConfirmEmail confirmEmail { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual ISiteRoleService roleService { get; set; }
+        public virtual IMessageService msgService { get; set; }
+        public virtual IAdminLogService<SiteLog> logService { get; set; }
+        public virtual IConfirmEmail confirmEmail { get; set; }
+        public virtual IUserErrorPicService errorPicService { get; set; }
 
         public UserController() {
             userService = new UserService();
@@ -52,12 +55,12 @@ namespace wojilu.Web.Controller.Admin.Members {
             msgService = new MessageService();
             logService = new SiteLogService();
             confirmEmail = new ConfirmEmail();
+            errorPicService = new UserErrorPicService();
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             set( "userListLink", to( Index ) );
-            set( "addUserLink", to( AddUser ) );
 
             set( "SearchAction", to( Index ) );
             set( "OperationUrl", to( Operation ) );
@@ -67,6 +70,7 @@ namespace wojilu.Web.Controller.Admin.Members {
             set( "sendConfirmEmailLink", to( SendConfirmMail ) );
 
             set( "resetPwdLink", to( ResetPwd ) );
+            set( "errorPicLink", to( ApproveUserPic ) );
 
             List<SiteRole> roles = roleService.GetAllRoles();
             List<SiteRole> roles2 = roleService.GetRolesWithotGuest();
@@ -81,97 +85,8 @@ namespace wojilu.Web.Controller.Admin.Members {
             bindUserList( list );
         }
 
-        public void AddUser() {
-            target( CreateUser );
-        }
-
         [HttpPost, DbTransaction]
-        public void CreateUser() {
-
-            List<UserVo> users = getUserInfoList();
-            if (users.Count == 0) {
-                echoError( "请填写用户信息" );
-                return;
-            }
-
-            logger.Info( "user count=" + users.Count );
-
-            try {
-                int okCount = 0;
-                foreach (UserVo u in users) {
-                    Result result = registerUser( u ); // 逐个导入用户(导入的过程就是注册的过程)
-                    if (result.IsValid) {
-                        logger.Info( "register user=" + u.Name );
-                        okCount += 1;
-                    }
-                    else {
-                        logger.Error( "register user error=" + result.ErrorsText );
-                        errors.Join( result );
-                    }
-                }
-
-                if (okCount > 0) {
-                    logger.Info( "register done" );
-                    echoToParentPart( "注册成功" );
-                }
-                else {
-                    echoError();
-                }
-            }
-            catch (Exception ex) {
-                logger.Info( "" + ex.Message );
-                logger.Info( "" + ex.StackTrace );
-
-                echoError( "对不起，注册出错，请查看日志" );
-            }
-        }
-
-        private Result registerUser( UserVo user ) {
-            // 调用 OpenService 进行 wojilu 注册
-            return new wojilu.Open.OpenService().UserRegister( user.Name, user.Pwd, user.Email );
-        }
-
-
-        private List<UserVo> getUserInfoList() {
-
-            String txtUsers = ctx.Post( "txtUsers" );
-
-            if (strUtil.IsNullOrEmpty( txtUsers )) return new List<UserVo>();
-
-            List<UserVo> users = new List<UserVo>();
-
-            String[] arrLines = txtUsers.Trim().Split( new char[] { '\n', '\r' } );
-
-            foreach (String line in arrLines) {
-
-                if (strUtil.IsNullOrEmpty( line )) continue;
-
-                String[] arrItems = line.Split( '/' );
-                if (arrItems.Length != 3) continue;
-
-                UserVo user = new UserVo();
-                user.Name = arrItems[0];
-                user.Pwd = arrItems[1];
-                user.Email = arrItems[2];
-
-                if (hasError( user )) continue;
-
-                users.Add( user );
-            }
-
-            return users;
-        }
-
-        private bool hasError( UserVo user ) {
-            return string.IsNullOrEmpty( user.Name ) ||
-                string.IsNullOrEmpty( user.Pwd ) ||
-                string.IsNullOrEmpty( user.Email );
-        }
-
-
-
-        [HttpPost, DbTransaction]
-        public void Operation() {
+        public virtual void Operation() {
             String userIds = ctx.PostIdList( "choice" );
 
             if (strUtil.IsNullOrEmpty( userIds )) {
@@ -183,54 +98,137 @@ namespace wojilu.Web.Controller.Admin.Members {
 
             String cmd = ctx.Post( "action" );
             String action = "";
-            if ("pick" == cmd)
+            if ("pick" == cmd) {
                 action = "set Status=" + MemberStatus.Pick;
-            else if ("unpick" == cmd)
+            }
+            else if ("unpick" == cmd) {
                 action = "set Status=" + MemberStatus.Normal;
-            else if ("approve" == cmd)
+            }
+            else if ("approve" == cmd) {
                 action = "set Status=" + MemberStatus.Normal;
-            else if ("delete" == cmd)
+            }
+            else if ("delete" == cmd) {
                 action = "set Status=" + MemberStatus.Deleted;
-            else if ("undelete" == cmd)
+            }
+            else if ("undelete" == cmd) {
                 action = "set Status=" + MemberStatus.Normal;
+            }
             else if ("deletetrue" == cmd) {
                 User.deleteBatch( condition );
                 redirect( Index );
                 return;
             }
             else if ("category" == cmd) {
-                int roleId = ctx.PostInt( "categoryId" );
+                long roleId = ctx.PostLong( "categoryId" );
                 action = "set RoleId=" + roleId;
             }
 
             User.updateBatch( action, condition );
             logUser( SiteLogString.AdminUser( cmd ), userIds );
-            actionContent( "ok" );
+            content( "ok" );
         }
 
-        //-----------------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------
 
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( UpdateProfile, id );
             User m = User.findById( id );
             bindProfile( m );
-
+            set( "lnkEditName", to( EditName, id ) );
+            set( "lnkEditUrl", to( EditUrl, id ) );
+            set( "lnkEditEmail", to( EditEmail, id ) );
         }
 
-        public void UpdateProfile( int id ) {
+        [HttpPost, DbTransaction]
+        public virtual void UpdateProfile( long id ) {
             User m = User.findById( id );
             UserProfileController.SaveProfile( m, ctx );
             db.update( m );
             db.update( m.Profile );
-            echoRedirect( lang( "opok" ) );
+            echoRedirectPart( lang( "opok" ) );
         }
 
+        //--------------------------------------
 
-        //-----------------------------------------------------------------------------------------------------
+        public virtual void EditName( long id ) {
+            target( UpdateName, id );
+            User m = User.findById( id );
+            set( "userName", m.Name );
+        }
 
-        public void ResetPwd() {
+        [HttpPost,DbTransaction]
+        public virtual void UpdateName( long id ) {
+
+            String newName = strUtil.SubString( ctx.Post( "userName" ), 20 );
+            if (strUtil.IsNullOrEmpty( newName )) {
+                echoError( "请填写用户名" );
+                return;
+            }
+
+            User m = User.findById( id );
+            m.Name = newName;
+            m.update();
+            echoToParentPart( lang( "opok" ) );
+        }
+
+        //--------------------------------------
+
+        public virtual void EditUrl( long id ) {
+            target( UpdateUrl, id );
+            User m = User.findById( id );
+            set( "userUrl", m.Url );
+        }
+
+        [HttpPost, DbTransaction]
+        public virtual void UpdateUrl( long id ) {
+
+            String newUrl = strUtil.SubString( ctx.Post( "userUrl" ), 50 );
+            if (strUtil.IsNullOrEmpty( newUrl )) {
+                echoError( "请填写个性网址" );
+                return;
+            }
+
+            User m = User.findById( id );
+            m.Url = newUrl;
+            m.update();
+
+            // UserApp
+            UserApp.updateBatch( "OwnerUrl='" + newUrl + "'", "OwnerId=" + id );
+            UserApp.updateBatch( "CreatorUrl='" + newUrl + "'", "OwnerId=" + id );
+            UserMenu.updateBatch( "OwnerUrl='" + newUrl + "'", "OwnerId=" + id );
+
+            echoToParentPart( lang( "opok" ) );
+        }
+
+        //--------------------------------------
+
+        public virtual void EditEmail( long id ) {
+            target( UpdateEmail, id );
+            User m = User.findById( id );
+            set( "userEmail", m.Email );
+        }
+
+        [HttpPost, DbTransaction]
+        public virtual void UpdateEmail( long id ) {
+
+            String userEmail = strUtil.SubString( ctx.Post( "userEmail" ), RegPattern.EmailLength );
+
+            if (strUtil.IsNullOrEmpty( userEmail ) || RegPattern.IsMatch( userEmail, RegPattern.Email ) == false) {
+                echoError( lang( "exUserMail" ) );
+                return;
+            }
+
+            User m = User.findById( id );
+            m.Email = userEmail;
+            m.update();
+            echoToParentPart( lang( "opok" ) );
+        }
+
+        //----------------------------------------------------------------------------
+
+        public virtual void ResetPwd() {
             set( "ActionLink", to( SavePwd ) + "?id=" + ctx.GetIdList( "id" ) );
             String idsStr = ctx.GetIdList( "id" );
             List<User> users = userService.GetByIds( idsStr );
@@ -238,7 +236,7 @@ namespace wojilu.Web.Controller.Admin.Members {
         }
 
         [HttpPost, DbTransaction]
-        public void SavePwd() {
+        public virtual void SavePwd() {
 
             // 1、验证密码是否正确
             String pwd = ctx.Post( "Pwd" );
@@ -247,7 +245,7 @@ namespace wojilu.Web.Controller.Admin.Members {
             String idsStr = ctx.PostIdList( "UserIds" );
             List<User> users = userService.GetByIds( idsStr );
             if (users.Count == 0) {
-                echoRedirect( lang( "exUserNotFound" ) );
+                echoRedirectPart( lang( "exUserNotFound" ) );
                 return;
             }
 
@@ -261,14 +259,15 @@ namespace wojilu.Web.Controller.Admin.Members {
             if (isSendMail) {
                 sendPwdToEmail( users, pwd );
             }
-            else
-                echoRedirect( lang( "pwdUpdated" ), Index );
+            else {
+                echoRedirectPart( lang( "pwdUpdated" ), to( Index ) );
+            }
 
         }
 
         private void sendPwdToEmail( List<User> users, String pwd ) {
 
-            MailService mail = MailUtil.getMailService();
+            MailClient mail = MailClient.Init();
 
             String msgTitle = string.Format( lang( "newPwdInfo" ), config.Instance.Site.SiteName );
             String msgBody = "{0} : <br/>" + string.Format( lang( "newPwdBody" ), config.Instance.Site.SiteName, pwd ) + config.Instance.Site.SiteName;
@@ -276,31 +275,30 @@ namespace wojilu.Web.Controller.Admin.Members {
             int sendCount = 0;
             foreach (User user in users) {
                 if (isEmailValid( user ) == false) continue;
-                mail.send( user.Email, msgTitle, string.Format( msgBody, user.Name ) );
+                mail.Send( user.Email, msgTitle, string.Format( msgBody, user.Name ) );
                 sendCount++;
             }
 
             if (sendCount > 0)
-                echoRedirect( lang( "pwdUpdatedAndSent" ), Index );
+                echoRedirectPart( lang( "pwdUpdatedAndSent" ), to( Index ) );
             else
-                echoRedirect( lang( "pwdUpdatedAndSentError" ), Index );
+                echoRedirectPart( lang( "pwdUpdatedAndSentError" ), to( Index ) );
         }
 
-        //-----------------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------
 
-        public void SendMsg() {
+        public virtual void SendMsg() {
             set( "ActionLink", to( SaveMsg ) + "?id=" + ctx.GetIdList( "id" ) );
 
             String idsStr = ctx.GetIdList( "id" );
             List<User> users = userService.GetByIds( idsStr );
             bindReceiverList( users, idsStr );
-            editor( "MsgBody", "", "350px" );
         }
 
         [HttpPost, DbTransaction]
-        public void SaveMsg() {
+        public virtual void SaveMsg() {
 
-            MsgInfo msgInfo = validateMsg();
+            MsgInfo msgInfo = validateMsg( true );
 
             if (ctx.HasErrors) {
                 run( SendMsg );
@@ -308,10 +306,10 @@ namespace wojilu.Web.Controller.Admin.Members {
             }
 
             msgService.SiteSend( msgInfo.Title, msgInfo.Body, msgInfo.Users );
-            echoRedirect( lang( "sentok" ), Index );
+            echoRedirectPart( lang( "sentok" ), to( Index ) );
         }
 
-        public void SendEmail() {
+        public virtual void SendEmail() {
 
             if (config.Instance.Site.EnableEmail == false) {
                 echo( "对不起，邮件服务尚未开启，无法发送邮件" );
@@ -324,10 +322,9 @@ namespace wojilu.Web.Controller.Admin.Members {
 
             List<User> users = userService.GetByIds( ids );
             bindReceiverEmailList( users, ids );
-            editor( "MsgBody", "", "350px" );
         }
 
-        public void SendConfirmMail() {
+        public virtual void SendConfirmMail() {
 
             if (config.Instance.Site.EnableEmail == false) {
                 echo( "对不起，邮件服务尚未开启，无法发送邮件" );
@@ -349,7 +346,7 @@ namespace wojilu.Web.Controller.Admin.Members {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveEmail() {
+        public virtual void SaveEmail() {
 
             if (config.Instance.Site.EnableEmail == false) {
                 echo( "对不起，邮件服务尚未开启，无法发送邮件" );
@@ -357,7 +354,6 @@ namespace wojilu.Web.Controller.Admin.Members {
             }
 
             MsgInfo msgInfo = validateMsg( true );
-
 
             if (ctx.HasErrors) {
                 run( SendMsg );
@@ -367,20 +363,66 @@ namespace wojilu.Web.Controller.Admin.Members {
             int sendCount = 0;
             foreach (User user in msgInfo.Users) {
                 if (isEmailValid( user ) == false) continue;
-                Boolean sent = confirmEmail.SendEmail( user, msgInfo.Title, msgInfo.Body );
-                if (sent) {
+                Result sent = sendEmail( user, msgInfo.Title, msgInfo.Body );
+                if (sent.IsValid) {
                     logUser( SiteLogString.SendUserEmail(), user );
                     sendCount++;
                 }
             }
 
-            if (sendCount > 0)
-                echoRedirect( lang( "sentok" ), Index );
-            else
-                echoRedirect( lang( "exSentError" ), Index );
+            if (sendCount > 0) {
+                echoRedirectPart( lang( "sentok" ), to( Index ) );
+            }
+            else {
+                echoRedirectPart( lang( "exSentError" ), to( Index ) );
+            }
         }
 
+        private Result sendEmail( User user, string title, string msg ) {
+            return MailClient.Init().Send( user.Email, title, msg );
+        }
 
+        public virtual void ApproveUserPic() {
+            set( "ActionLink", to( SaveApprovePic ) + "?id=" + ctx.GetIdList( "id" ) );
+            String idsStr = ctx.GetIdList( "id" );
+            List<User> users = userService.GetByIds( idsStr );
+            bindReceiverList( users, idsStr );
+        }
+
+        public virtual void SaveApprovePic() {
+            String ids = ctx.PostIdList( "UserIds" );
+            String reviewMsg = validPicMsg();
+
+            if (ctx.HasErrors) {
+                run( ApproveUserPic );
+                return;
+            }
+
+            int isPass = ctx.PostInt( "IsPass" );
+            int isDelete = ctx.PostIsCheck( "IsDelete" );
+            if (isPass == 0) {
+                errorPicService.ApproveError( ids, reviewMsg, ctx.PostIsCheck( "IsNextAutoPass" ), isDelete );
+            }
+            else {
+                errorPicService.ApproveOk( ids, reviewMsg );
+            }
+
+            echoRedirectPart( "审核成功", to( Index ) );
+        }
+
+        private string validPicMsg() {
+            String idsStr = ctx.PostIdList( "UserIds" );
+            List<User> users = userService.GetByIds( idsStr );
+            if (users.Count == 0) {
+                errors.Add( lang( "exNoReceiver" ) );
+                return null;
+            }
+
+            String msg = strUtil.CutString( ctx.Post( "Msg" ), 200 );
+            if (strUtil.IsNullOrEmpty( msg )) errors.Add( "请填写审核原因" );
+
+            return msg;
+        }
 
 
     }

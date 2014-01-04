@@ -26,13 +26,13 @@ namespace wojilu.Web.Controller.Forum.Admin {
     [App( typeof( ForumApp ) )]
     public partial class ForumController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
-        public IForumCategoryService categoryService { get; set; }
-        public IForumService forumService { get; set; }
-        public IForumLogService logService { get; set; }
-        public IModeratorService moderatorService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IForumPostService postService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumCategoryService categoryService { get; set; }
+        public virtual IForumService forumService { get; set; }
+        public virtual IForumLogService logService { get; set; }
+        public virtual IModeratorService moderatorService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IForumPostService postService { get; set; }
 
         public ForumController() {
             forumService = new ForumService();
@@ -51,7 +51,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             return _tree;
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             view( "ListBoard" );
             set( "addCategoryUrl", to( AddCategory ) );
@@ -63,19 +63,21 @@ namespace wojilu.Web.Controller.Forum.Admin {
             bindBoards( orderedList );
         }
 
-        public void Notice() {
-
+        public virtual void Notice() {
             redirect( new ForumPickController().Index );
+        }
+
+        public virtual void Headline() {
 
             target( SaveNotice );
 
             ForumApp forum = ctx.app.obj as ForumApp;
 
-            editor( "Notice", forum.Notice, "380px" );
+            set( "Notice", forum.Notice );
         }
 
         [HttpPost, DbTransaction]
-        public void SaveNotice() {
+        public virtual void SaveNotice() {
 
             String notice = ctx.PostHtml( "Notice" );
 
@@ -89,9 +91,9 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void SaveSort() {
+        public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             ForumBoard board = getTree().GetById( id );
@@ -119,7 +121,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         //-------------------------------------------------------------------------------
 
 
-        public void AddCategory() {
+        public virtual void AddCategory() {
 
             target( SaveCategory );
             bind( "c", new ForumBoard() );
@@ -127,7 +129,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             set( "ViewId", BoardViewStatus.GetDropList( "ViewId", 0 ) );
         }
 
-        public void AddSubBoard( int boardId ) {
+        public virtual void AddSubBoard( long boardId ) {
 
             view( "AddBoard" );
 
@@ -142,7 +144,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveBoard() {
+        public virtual void SaveBoard() {
             ForumBoard fb = ForumValidator.ValidateBoard( ctx );
             if (errors.HasErrors) {
                 run( AddSubBoard, fb.Id );
@@ -175,7 +177,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveCategory() {
+        public virtual void SaveCategory() {
 
             ForumBoard fb = ForumValidator.ValidateBoard( ctx );
             if (errors.HasErrors) {
@@ -203,7 +205,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
         //-------------------------------------------------------------------------------                
 
-        public void EditBoard( int id ) {
+        public virtual void EditBoard( long id ) {
 
             view( "AddBoard" );
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
@@ -221,7 +223,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void DeleteLogo( int id ) {
+        public virtual void DeleteLogo( long id ) {
 
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
             if (board == null) {
@@ -233,7 +235,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             echoAjaxOk();
         }
 
-        public void EditCategory( int id ) {
+        public virtual void EditCategory( long id ) {
 
             view( "AddCategory" );
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
@@ -247,7 +249,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void UpdateBoard( int id ) {
+        public virtual void UpdateBoard( long id ) {
 
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
             if (board == null) {
@@ -285,7 +287,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void UpdateCategory( int id ) {
+        public virtual void UpdateCategory( long id ) {
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
             if (board == null) {
                 echoRedirect( alang( "exCategoryNotFound" ) );
@@ -318,7 +320,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         //-------------------------------------------------------------------------------
 
         [HttpDelete, DbTransaction]
-        public void DeleteBoard( int id ) {
+        public virtual void DeleteBoard( long id ) {
 
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
             if (board == null) {
@@ -337,7 +339,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpDelete, DbTransaction]
-        public void DeleteCategory( int id ) {
+        public virtual void DeleteCategory( long id ) {
 
             ForumBoard board = getTree().GetById( id );
             if (board == null) {
@@ -356,7 +358,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
         /*------------------------------------------------------------------------------------------------------------*/
 
-        public void TopicTrash() {
+        public virtual void TopicTrash() {
 
             target( AdminTopicTrashList );
             set( "topicTrashLink", to( TopicTrash ) );
@@ -367,7 +369,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             bindTrashTopic( deletedPage );
         }
 
-        public void ViewDeletedTopic( int id ) {
+        public virtual void ViewDeletedTopic( long id ) {
             ForumTopic topic = topicService.GetById_ForAdmin( id );
             bind( "t", topic );
 
@@ -379,7 +381,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             set( "page", list.PageBar );
         }
 
-        public void PostTrash() {
+        public virtual void PostTrash() {
 
             target( AdminPostTrashList );
             set( "topicTrashLink", to( TopicTrash ) );
@@ -389,7 +391,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             bindTrashPost( deletedPage );
         }
 
-        public void ViewDeletedPost( int id ) {
+        public virtual void ViewDeletedPost( long id ) {
 
             ForumPost post = postService.GetById_ForAdmin( id );
             ForumTopic topic = topicService.GetById_ForAdmin( post.TopicId );
@@ -409,7 +411,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void AdminTopicTrashList() {
+        public virtual void AdminTopicTrashList() {
 
             String ids = ctx.PostIdList( "choice" );
             String cmd = ctx.Post( "action" );
@@ -427,7 +429,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void AdminPostTrashList() {
+        public virtual void AdminPostTrashList() {
 
             String ids = ctx.PostIdList( "choice" );
             String cmd = ctx.Post( "action" );
@@ -448,7 +450,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
         /*------------------------------------------------------------------------------------------------------------*/
 
-        public void DataCombine() {
+        public virtual void DataCombine() {
 
             target( SaveCombine );
             set( "ForumDropDown1", getTree().DropList( "ForumSource", 0 ) );
@@ -456,10 +458,10 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveCombine() {
+        public virtual void SaveCombine() {
 
-            int srcId = ctx.PostInt( "ForumSource" );
-            int targetId = ctx.PostInt( "ForumTarget" );
+            long srcId = ctx.PostLong( "ForumSource" );
+            long targetId = ctx.PostLong( "ForumTarget" );
 
             ForumBoard srcBoard = boardService.GetById( srcId, ctx.owner.obj );
             ForumBoard targetBoard = boardService.GetById( targetId, ctx.owner.obj );

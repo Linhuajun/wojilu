@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -16,16 +16,17 @@ using wojilu.Apps.Content.Enum;
 using wojilu.Common.AppBase.Interface;
 using wojilu.Common.AppBase;
 using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Utils;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
-
     [App( typeof( ContentApp ) )]
-    public partial class ImgController : ControllerBase, IPageSection {
+    public partial class ImgController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentImgService imgService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentImgService imgService { get; set; }
 
         public ImgController() {
             postService = new ContentPostService();
@@ -33,7 +34,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             imgService = new ContentImgService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -49,53 +50,46 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( AddImgList, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
-            List<ContentPost> posts = postService.GetBySection( ctx.app.Id, sectionId );
+        public virtual String GetSectionIcon( long sectionId ) {
+            return BinderUtils.iconPic;
+        }
+
+        public virtual void AdminSectionShow( long sectionId ) {
+            List<ContentPost> posts = GetSectionPosts( sectionId );
             bindSectionShow( sectionId, posts );
         }
 
-        public void AdminList( int sectionId ) {
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
+            return postService.GetBySection( sectionId, s.ListCount );
+        }
+
+        public virtual void AdminList( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            DataPage<ContentPost> posts = postService.GetBySectionAndCategory( section.Id, ctx.GetInt( "categoryId" ) );
+            DataPage<ContentPost> posts = postService.GetPageBySectionAndCategory( section.Id, ctx.GetLong( "categoryId" ) );
 
             bindAdminList( sectionId, section, posts );
         }
 
         //--------------------------------------------------------------------------------------------------------------------------
 
-        public void AddImgList( int postId ) {
-
-            ContentPost post = postService.GetById( postId, ctx.owner.Id );
-            if (post == null) {
-                echoRedirect( lang( "exDataNotFound" ) );
-                return;
-            }
-
-            target( CreateImgList, postId  );
-            List<ContentImg> imgList = imgService.GetImgList( postId );
-
-            bindAddList( postId, post, imgList );
-        }
-
-
-        public void AddListInfo( int sectionId ) {
+        public virtual void AddListInfo( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            target( to( CreateListInfo, sectionId ) + "?categoryId=" + ctx.GetInt( "categoryId" ) );
+            target( to( CreateListInfo, sectionId ) + "?categoryId=" + ctx.GetLong( "categoryId" ) );
             set( "section.Name", section.Title );
             set( "App.ImagesPath", sys.Path.Img );
-
-            editor( "Content", "", "190px" );
         }
-        
+
         [HttpPost, DbTransaction]
-        public void CreateListInfo( int sectionId ) {
+        public virtual void CreateListInfo( long sectionId ) {
             ContentPost post = ContentValidator.SetValueBySection( sectionService.GetById( sectionId, ctx.app.Id ), ctx );
             if (strUtil.IsNullOrEmpty( post.Title )) {
                 errors.Add( lang( "exTitle" ) );
-                run(AddListInfo, sectionId );
+                run( AddListInfo, sectionId );
             }
             else {
                 post.CategoryId = PostCategory.Img;
@@ -105,14 +99,13 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 postService.Insert( post, null );
 
                 redirect( AddImgList, post.Id );
-                HtmlHelper.SetCurrentPost( ctx, post );
+                HtmlHelper.SetPostToContext( ctx, post );
             }
         }
 
         //-------------------------------------------------------------
 
-        [HttpPost, DbTransaction]
-        public void CreateImgList( int postId ) {
+        public virtual void AddImgList( long postId ) {
 
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
@@ -120,9 +113,85 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 return;
             }
 
+            target( CreateImgList, postId );
+            List<ContentImg> imgList = imgService.GetImgList( postId );
+
+            bindAddList( postId, post, imgList );
+            bindLinkList();
+        }
+
+        private void bindLinkList() {
+            int lnkCounts = 3;
+            IBlock lnkBlock = getBlock( "linkList" );
+            for (int i = 1; i < (lnkCounts + 1); i++) {
+                lnkBlock.Set( "photoIndex", i );
+                lnkBlock.Next();
+            }
+        }
+
+
+        [HttpPost, DbTransaction]
+        public virtual void CreateImgList( long postId ) {
+
+            ContentPost post = postService.GetById( postId, ctx.owner.Id );
+            if (post == null) {
+                echoRedirect( lang( "exDataNotFound" ) );
+                return;
+            }
+
+            String dataType = ctx.Post( "dataType" );
+            if (dataType == "upload") {
+                saveUploadPic( postId, post );
+            }
+            else if (dataType == "link") {
+                saveLinkPic( post );
+            }
+        }
+
+        private void saveLinkPic( ContentPost post ) {
+
+            int lnkCounts = 3;
+            Boolean hasPic = false;
+            for (int i = 1; i < (lnkCounts + 1); i++) {
+
+                String picUrl = ctx.Post( "Pic"+i );
+                String picDesc = ctx.Post( "Desc" + i );
+
+                if (strUtil.IsNullOrEmpty( picUrl )) continue;
+
+                saveLinkPicSingle( picUrl, picDesc, post, i );
+
+                hasPic = true;
+
+            }
+
+            if (hasPic == false) {
+                echoError( "请填写图片网址" );
+            }
+            else {
+                redirect( AddImgList, post.Id );
+            }
+
+        }
+
+        private void saveLinkPicSingle( string picUrl, string picDesc, ContentPost post, int i ) {
+
+            ContentImg img = new ContentImg();
+            img.Post = post;
+            img.ImgUrl = picUrl;
+            img.Description = picDesc;
+            imgService.CreateImg( img );
+            if ((i == 1) && post.HasImg() == false) {
+                post.ImgLink = img.ImgUrl;
+                imgService.UpdateImgLogo( post );
+            }
+        }
+
+        private void saveUploadPic( long postId, ContentPost post ) {
+
             if (ctx.GetFiles().Count <= 0) {
                 errors.Add( alang( "plsUpImg" ) );
-                run(AddImgList, postId );
+                run( AddImgList, postId );
                 return;
             }
 
@@ -137,7 +206,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                     img.ImgUrl = result.Info.ToString();
                     img.Description = ctx.Post( "Text" + (i + 1) );
                     imgService.CreateImg( img );
-                    if ((i == 0) && post.HasImg()==false) {
+                    if ((i == 0) && post.HasImg() == false) {
                         post.ImgLink = img.ImgUrl;
                         imgService.UpdateImgLogo( post );
                     }
@@ -151,13 +220,20 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             }
             else {
                 redirect( AddImgList, postId );
-                HtmlHelper.SetCurrentPost( ctx, post );
             }
         }
 
 
         [HttpPut, DbTransaction]
-        public void SetLogo( int imgId ) {
+        public virtual void SetLogo( long postId ) {
+
+            ContentPost post = postService.GetById( postId, ctx.owner.Id );
+            if (post == null) {
+                echoRedirect( lang( "exDataNotFound" ) );
+                return;
+            }
+
+            long imgId = ctx.GetLong( "imgId" );
 
             ContentImg img = imgService.GetImgById( imgId );
             if (img == null) {
@@ -165,17 +241,15 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 return;
             }
 
-            ContentPost post = img.Post;
             post.ImgLink = img.ImgUrl;
             imgService.UpdateImgLogo( post );
 
             echoRedirect( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
         }
 
         //--------------------------------------------------------------------------------------------------------------------------
-        
-        public void EditListInfo( int postId ) {
+
+        public virtual void EditListInfo( long postId ) {
 
             view( "EditListInfo" );
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
@@ -183,14 +257,14 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 echoRedirect( lang( "exDataNotFound" ) );
                 return;
             }
-            
-            target( UpdateListInfo, postId  );
+
+            target( UpdateListInfo, postId );
             bindListEdit( postId, post );
         }
 
 
         [HttpPost, DbTransaction]
-        public void UpdateListInfo( int postId ) {
+        public virtual void UpdateListInfo( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
@@ -204,41 +278,45 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             post.CommentCondition = cvt.ToInt( ctx.Post( "IsCloseComment" ) );
             post.HasImgList = 1;
 
+            post.MetaKeywords = ctx.Post( "MetaKeywords" );
+            post.MetaDescription = strUtil.SubString( ctx.Post( "MetaDescription" ), 250 );
 
             if (strUtil.IsNullOrEmpty( post.Title )) {
                 errors.Add( lang( "exTitle" ) );
-                run(EditListInfo, postId );
+                run( EditListInfo, postId );
             }
             else {
                 postService.Update( post, null );
 
                 echoRedirect( lang( "opok" ), to( EditListInfo, post.Id ) );
-                HtmlHelper.SetCurrentPost( ctx, post );
             }
         }
 
         //--------------------------------------------------------------------------------------------------------------------------
 
         [HttpDelete, DbTransaction]
-        public void Delete( int postId ) {
+        public virtual void Delete( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
                 return;
             }
 
-            int imgCount = imgService.GetImgCount( postId );
-            if (imgCount > 0) {
-                echoRedirect( alang( "exDeleteImg" ) );
-                return;
-            }
-            imgService.DeleteImg( post );
+            postService.Delete( post ); // 删除回收站
             echoRedirect( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
+            HtmlHelper.SetPostToContext( ctx, post );
         }
 
         [HttpDelete, DbTransaction]
-        public void DeleteImg( int imgId ) {
+        public virtual void DeleteImg( long postId ) {
+
+            ContentPost post = postService.GetById( postId, ctx.owner.Id );
+            if (post == null) {
+                echoRedirect( lang( "exDataNotFound" ) );
+                return;
+            }
+
+            long imgId = ctx.GetLong( "imgId" );
             ContentImg img = imgService.GetImgById( imgId );
             if (img == null) {
                 echoRedirect( alang( "exImgFound" ) );
@@ -246,10 +324,9 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             }
 
             imgService.DeleteImgOne( img );
-            
-            echoRedirect( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, img.Post );
 
+            echoRedirect( lang( "opok" ) );
+            HtmlHelper.SetPostToContext( ctx, post );
         }
 
 

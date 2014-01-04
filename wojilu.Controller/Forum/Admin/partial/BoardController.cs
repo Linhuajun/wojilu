@@ -85,12 +85,12 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
         //------------------------------------------------------------------------------
 
-        private void bindAddSubBoard( int boardId, ForumBoard board ) {
+        private void bindAddSubBoard( long boardId, ForumBoard board ) {
             set( "lblForumAction", alang( "addSubBoard" ) );
 
             set( "Name", ctx.Post( "Name" ) );
             set( "Description", ctx.Post( "Description" ) );
-            editor( "Notice", ctx.Post( "Notice" ), "100px" );
+            set( "Notice", ctx.Post( "Notice" ) );
             set( "boardLogo", string.Empty );
 
             set( "CategoryDropDown", Html.InputHidden( "ParentId", boardId.ToString() ) + board.Name );
@@ -118,7 +118,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
             set( "chkIsCategory", Html.CheckBox( "IsCategory", alang( "noPost" ), "1", (board.IsCategory == 1) ) );
 
-            editor( "Notice", board.Notice, "100px" );
+            set( "Notice", board.Notice );
 
             set( "CategoryDropDown", getTree().DropList( "ParentId", board.ParentId, board.Id, lang( "rootNode" ) ) );
             set( "ViewId", BoardViewStatus.GetDropList( "ViewId", board.ViewId ) );

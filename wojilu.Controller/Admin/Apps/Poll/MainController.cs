@@ -10,8 +10,8 @@ namespace wojilu.Web.Controller.Admin.Apps.Poll {
     [App( typeof( PollApp ) )]
     public class MainController : ControllerBase {
 
-        public void Index() {
-            actionContent( "TODO...建设中" );
+        public virtual void Index() {
+            content( "TODO...建设中" );
         }
 
     }

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -14,57 +14,55 @@ namespace wojilu.Common.Msg.Interface {
     public interface IMessageService {
 
         /// <summary>
-        /// ÒÔÍøÕ¾µÄÃûÒå¸øÓÃ»§·¢ËÍÕ¾ÄÚ¶ÌĞÅ
+        /// ä»¥ç½‘ç«™çš„åä¹‰ç»™ç”¨æˆ·å‘é€ç«™å†…çŸ­ä¿¡
         /// </summary>
-        /// <param name="title">¶ÌĞÅ±êÌâ</param>
-        /// <param name="body">¶ÌĞÅÄÚÈİ</param>
-        /// <param name="receiver">½ÓÊÕÕß</param>
+        /// <param name="title">çŸ­ä¿¡æ ‡é¢˜</param>
+        /// <param name="body">çŸ­ä¿¡å†…å®¹</param>
+        /// <param name="receiver">æ¥æ”¶è€…</param>
         void SiteSend( String title, String body, User receiver );
 
         /// <summary>
-        /// ÒÔÍøÕ¾µÄÃûÒå¸ø¶à¸öÓÃ»§·¢ËÍÕ¾ÄÚ¶ÌĞÅ
+        /// ä»¥ç½‘ç«™çš„åä¹‰ç»™å¤šä¸ªç”¨æˆ·å‘é€ç«™å†…çŸ­ä¿¡
         /// </summary>
-        /// <param name="title">¶ÌĞÅ±êÌâ</param>
-        /// <param name="body">¶ÌĞÅÄÚÈİ</param>
-        /// <param name="receiver">½ÓÊÕÕßÁĞ±í</param>
+        /// <param name="title">çŸ­ä¿¡æ ‡é¢˜</param>
+        /// <param name="body">çŸ­ä¿¡å†…å®¹</param>
+        /// <param name="receiver">æ¥æ”¶è€…åˆ—è¡¨</param>
         void SiteSend( String title, String body, List<User> receivers );
 
         /// <summary>
-        /// ·¢ËÍÕ¾ÄÚ¶ÌĞÅ
+        /// å‘é€ç«™å†…çŸ­ä¿¡
         /// </summary>
-        /// <param name="sender">·¢ËÍÈËUser</param>
-        /// <param name="rawReceiver">½ÓÊÕÈËµÄÓÃ»§Ãû£¨¶à¸öÓÃ»§ÃûÓÃ¶ººÅ·Ö¿ª£©</param>
-        /// <param name="msgTitle">¶ÌĞÅ±êÌâ</param>
-        /// <param name="msgBody">¶ÌĞÅÄÚÈİ</param>
+        /// <param name="sender">å‘é€äººUser</param>
+        /// <param name="rawReceiver">æ¥æ”¶äººçš„ç”¨æˆ·åï¼ˆå¤šä¸ªç”¨æˆ·åç”¨é€—å·åˆ†å¼€ï¼‰</param>
+        /// <param name="msgTitle">çŸ­ä¿¡æ ‡é¢˜</param>
+        /// <param name="msgBody">çŸ­ä¿¡å†…å®¹</param>
         /// <returns></returns>
         Result SendMsg( User sender, String rawReceiver, String msgTitle, String msgBody );
 
-        Result SendMsg( User sender, String rawReceiver, String msgTitle, String msgBody, int replyId, int[] attachmentIds );
+        Result SendMsg(User sender, string rawReceiver, string msgTitle, string msgBody, long replyId, long[] attachmentIds);
         
 
         void ReadMsg( Message msg );
-
-        Boolean AdminByAction( String action, User member, String choice );
-
-        DataPage<Message> FindPageAll( int receiverId );
-        DataPage<MessageData> FindPageSent( int senderId );
-
-        DataPage<Message> FindPageTrash( int receiverId );
-        DataPage<Message> GetNewMsg( int receiverId );
-
-        Message GetById( int receiverId, int id );
-        MessageData GetDataById( int senderId, int id );
-        List<Message> GetNewMsg( int receiverId, int count );
-        MessageStats GetStats( User owner );
-
         void CheckSiteMsg( User user );
 
+        Message GetById(long receiverId, long id);
+        MessageData GetDataById(long senderId, long id);
+        MessageStats GetStats( User owner );
 
-        DataPage<Message> SearchByUser( int receiverId, string senderName );
-        DataPage<MessageData> SearchByReceiver( int senderId, string receiverName );
+        Message GetPrevMsg(long receiverId, long msgId);
+        Message GetNextMsg(long receiverId, long msgId);
 
-        Message GetPrevMsg( int receiverId, int msgId );
-        Message GetNextMsg( int receiverId, int msgId );
+        DataPage<Message> GetPageAll(long receiverId);
+        DataPage<MessageData> GetPageSent(long senderId);
+        DataPage<Message> GetPageTrash(long receiverId);
+
+        DataPage<Message> SearchByUser(long receiverId, string senderName);
+        DataPage<MessageData> SearchByReceiver(long senderId, string receiverName);
+
+        DataPage<Message> GetNewMsg(long receiverId);
+        List<Message> GetNewMsg(long receiverId, int count);
+
+        Boolean AdminByAction( String action, User member, String choice );
 
         void DeleteToTrash( Message msg );
     }

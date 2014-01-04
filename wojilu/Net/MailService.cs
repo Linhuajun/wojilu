@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,15 +22,15 @@ using System.Net.Mail;
 
 namespace wojilu.Net {
 
-    /// <summary>
-    /// 邮件发送成功之后执行的方法
-    /// </summary>
-    public interface ISuccessCallback {
+    public class MailUtil {
 
-        /// <summary>
-        /// 邮件发送成功之后执行的方法
-        /// </summary>
-        void SuccessRun();
+        public static MailService getMailService() {
+            MailService mail = new MailService( config.Instance.Site.SmtpUrl, config.Instance.Site.SmtpUser, config.Instance.Site.SmtpPwd );
+            mail.enableSsl( config.Instance.Site.SmtpEnableSsl );
+            mail.setSender( config.Instance.Site.SiteName );
+            return mail;
+        }
+
     }
 
     /// <summary>
@@ -44,6 +44,7 @@ namespace wojilu.Net {
     /// mail.send( "aaa@126.com", "岳老二的邮件标题", "此处内容，此处<strong style='color:red;font-size:36px;'>html部分</strong>"
     /// </code>
     /// </example>
+    [Obsolete( "This class is obsolete; Use class wojilu.Net.MailClient instead" )]
     public class MailService {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( MailService ) );
@@ -166,6 +167,11 @@ namespace wojilu.Net {
                 catch (SmtpException ex) {
                     String info = "send mail to " + to + " : " + title;
                     logger.Error( "[" + info + "] error : " + ex.ToString() );
+
+                    logger.Error( "msg.AddressTo=" + to );
+                    logger.Error( "msg.Subject=" + message.Subject );
+                    logger.Error( "msg.Body=" + message.Body );
+
                     return false;
                 }
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -12,15 +12,15 @@ using wojilu.Common.AppBase;
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
-    public partial class SlideController : ControllerBase, IPageSection {
+    public partial class SlideController : ControllerBase, IPageAdminSection {
 
-        private void bindSectionShow( int sectionId, int imgcat, List<ContentPost> posts, ContentPost first ) {
+        private void bindSectionShow( long sectionId, int imgcat, List<ContentPost> posts, ContentPost first ) {
 
             set( "sectionId", sectionId );
-            set( "addUrl", to( new PostController().Add, sectionId ) + "?categoryId=" + imgcat );
+            set( "addUrl", to( new Common.PostController().Add, sectionId ) + "?categoryId=" + imgcat );
             set( "listUrl", to( new ListController().AdminList, sectionId ) + "?categoryId=" + imgcat );
 
-            int slideWidth = first == null ? 300 : first.Width;
+            int slideWidth = first == null ? 300 : first.Width-30;
             int slideHeight = first == null ? 220 : first.Height;
 
             set( "slideWidth", slideWidth );
@@ -38,7 +38,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                     block.Set( "photo.Title", photo.Title );
 
                 block.Set( "photo.ImgUrl", photo.GetImgMedium() );
-                String lnk = photo.HasImg() ? to( new PostController().EditImg, photo.Id ) : "#";
+                String lnk = photo.HasImg() ? to( new Common.PostController().EditImg, photo.Id ) : "#";
                 block.Set( "photo.Link", lnk );
                 block.Next();
 

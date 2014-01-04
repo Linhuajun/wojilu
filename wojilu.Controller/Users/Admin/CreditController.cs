@@ -21,9 +21,9 @@ namespace wojilu.Web.Controller.Users.Admin {
 
     public class CreditController : ControllerBase {
 
-        public IUserIncomeService incomeService { get; set; }
-        public ISiteRoleService roleService { get; set; }
-        public ICurrencyService currencyService { get; set; }
+        public virtual IUserIncomeService incomeService { get; set; }
+        public virtual ISiteRoleService roleService { get; set; }
+        public virtual ICurrencyService currencyService { get; set; }
 
         public CreditController() {
             incomeService = new UserIncomeService();
@@ -38,7 +38,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "incomeLink", to( IncomeLog, 0 ) );
         }
 
-        public void My() {
+        public virtual void My() {
 
             User user = ctx.owner.obj as User;
 
@@ -61,7 +61,7 @@ namespace wojilu.Web.Controller.Users.Admin {
 
         private static readonly int tempKeyCurrencyId = 99999999;
 
-        public void IncomeLog( int currencyId ) {
+        public virtual void IncomeLog( long currencyId ) {
 
             User user = ctx.owner.obj as User;
 
@@ -75,11 +75,11 @@ namespace wojilu.Web.Controller.Users.Admin {
 
         private void bindCurrencyLink( IBlock block, String lbl, Object data ) {
             UserIncomeLog x = data as UserIncomeLog;
-            int currencyId = x.CurrencyId == 0 ? tempKeyCurrencyId : x.CurrencyId;
+            long currencyId = x.CurrencyId == 0 ? tempKeyCurrencyId : x.CurrencyId;
             block.Set( "x.CurrencyLink", to( IncomeLog, currencyId ) );
         }
 
-        public void IncomeRule() {
+        public virtual void IncomeRule() {
 
             IList currencyList = currencyService.GetCurrencyAll();
             IList actions = currencyService.GetUserActions();
@@ -130,7 +130,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "ruleTable", builder );
         }
 
-        public void Rank() {
+        public virtual void Rank() {
 
             set( "baseCurrency.Name", KeyCurrency.Instance.Name );
 

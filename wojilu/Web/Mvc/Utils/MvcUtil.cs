@@ -84,6 +84,25 @@ namespace wojilu.Web.Mvc.Utils {
             return builder.ToString();
         }
 
+        public static String renderValidatorJsonObject( String htmlMsg, Boolean isValid, Object obj ) {
+
+            if (obj == null) return renderValidatorJson( htmlMsg, isValid, "" );
+            if (obj.GetType() == typeof( String )) return renderValidatorJson( htmlMsg, isValid, obj.ToString() );
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append( "{\"IsValid\":" );
+            builder.Append( isValid ? "true" : "false" );
+            builder.Append( ", \"Msg\":\"" );
+
+            builder.Append( JsonString.ClearNewLine( htmlMsg ) );
+
+            builder.Append( "\", \"Info\":" );
+            builder.Append( Json.ToString( obj ) );
+            builder.Append( "}" );
+
+            return builder.ToString();
+        }
+
         //--------------------------------------------------------------------------------------------
 
         internal static String getNoLayoutContent( String body ) {
@@ -116,8 +135,9 @@ namespace wojilu.Web.Mvc.Utils {
         }
 
         private static String getRequireJs( String jsName ) {
-            String jsEnv = "<script>require(['wojilu._" + jsName + "', 'wojilu._admin']);</script>";
-            return string.Format( "<script data-main=\"{0}main\" src=\"{0}lib/require-jquery-wojilu.js\"></script>{1}", sys.Path.Js, jsEnv );
+            return "<script> var require = {urlArgs: 'v=" + MvcConfig.Instance.JsVersion + "'};</script>"
+                + string.Format( "<script data-main=\"{0}main\" src=\"{0}lib/require-jquery-wojilu.js?v={1}\"></script>", sys.Path.Js, MvcConfig.Instance.JsVersion )
+                + "<script>require(['wojilu._" + jsName + "', 'wojilu._admin']);</script>";
         }
 
 

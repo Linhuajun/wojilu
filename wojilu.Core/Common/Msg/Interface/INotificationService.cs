@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -11,41 +11,41 @@ namespace wojilu.Common.Msg.Interface {
 
     public interface INotificationService {
 
-        Notification GetById( int id );
-        List<Notification> GetUnread( int receiverId, String receiverType, int count );
-        DataPage<Notification> GetPage( int receiverId, String receiverType );
-        int GetUnReadCount( int receiverId, String receiverType );
+        Notification GetById(long id);
+        List<Notification> GetUnread(long receiverId, string receiverType, int count);
+        DataPage<Notification> GetPage(long receiverId, string receiverType);
+        int GetUnReadCount(long receiverId, string receiverType);
 
-        void Read( int notificationId );
-        void ReadAll( int receiverId, String receiverType );
-
-        /// <summary>
-        /// ÏòÓÃ»§(User)·¢ËÍÍ¨Öª
-        /// </summary>
-        /// <param name="receiverId">½ÓÊÕUserµÄId</param>
-        /// <param name="msg">Í¨ÖªÄÚÈİ</param>
-        void send( int receiverId, String msg );
+        void Read(long notificationId);
+        void ReadAll(long receiverId, string receiverType);
 
         /// <summary>
-        /// ÏòÓÃ»§(User)·¢ËÍÍ¨Öª
+        /// å‘ç”¨æˆ·(User)å‘é€é€šçŸ¥
         /// </summary>
-        /// <param name="receiverId">½ÓÊÕUserµÄId</param>
-        /// <param name="msg">Í¨ÖªÄÚÈİ</param>
-        /// <param name="type">NotificationTypeµÄÃ¶¾ÙÖµ</param>
-        void send( int receiverId, String msg, int type );
+        /// <param name="receiverId">æ¥æ”¶Userçš„Id</param>
+        /// <param name="msg">é€šçŸ¥å†…å®¹</param>
+        void send(long receiverId, string msg);
 
         /// <summary>
-        /// ÏòÄ³ÖÖIMember¶ÔÏó·¢ËÍÍ¨Öª
+        /// å‘ç”¨æˆ·(User)å‘é€é€šçŸ¥
         /// </summary>
-        /// <param name="receiverId">½ÓÊÕÓÃ»§µÄId</param>
-        /// <param name="receiverType">½ÓÊÕÕßµÄÀàĞÍType.FullName£¬±ÈÈçSite£¬UserµÈ</param>
-        /// <param name="msg">Í¨ÖªÄÚÈİ</param>
-        /// <param name="type">NotificationTypeµÄÃ¶¾ÙÖµ</param>
-        void send( int receiverId, String receiverType, String msg, int type );
+        /// <param name="receiverId">æ¥æ”¶Userçš„Id</param>
+        /// <param name="msg">é€šçŸ¥å†…å®¹</param>
+        /// <param name="type">NotificationTypeçš„æšä¸¾å€¼</param>
+        void send(long receiverId, string msg, int type);
 
-        void sendFriendRequest( int senderId, int receiverId, String msg );
+        /// <summary>
+        /// å‘æŸç§IMemberå¯¹è±¡å‘é€é€šçŸ¥
+        /// </summary>
+        /// <param name="receiverId">æ¥æ”¶ç”¨æˆ·çš„Id</param>
+        /// <param name="receiverType">æ¥æ”¶è€…çš„ç±»å‹Type.FullNameï¼Œæ¯”å¦‚Siteï¼ŒUserç­‰</param>
+        /// <param name="msg">é€šçŸ¥å†…å®¹</param>
+        /// <param name="type">NotificationTypeçš„æšä¸¾å€¼</param>
+        void send(long receiverId, string receiverType, string msg, int type);
 
-        void cancelFriendRequest( int senderId, int receiverId );
+        void sendFriendRequest(long senderId, long receiverId, string msg);
+
+        void cancelFriendRequest(long senderId, long receiverId);
 
 
     }

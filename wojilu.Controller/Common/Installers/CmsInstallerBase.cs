@@ -31,17 +31,22 @@ namespace wojilu.Web.Controller.Common.Installers {
 
     public abstract class CmsInstallerBase {
 
-        public AppInstallerService installerService { get; set; }
-        public IMemberAppService appService { get; set; }
-        public IMenuService menuService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentCustomTemplateService tplService { get; set; }
+        public virtual AppInstallerService installerService { get; set; }
+        public virtual IMemberAppService appService { get; set; }
+        public virtual IMenuService menuService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentCustomTemplateService tplService { get; set; }
 
         protected User user;
         protected IMember owner;
         protected String appName;
+        protected String menuFUrl;
+
         protected MvcContext ctx;
         protected ContentApp app;
+
+        protected String themeId;
 
         public CmsInstallerBase() {
             installerService = new AppInstallerService();
@@ -49,6 +54,7 @@ namespace wojilu.Web.Controller.Common.Installers {
             menuService = new UserMenuService();
             sectionService = new ContentSectionService();
             tplService = new ContentCustomTemplateService();
+            postService = new ContentPostService();
         }
 
         /// <summary>
@@ -89,20 +95,31 @@ namespace wojilu.Web.Controller.Common.Installers {
 </div>";
         }
 
-        public IMemberApp Install( MvcContext ctx, IMember owner, String appName, AccessStatus accessStatus ) {
+        public virtual IMemberApp Install( MvcContext ctx, IMember owner, String appName, AccessStatus accessStatus, String themeId, String friendlyUrl ) {
 
 
             this.ctx = ctx;
             this.appName = appName;
+            this.menuFUrl = friendlyUrl;
             this.user = ctx.viewer.obj as User;
             this.owner = owner;
 
+            this.themeId = themeId;
+
             setService( ctx );
 
+
+            // 真正初始化过程
+
+            initTheme();
             IMemberApp app = createPortalApp();
             createLayout();
 
             return app;
+        }
+
+
+        protected virtual void initTheme() {
         }
 
         protected abstract IMemberApp createPortalApp();
@@ -160,8 +177,6 @@ namespace wojilu.Web.Controller.Common.Installers {
 
             p.AppId = s.AppId;
 
-
-
             new ContentPollService().CreatePoll( s.Id, p );
 
         }
@@ -173,65 +188,58 @@ namespace wojilu.Web.Controller.Common.Installers {
         }
 
 
-        protected void createImgS( ContentSection s, String title, String content, String imgUrl ) {
-            createPost( s, title, content, imgUrl, "", false );
+        protected ContentPost createImgS( ContentSection s, String title, String content, String imgUrl ) {
+            return createPost( s, title, content, imgUrl, "", false );
         }
 
-        protected void createPostC( ContentSection s, String title, String cat ) {
-
-            createPost( s, title, "[" + cat + "] " + title, title, "", "", false );
+        protected ContentPost createPostC( ContentSection s, String title, String cat ) {
+            return createPost( s, title, "[" + cat + "] " + title, title, "", "", false );
         }
 
         //----------------------------------------------------------------------------
-        protected void createImgHome( ContentSection s, String title, String titleHome, int width, int height, String imgUrl ) {
-
-            createPost( s, title, titleHome, title, imgUrl, "", 0, width, height );
+        protected ContentPost createImgHome( ContentSection s, String title, String titleHome, int width, int height, String imgUrl ) {
+            return createPost( s, title, titleHome, title, imgUrl, "", 0, width, height );
         }
         //----------------------------------------------------------------------------
 
 
-        protected void createImgHome( ContentSection s, String title, String titleHome, String imgUrl ) {
-
-            createPost( s, title, titleHome, title, imgUrl, "", true );
+        protected ContentPost createImgHome( ContentSection s, String title, String titleHome, String imgUrl ) {
+            return createPost( s, title, titleHome, title, imgUrl, "", true );
         }
 
-        protected void createImgPost( ContentSection s, String title, String content, String imgUrl ) {
-
-            createPost( s, title, title, content, imgUrl, "", false, PostCategory.ImgPost );
+        protected ContentPost createImgPost( ContentSection s, String title, String content, String imgUrl ) {
+            return createPost( s, title, title, content, imgUrl, "", false, PostCategory.ImgPost );
         }
 
-        protected void createPost( ContentSection s, String title, String content, String imgUrl, String videoUrl, Boolean isBigImg ) {
-            createPost( s, title, "", content, imgUrl, videoUrl, isBigImg );
+        protected ContentPost createPost( ContentSection s, String title, String content, String imgUrl, String videoUrl, Boolean isBigImg ) {
+            return createPost( s, title, "", content, imgUrl, videoUrl, isBigImg );
         }
 
-        protected void createPost( ContentSection s, String title, String titleHome, String content, String imgUrl, String videoUrl, Boolean isBigImg ) {
-            createPost( s, title, titleHome, content, imgUrl, videoUrl, isBigImg, 0 );
-
+        protected ContentPost createPost( ContentSection s, String title, String titleHome, String content, String imgUrl, String videoUrl, Boolean isBigImg ) {
+            return createPost( s, title, titleHome, content, imgUrl, videoUrl, isBigImg, 0 );
         }
 
         //---------------------------------
 
-        protected void createPost( ContentSection s, String title, String titleHome, String content, String imgUrl, String videoUrl, Boolean isBigImg, int categoryId ) {
-            int width=0;
-            int height=0;
+        protected ContentPost createPost( ContentSection s, String title, String titleHome, String content, String imgUrl, String videoUrl, Boolean isBigImg, int categoryId ) {
+            int width = 0;
+            int height = 0;
 
             if (strUtil.HasText( imgUrl )) {
 
                 if (isBigImg) {
                     width = 290;
                     height = 210;
-                }
-                else {
+                } else {
                     width = 120;
                     height = 90;
                 }
             }
 
-            createPost( s, title, titleHome, content, imgUrl, videoUrl, categoryId, width, height );
-
+            return createPost( s, title, titleHome, content, imgUrl, videoUrl, categoryId, width, height );
         }
 
-        protected void createPost( ContentSection s, String title, String titleHome, String content, String imgUrl, String videoUrl, int categoryId, int width, int height ) {
+        protected ContentPost createPost( ContentSection s, String title, String titleHome, String content, String imgUrl, String videoUrl, long categoryId, int width, int height ) {
 
             IMember o = this.owner;
             User u = this.user;
@@ -263,28 +271,21 @@ namespace wojilu.Web.Controller.Common.Installers {
                 p.TypeName = typeof( ContentVideo ).FullName;
                 p.Width = 290;
                 p.Height = 235;
-            }
-            else if (strUtil.HasText( imgUrl )) {
+            } else if (strUtil.HasText( imgUrl )) {
 
-                if (categoryId > 0)
+                if (categoryId > 0) {
                     p.CategoryId = categoryId;
-                else
+                } else {
                     p.CategoryId = PostCategory.Img;
-
-                //if (isBigImg) {
-                //    p.Width = 290;
-                //    p.Height = 210;
-                //}
-                //else {
-                //    p.Width = 120;
-                //    p.Height = 90;
-                //}
+                }
 
                 p.Width = width;
                 p.Height = height;
             }
 
-            p.insert();
+            postService.Insert( p, "" );
+
+            return p;
         }
 
         //---------------------------------
@@ -306,12 +307,16 @@ namespace wojilu.Web.Controller.Common.Installers {
             IMemberApp mapp = appService.Add( creator, owner, name, installer.Id, AccessStatus.Public );
             String appUrl = UrlConverter.clearUrl( mapp, ctx, this.owner );
 
-            IMenu menu = menuService.AddMenuByApp( mapp, name, "", appUrl );
+            IMenu menu = menuService.AddMenuByApp( mapp, name, this.menuFUrl, appUrl );
 
             ContentApp newApp = ContentApp.findById( mapp.AppOid );
             this.app = newApp;
 
             return mapp;
+        }
+
+        protected ContentSection createSection( String name, String sectionType, String layoutStr ) {
+            return createSection( name, sectionType, layoutStr, null );
         }
 
         /// <summary>
@@ -326,6 +331,10 @@ namespace wojilu.Web.Controller.Common.Installers {
             return createSection( name, sectionType, layoutStr, null );
         }
 
+        protected ContentSection createSection( String name, Type sectionType, String layoutStr, ContentCustomTemplate ct ) {
+            return createSection( name, sectionType.FullName, layoutStr, ct );
+        }
+
         /// <summary>
         /// 创建手动添加区块
         /// </summary>
@@ -334,7 +343,7 @@ namespace wojilu.Web.Controller.Common.Installers {
         /// <param name="layoutStr">所属行和所属列</param>
         /// <param name="ct">自定义模板</param>
         /// <returns></returns>
-        protected ContentSection createSection( String name, Type sectionType, String layoutStr, ContentCustomTemplate ct ) {
+        protected ContentSection createSection( String name, String sectionType, String layoutStr, ContentCustomTemplate ct ) {
 
             ContentSection section = new ContentSection();
 
@@ -344,7 +353,7 @@ namespace wojilu.Web.Controller.Common.Installers {
             section.AppId = this.app.Id;
             section.RowId = rowId;
             section.ColumnId = columnId;
-            section.SectionType = sectionType.FullName;
+            section.SectionType = sectionType;
             section.Title = name;
 
             if (ct != null) section.CustomTemplateId = ct.Id;
@@ -362,7 +371,7 @@ namespace wojilu.Web.Controller.Common.Installers {
         /// <param name="templateId"></param>
         /// <param name="layoutStr"></param>
         /// <returns></returns>
-        protected ContentSection createSectionMashup( String title, int serviceId, int templateId, String layoutStr ) {
+        protected ContentSection createSectionMashup( String title, long serviceId, long templateId, String layoutStr ) {
 
             ContentSection section = new ContentSection();
 

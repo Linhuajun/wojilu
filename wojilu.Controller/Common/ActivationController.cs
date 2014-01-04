@@ -17,9 +17,9 @@ namespace wojilu.Web.Controller.Common {
     public class ActivationController : ControllerBase {
 
 
-        public IUserService userService { get; set; }
-        public IConfirmEmail confirmEmail { get; set; }
-        public IUserConfirmService confirmService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IConfirmEmail confirmEmail { get; set; }
+        public virtual IUserConfirmService confirmService { get; set; }
 
         public ActivationController() {
             userService = new UserService();
@@ -33,25 +33,13 @@ namespace wojilu.Web.Controller.Common {
             }
         }
 
-        public static void AllowSendActivationEmail( MvcContext ctx, int userId ) {
-            ctx.web.SessionSet( "__ReSendActivationEmail", userId );
-        }
-
-        public static int IsAllowSendActivationEmail( MvcContext ctx ) {
-
-            if (ctx.web.SessionGet( "__ReSendActivationEmail" ) == null) return 0;
-
-            return (int)ctx.web.SessionGet( "__ReSendActivationEmail" );
-        }
-
         //-----------------------------------------------------------------------------
 
         // 重发激活邮件之前的验证：请输入用户名和密码form
-        public void SendEmailLogin() {
+        public virtual void SendEmailLogin() {
 
             if (ctx.viewer.IsLogin) {
 
-                AllowSendActivationEmail( ctx, ctx.viewer.Id );
                 redirect( SendEmailButton );
                 return;
             }
@@ -68,19 +56,18 @@ namespace wojilu.Web.Controller.Common {
         }
 
         [HttpPost]
-        public void SendEmailLoginCheck() {
+        public virtual void SendEmailLoginCheck() {
 
-            int userId = userIsValid();
+            long userId = userIsValid();
             if (userId <= 0) {
                 run( SendEmailLogin );
                 return;
             }
 
-            AllowSendActivationEmail( ctx, userId );
             redirect( SendEmailButton );
         }
 
-        private int userIsValid() {
+        private long userIsValid() {
 
 
             if (Html.Captcha.CheckError( ctx )) {
@@ -116,7 +103,7 @@ namespace wojilu.Web.Controller.Common {
         // 重发激活邮件的按钮：
         // 1)必须有验证码
         // 2)同时呈现email文本框，允许及时修改
-        public void SendEmailButton() {
+        public virtual void SendEmailButton() {
 
 
             if (hasActivation()) {
@@ -124,7 +111,7 @@ namespace wojilu.Web.Controller.Common {
                 return;
             }
 
-            int userId = IsAllowSendActivationEmail( ctx );
+            long userId = ctx.viewer.Id;
 
             if (userId <= 0) {
                 redirect( SendEmailLogin );
@@ -143,7 +130,7 @@ namespace wojilu.Web.Controller.Common {
         }
 
         [HttpPost, DbTransaction]
-        public void CheckEmailExist( int userId ) {
+        public virtual void CheckEmailExist( long userId ) {
 
             String email = ctx.Post( "Email" );
 
@@ -157,14 +144,14 @@ namespace wojilu.Web.Controller.Common {
 
 
         [HttpPost]
-        public void SendEmail() {
+        public virtual void SendEmail() {
 
             if (hasActivation()) {
                 echoError( "您已经激活" );
                 return;
             }
 
-            int userId = IsAllowSendActivationEmail( ctx );
+            long userId = ctx.viewer.Id;
 
             if (userId <= 0) {
                 redirect( SendEmailLogin );
@@ -186,7 +173,7 @@ namespace wojilu.Web.Controller.Common {
             }
 
 
-            String email = ctx.Post( "Email" );
+            String email = strUtil.SubString( ctx.Post( "Email" ), RegPattern.EmailLength );
 
             if (strUtil.IsNullOrEmpty( email )) {
                 echoError( "请填写email" );
@@ -215,7 +202,7 @@ namespace wojilu.Web.Controller.Common {
 
         }
 
-        public void SendEmailDone() {
+        public virtual void SendEmailDone() {
 
             String email = ctx.Get( "email" );
             set( "email", email );

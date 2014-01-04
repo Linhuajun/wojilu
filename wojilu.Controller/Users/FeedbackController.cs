@@ -1,14 +1,12 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
-using wojilu.Web.Mvc.Utils;
 
 using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Interface;
@@ -17,15 +15,13 @@ using wojilu.Members.Users.Service;
 using wojilu.Common.Msg.Service;
 using wojilu.Common.Msg.Domain;
 using wojilu.Common.Msg.Interface;
-using wojilu.Web.Controller.Common;
-using wojilu.Serialization;
 
 namespace wojilu.Web.Controller.Users {
 
     public class FeedbackController : ControllerBase {
 
-        public IFeedbackService feedbackService { get; set; }
-        public IBlacklistService blacklistService { get; set; }
+        public virtual IFeedbackService feedbackService { get; set; }
+        public virtual IBlacklistService blacklistService { get; set; }
 
         public FeedbackController() {
             feedbackService = new FeedbackService();
@@ -38,7 +34,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
         [HttpPost]
-        public void Create() {
+        public virtual void Create() {
 
             checkFeedbackPermission();
             if (ctx.HasErrors) {
@@ -54,33 +50,38 @@ namespace wojilu.Web.Controller.Users {
 
             if (f.IsPrivate == 1) {
                 sendMsg( f );
-                String postContent = "<span>" + lang( "feedbackPrivate" ) + "</span>";
-                echoJsonMsg( postContent, true, "" );
-                //actionContent( MvcUtil.renderValidatorJson( postContent, true ) );
+
+                String postContent = "<div style=\"color:red;margin-left:10px;\">说明：私信发送成功！此处不会公开显示。</div>";
+                Dictionary<String, Object> dic = new Dictionary<string, object>();
+                dic.Add( "IsValid", true );
+                dic.Add( "Info", "formResult" );
+                dic.Add( "Msg", postContent );
+
+                echoJson( dic );
+
                 return;
             }
             else {
 
-                feedbackService.Insert( f );
+                feedbackService.Insert( f, t2( List ) );
 
                 List<Feedback> flist = new List<Feedback>();
                 flist.Add( f );
                 ctx.SetItem( "feedbackList", flist );
 
                 String postContent = loadHtml( bindList );
-                //echoJsonMsg( postContent, true, "formResult" );
 
                 Dictionary<String, Object> dic = new Dictionary<string, object>();
                 dic.Add( "IsValid", true );
                 dic.Add( "Info", "formResult" );
                 dic.Add( "Msg", postContent );
 
-                echoJson( JsonString.Convert( dic ) );
+                echoJson( dic );
 
             }
         }
 
-        public void Reply( int id ) {
+        public virtual void Reply( long id ) {
 
             checkFeedbackPermission();
             if (ctx.HasErrors) {
@@ -99,7 +100,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
         [HttpPost, Login]
-        public void SaveReply( int id ) {
+        public virtual void SaveReply( long id ) {
 
             checkFeedbackPermission();
             if (ctx.HasErrors) {
@@ -119,9 +120,9 @@ namespace wojilu.Web.Controller.Users {
                 return;
             }
 
-            feedbackService.Reply( parent, f );
+            feedbackService.Reply( parent, f, t2( List ) );
 
-            echoToParent( lang( "opok" ) );
+            echoToParent( lang( "opok" ), t2( List ) );
 
         }
 
@@ -130,11 +131,11 @@ namespace wojilu.Web.Controller.Users {
             ctx.viewer.SendMsg( ctx.owner.obj.Name, title, f.Content );
         }
 
-        public void List() {
+        public virtual void List() {
 
             if (hasAdminPermission()) redirect( AdminList );
 
-            WebUtils.pageTitle( this, lang( "feedback" ) );
+            ctx.Page.Title = lang( "feedback" );
 
             set( "ActionLink", t2( Create ) );
             String pwTip = string.Format( lang( "pwTip" ), Feedback.ContentLength );
@@ -148,7 +149,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
         [Login]
-        public void AdminList() {
+        public virtual void AdminList() {
 
             if (!hasAdminPermission()) {
                 echoRedirect( lang( "exNoPermission" ), List );
@@ -167,7 +168,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
         [HttpDelete, Login]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             if (!hasAdminPermission()) {
                 echo( lang( "exNoPermission" ) );
@@ -207,7 +208,7 @@ namespace wojilu.Web.Controller.Users {
             return ctx.viewer.Id == ctx.owner.Id && ctx.owner.obj is User;
         }
 
-        private Feedback validate( int parentId ) {
+        private Feedback validate( long parentId ) {
 
             Feedback f = new Feedback();
             f.Creator = (User)ctx.viewer.obj;
@@ -226,7 +227,7 @@ namespace wojilu.Web.Controller.Users {
         }
 
         [NonVisit]
-        public void bindList() {
+        public virtual void bindList() {
             List<Feedback> list = ctx.GetItem( "feedbackList" ) as List<Feedback>;
             IBlock block = getBlock( "list" );
             foreach (Feedback f in list) {

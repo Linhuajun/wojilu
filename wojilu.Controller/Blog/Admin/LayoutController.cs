@@ -16,14 +16,14 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
     public class LayoutController : ControllerBase {
 
-        public IBlogCategoryService categoryService { get; set; }
+        public virtual IBlogCategoryService categoryService { get; set; }
 
         public LayoutController() {
             categoryService = new BlogCategoryService();
             base.HideLayout( typeof( Blog.LayoutController ) );
         }
 
-        public IMemberAppService getUserAppService() {
+        public virtual IMemberAppService getUserAppService() {
             return new UserAppService();
         }
 
@@ -31,7 +31,7 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
             set( "app.Name", getUserAppService().GetByApp( (IApp)ctx.app.obj ).Name );
 
-            set( "friendsBlogLink", to( new BlogController().Index, -1 ) );
+            set( "friendsBlogLink", to( new BlogController().Friends, -1 ) );
             set( "myBlogLink", to( new MyListController().My ) );
             set( "addBlogLink", to( new PostController().Add ) );
             set( "categoryLink", to( new CategoryController().List ) );

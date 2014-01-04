@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -13,11 +13,11 @@ using wojilu.Common.AppBase;
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
-    public partial class ListTwoController : ControllerBase, IPageSection {
+    public partial class ListTwoController : ControllerBase, IPageAdminSection {
 
 
-        private void bindSectionShow( int sectionId, List<ContentPost> posts ) {
-            set( "addUrl", to( new PostController().Add, sectionId ) );
+        private void bindSectionShow( long sectionId, List<ContentPost> posts ) {
+            set( "addUrl", to( new Common.PostController().Add, sectionId ) );
             set( "listUrl", to( new ListController().AdminList, sectionId ) );
             IBlock block = getBlock( "list" );
             foreach (ContentPost post in posts) {
@@ -30,7 +30,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                     block.Set( "post.Title", post.Title );
 
 
-                block.Set( "post.Url", to( new PostController().Edit, post.Id ) );
+                block.Set( "post.Url", to( new Common.PostController().Edit, post.Id ) );
                 block.Next();
             }
         }

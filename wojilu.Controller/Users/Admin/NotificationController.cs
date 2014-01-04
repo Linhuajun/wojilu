@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -21,8 +21,8 @@ namespace wojilu.Web.Controller.Users.Admin {
 
     public class NotificationController : ControllerBase {
 
-        public INotificationService notificationService { get; set; }
-        public IFriendService friendService { get; set; }
+        public virtual INotificationService notificationService { get; set; }
+        public virtual IFriendService friendService { get; set; }
 
         public NotificationController() {
             notificationService = new NotificationService();
@@ -31,7 +31,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             this.LayoutControllerType = typeof( MsgController );
         }
 
-        public void NewList() {
+        public virtual void NewList() {
 
             List<Notification> notifications = notificationService.GetUnread( ctx.owner.Id, ctx.owner.obj.GetType().FullName, 10 );
 
@@ -57,9 +57,9 @@ namespace wojilu.Web.Controller.Users.Admin {
 
         }
 
-        public void List() {
+        public virtual void List() {
 
-            set( "myHomeLink", to( new FeedController().My, 0 ) );
+            set( "myHomeLink", to( new HomeController().Index, 0 ) );
             set( "lnkReadAll", to( ReadAll ) );
 
             User owner = ctx.owner.obj as User;
@@ -96,19 +96,19 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void ReadAll() {
+        public virtual void ReadAll() {
             notificationService.ReadAll( ctx.owner.Id, ctx.owner.obj.GetType().FullName );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void Read( int id ) {
+        public virtual void Read( long id ) {
 
             Notification nf = notificationService.GetById( id );
 
-            // ∫√”——˚«Î «Œﬁ∑®÷±Ω”±Íº«Œ™“—∂¡µƒ£¨±ÿ–ÎÕ®π˝œ¬√ÊµƒΩ” ‹ªÚæ‹æ¯√˜»∑≤Ÿ◊˜
+            // Â•ΩÂèãÈÇÄËØ∑ÊòØÊó†Ê≥ïÁõ¥Êé•Ê†áËÆ∞‰∏∫Â∑≤ËØªÁöÑÔºåÂøÖÈ°ªÈÄöËøá‰∏ãÈù¢ÁöÑÊé•ÂèóÊàñÊãíÁªùÊòéÁ°ÆÊìç‰Ωú
             if (nf.Type == NotificationType.Friend && (nf.Creator != null && nf.Creator.Id > 0)) {
-                echoText( "«Î—°‘Ò≈˙◊ºªÚæ‹æ¯" );
+                echoText( "ËØ∑ÈÄâÊã©ÊâπÂáÜÊàñÊãíÁªù" );
             }
             else {
                 notificationService.Read( id );
@@ -118,7 +118,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [HttpPut, DbTransaction]
-        public void ApproveFriend( int id ) {
+        public virtual void ApproveFriend( long id ) {
 
             Notification nf = notificationService.GetById( id );
 
@@ -129,7 +129,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [HttpPut, DbTransaction]
-        public void RefuseFriend( int id ) {
+        public virtual void RefuseFriend( long id ) {
             Notification nf = notificationService.GetById( id );
             friendService.Refuse( ctx.owner.Id, nf.Creator.Id );
             notificationService.Read( id );

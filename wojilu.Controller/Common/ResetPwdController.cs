@@ -18,8 +18,8 @@ namespace wojilu.Web.Controller.Common {
 
     public class ResetPwdController : ControllerBase {
 
-        public IUserService userService { get; set; }
-        public IUserResetPwdSerevice resetService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IUserResetPwdSerevice resetService { get; set; }
 
         public ResetPwdController() {
             userService = new UserService();
@@ -29,20 +29,22 @@ namespace wojilu.Web.Controller.Common {
         }
 
         public override void CheckPermission() {
-            if (ctx.viewer.IsLogin) echoRedirect( lang( "exLogged" ) );
+            if (ctx.viewer.IsLogin) {
+                echoRedirect( lang( "exLogged" ), sys.Url.SiteUrl );
+            }
         }
 
         public override void Layout() {
         }
 
-        public void StepOne() {
+        public virtual void StepOne() {
             target( StepTwo );
             set( "siteName", config.Instance.Site.SiteName );
             set( "Captcha", Html.Captcha );
         }
 
         [HttpPost, DbTransaction]
-        public void StepTwo() {
+        public virtual void StepTwo() {
 
             // 0、验证码
             Html.Captcha.CheckError( ctx );
@@ -57,14 +59,14 @@ namespace wojilu.Web.Controller.Common {
             }
 
             if (ctx.HasErrors) {
-                showError();
+                echoError();
                 return;
             }
 
             User user = userService.GetByMail( email );
             if (user == null) {
                 errors.Add( lang( "exUserNotFoundByEmail" ) );
-                showError();
+                echoError();
                 return;
             }
             ctx.SetItem( "User", user );
@@ -78,37 +80,23 @@ namespace wojilu.Web.Controller.Common {
             ctx.SetItem( "ResetLink", resetLink );
 
             // 3、给此email发送一封重置pwd的邮件
-            MailService mail = MailUtil.getMailService();
+            MailClient mail = MailClient.Init();
             String title = string.Format( lang( "exResetMsgTitle" ), config.Instance.Site.SiteName );
             String body = loadHtml( emailBody );
-            Boolean isSent = mail.send( email, title, body );
-            if (!isSent) {
+            Result sentResult = mail.Send( email, title, body );
+            if (sentResult.HasErrors) {
                 errors.Add( lang( "exResetSend" ) );
-                showError();
+                echoError();
             }
             else {
                 resetService.Insert( userReset );
-                showJson( lang( "resetSendok" ) );
+                echoRedirect( lang( "resetSendok" ), ctx.url.SiteAndAppPath );
             }
 
         }
 
-        private void showError() {
-            echoJson( errors.ErrorsJson );
-        }
-
-        private void showJson( String msg ) {
-
-            StringBuilder builder = new StringBuilder();
-            builder.Append( "{\"IsValid\":true, Msg:\"" );
-            builder.Append( msg );
-            builder.Append( "\"}" );
-
-            echoJson( builder.ToString() );
-        }
-
         [NonVisit]
-        public void emailBody() {
+        public virtual void emailBody() {
 
             User user = ctx.GetItem( "User" ) as User;
             String resetLink = ctx.GetItem( "ResetLink" ).ToString();
@@ -127,7 +115,7 @@ namespace wojilu.Web.Controller.Common {
             return strUtil.Join( ctx.url.SiteUrl, to( ResetPwd ) + "?c=" + codeFull );
         }
 
-        public void ResetPwd() {
+        public virtual void ResetPwd() {
 
             // 1、根据get的code，查询数据库，是否有此重置密码请求
             UserResetPwd resetInfo = validateCode();
@@ -142,7 +130,7 @@ namespace wojilu.Web.Controller.Common {
         }
 
         [HttpPost, DbTransaction]
-        public void SavePwd() {
+        public virtual void SavePwd() {
 
             UserResetPwd resetInfo = validateCode();
             if (resetInfo == null) {

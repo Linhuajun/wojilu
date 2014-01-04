@@ -23,10 +23,10 @@ namespace wojilu.Web.Controller.Photo {
     [App( typeof( PhotoApp ) )]
     public class MainController : ControllerBase {
 
-        public ISysPhotoService photoService { get; set; }
-        public IPickedService PickedService { get; set; }
-        public IPhotoSysCategoryService categoryService { get; set; }
-        public IPhotoRankService rankService { get; set; }
+        public virtual ISysPhotoService photoService { get; set; }
+        public virtual IPickedService PickedService { get; set; }
+        public virtual IPhotoSysCategoryService categoryService { get; set; }
+        public virtual IPhotoRankService rankService { get; set; }
 
 
         public MainController() {
@@ -42,6 +42,8 @@ namespace wojilu.Web.Controller.Photo {
 
         [CacheAction( typeof( PhotoMainLayoutCache ) )]
         public override void Layout() {
+            // 当前app/module所有页面，所属的首页
+            ctx.SetItem( "_moduleUrl", to( Index ) );
         }
 
 
@@ -66,9 +68,9 @@ namespace wojilu.Web.Controller.Photo {
 
         [CachePage( typeof( PhotoMainPageCache ) )]
         [CacheAction( typeof( PhotoMainActionCache ) )]
-        public void Index() {
+        public virtual void Index() {
 
-            WebUtils.pageTitle( this, lang( "photo" ) );
+            ctx.Page.Title = lang( "photo" );
 
             bindPicked();
 
@@ -116,19 +118,19 @@ namespace wojilu.Web.Controller.Photo {
             }
         }
 
-        public void List( int categoryId ) {
+        public virtual void List( long categoryId ) {
 
             set( "appLink", to( Index ) );
 
             PhotoSysCategory category = categoryService.GetById( categoryId );
-            WebUtils.pageTitle( this, category.Name, lang( "photo" ) );
+            ctx.Page.SetTitle( category.Name, lang( "photo" ) );
 
             DataPage<PhotoPost> list = photoService.GetSysPostPage( categoryId, 20 );
             bindOneCategory( this.utils.getCurrentView(), category, list.Results );
             set( "page", list.PageBar );
         }
 
-        public void Recent() {
+        public virtual void Recent() {
 
             view( "List" );
 
@@ -151,7 +153,7 @@ namespace wojilu.Web.Controller.Photo {
 
             set( "page", list.PageBar );
 
-            WebUtils.pageTitle( this, "最新", lang( "photo" ) );
+            ctx.Page.SetTitle( "最新", lang( "photo" ) );
 
         }
 

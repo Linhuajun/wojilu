@@ -22,10 +22,10 @@ namespace wojilu.Web.Controller.Forum.Admin {
     [App( typeof( ForumApp ) )]
     public class ModeratorController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
-        public IForumService forumService { get; set; }
-        public IModeratorService moderatorService { get; set; }
-        public IUserService userService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumService forumService { get; set; }
+        public virtual IModeratorService moderatorService { get; set; }
+        public virtual IUserService userService { get; set; }
 
         public ModeratorController() {
             forumService = new ForumService();
@@ -34,7 +34,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
             moderatorService = new ModeratorService();
         }
 
-        public void List( int boardId ) {
+        public virtual void List( long boardId ) {
 
             ForumBoard board = boardService.GetById( boardId, ctx.owner.obj );
             if (board == null) {
@@ -60,9 +60,9 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
-            int id = ctx.PostInt( "BoardId" );
+            long id = ctx.PostLong( "BoardId" );
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
             if (board == null) {
                 echoRedirect( alang( "exBoardNotFound" ) );
@@ -90,7 +90,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
             if (board == null) {
@@ -100,7 +100,7 @@ namespace wojilu.Web.Controller.Forum.Admin {
 
             ctx.SetItem( "boardId", id );
 
-            int userId = ctx.GetInt( "m" );
+            long userId = ctx.GetLong( "m" );
             if (userId <= 0) {
                 echoRedirect( lang( "exUser" ) );
                 return;

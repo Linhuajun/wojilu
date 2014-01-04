@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -13,35 +13,36 @@ namespace wojilu.Common.Microblogs.Interface {
 
     public interface IMicroblogService {
 
-        IFeedService feedService { get; set; }
-        //INotificationService nfService { get; set; }
+        void Add(User creator, string msg, string dataType, long dataId, string ip);
 
-        Microblog GetById( int id );
+        /// <summary>
+        /// 纯粹插入数据库，不检查表情、at用户、不处理tag；不处理转发
+        /// </summary>
+        /// <param name="creator"></param>
+        /// <param name="msg"></param>
+        /// <param name="dataType"></param>
+        /// <param name="dataId"></param>
+        /// <param name="ip"></param>
+        void AddSimple(User creator, string msg, string dataType, long dataId, string ip);
 
-        List<Microblog> GetCurrent( int count, int userId );
-        Microblog GetFirst( int userId );
+        void AddSimplePrivate(User user, string msg, string dataType, long dataId, string ip);
 
-        DataPage<Microblog> GetPageList( int userId, int pageSize );
+        Microblog GetById(long id);
+        Microblog GetFirst(long userId);
+        List<Microblog> GetCurrent(int count, long userId);
 
-        void Insert( Microblog log );
-        //void InsertBig( Microblog blog );
+        DataPage<Microblog> GetPageList(long userId, int pageSize);
+        DataPage<Microblog> GetFollowingPage(long ownerId, int pageSize);
+        DataPage<Microblog> GetFollowingPage(long ownerId, string searchKey);
 
+        void Insert( Microblog blog );
+
+        int CountByUser(long userId);
 
         void Delete( Microblog blog );
-
-        DataPage<Microblog> GetPageListAll( int pageSize );
-
-        int CountByUser( int userId );
+        void DeleteBatch( String ids );
 
 
-        DataPage<Microblog> GetFollowingPage( int ownerId, int pageSize );
-
-        DataPage<Microblog> GetFollowingPage( int p, string searchKey );
-
-        //DataPage<Microblog> GetPageList( int p, int pageSize );
-
-
-        void DeleteBatch( string ids );
     }
 
 }

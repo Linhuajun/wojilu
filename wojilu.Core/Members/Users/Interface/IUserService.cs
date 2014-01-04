@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -25,7 +25,7 @@ namespace wojilu.Members.Users.Interface {
 
         void AddPostCount( User user );
         void ConfirmEmailIsError( User user );
-        void DeletePostCount( int creatorId );
+        void DeletePostCount( long creatorId );
 
         int GetUserCount();
         User GetCurrent();
@@ -33,7 +33,7 @@ namespace wojilu.Members.Users.Interface {
         DataPage<User> GetAll( int pageSize );
         DataPage<User> GetAllValid( int pageSize );
 
-        User GetById( int id );
+        User GetById( long id );
         List<User> GetByIds( String idsStr );
         User GetByMail( String email );
         User GetByName( String name );
@@ -49,7 +49,7 @@ namespace wojilu.Members.Users.Interface {
         List<User> GetPickedList( int count );
         List<User> GetRanked( String sortBy, int count );
         List<User> GetRanked( int count );
-        List<User> GetRankedToMakeFriends( int count, List<int> ids );
+        List<User> GetRankedToMakeFriends( int count, List<long> ids );
         List<User> GetUnSendConfirmEmailUsers();
         DataPage<User> SearchBy( String condition, int pageSize );
 
@@ -59,7 +59,7 @@ namespace wojilu.Members.Users.Interface {
         User IsNameEmailPwdCorrect( String nameOrEmail, String pwd );
         Boolean IsPwdCorrect( User user, String pwd );
         Boolean IsEmailExist( string email );
-        Boolean IsEmailExist( int userId, string email );
+        Boolean IsEmailExist( long userId, string email );
 
         String HashPwd( String pwd, String salt );
 
@@ -69,16 +69,38 @@ namespace wojilu.Members.Users.Interface {
         Boolean IsUserDeleted( User user );
 
         User Register( User user, MvcContext ctx );
+        Result RegisterNoPwd( User user );
 
         void SendConfirmEmail( User user );
+
         void UpdatePwd( User user, String pwd );
+        void UpdateEmail( User user, string email );
+        void UpdateEmailAndResetConfirmStatus( User user, string email );
+        Result CreateEmail( User user, string email );
+
         void UpdateAvatar( User user, String newPic );
 
-
+        /// <summary>
+        /// 根据用户名检索(使用 like %% 检索)
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         List<User> SearchByName( String name );
 
 
 
+        /// <summary>
+        /// 保存图像、不会增加积分、不会发送邮件鼓励；给管理员发通知
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="p"></param>
+        void UpdateAvatarWhenError( User user, string newPic );
 
+        /// <summary>
+        /// 仅仅保存图像。不会增加积分、不会发送邮件鼓励、不给管理员发通知
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="newPic"></param>
+        void UpdateAvatarOnly( User user, string newPic );
     }
 }

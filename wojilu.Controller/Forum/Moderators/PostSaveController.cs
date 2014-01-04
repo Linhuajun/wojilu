@@ -22,10 +22,10 @@ namespace wojilu.Web.Controller.Forum.Moderators {
     public partial class PostSaveController : ControllerBase {
 
 
-        public IForumBoardService boardService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IUserIncomeService userIncomeService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IUserIncomeService userIncomeService { get; set; }
 
         public PostSaveController() {
             topicService = new ForumTopicService();
@@ -45,7 +45,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
 
         //------------------------------------ 版主管理：帖子评分 -----------------------------------------
 
-        public void SaveCredit( int id ) {
+        public virtual void SaveCredit( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             if (post == null) {
@@ -57,7 +57,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
 
             int rateMaxValue = ((ForumApp)ctx.app.obj).MaxRateValue;
 
-            int currencyId = ctx.PostInt( "CurrencyId" );
+            long currencyId = ctx.PostLong( "CurrencyId" );
             int currencyValue = ctx.PostInt( "CurrencyValue" );
             String reason = ctx.Post( "Reason" );
             User user = (User)ctx.viewer.obj;
@@ -75,38 +75,35 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         //------------------------------------ admin -----------------------------------------
 
         [HttpPut, DbTransaction]
-        public void Ban( int id ) {
+        public virtual void Ban( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             if (post == null) {
-                actionContent( alang( "exPostNotFound" ) );
+                content( alang( "exPostNotFound" ) );
                 return;
             }
             if (boardError( post )) return;
 
             postService.BanPost( post, ctx.Post( "Reason" ), ctx.PostIsCheck( "IsSendMsg" ), (User)ctx.viewer.obj, ctx.app.Id, ctx.Ip );
-
-            new ForumCacheRemove( this.boardService, topicService, this ).BanPost( post );
             echoRedirect( lang( "opok" ) );
         }
 
         [HttpPut, DbTransaction]
-        public void UnBan( int id ) {
+        public virtual void UnBan( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             if (post == null) {
-                actionContent( alang( "exPostNotFound" ) );
+                content( alang( "exPostNotFound" ) );
                 return;
             }
             if (boardError( post )) return;
 
             postService.UnBanPost( post, (User)ctx.viewer.obj, ctx.app.Id, ctx.Ip );
-            new ForumCacheRemove( this.boardService, topicService, this ).BanPost( post );
             echoRedirect( lang( "opok" ) );
         }
 
         [HttpPut, DbTransaction]
-        public void Lock( int id ) {
+        public virtual void Lock( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             if (topic == null) {
@@ -120,7 +117,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         [HttpPut, DbTransaction]
-        public void UnLock( int id ) {
+        public virtual void UnLock( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             if (topic == null) {
@@ -134,7 +131,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         [HttpDelete, DbTransaction]
-        public void DeletePost( int id ) {
+        public virtual void DeletePost( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             if (post == null) {
@@ -145,10 +142,12 @@ namespace wojilu.Web.Controller.Forum.Moderators {
 
             postService.DeleteToTrash( post, (User)ctx.viewer.obj, ctx.Ip );
 
-            echoRedirect( lang( "opok" ) );
+            ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
+
+            echoRedirect( lang( "opok" ), alink.ToAppData( topic ) );
         }
 
-        public void DeleteTopic( int id ) {
+        public virtual void DeleteTopic( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             if (topic == null) {
@@ -172,7 +171,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         private int getPageSize() { return 100; }
 
         private Boolean boardError( ForumTopic topic ) {
-            if (ctx.GetInt( "boardId" ) != topic.ForumBoard.Id) {
+            if (ctx.GetLong( "boardId" ) != topic.ForumBoard.Id) {
                 echoRedirect( lang( "exNoPermission" ) );
                 return true;
             }
@@ -180,7 +179,7 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         private Boolean boardError( ForumPost post ) {
-            if (ctx.GetInt( "boardId" ) != post.ForumBoardId) {
+            if (ctx.GetLong( "boardId" ) != post.ForumBoardId) {
                 echoRedirect( lang( "exNoPermission" ) );
                 return true;
             }

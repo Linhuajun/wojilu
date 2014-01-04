@@ -30,6 +30,25 @@ namespace wojilu.Data {
             return false;
         }
 
+        protected override void addColumn_PrimaryKey( EntityInfo entity, StringBuilder sb, Dictionary<String, EntityInfo> clsList ) {
+            if (isAddIdentityKey( entity.Type ) == false) {
+                sb.Append( " Id int primary key default 0, " );
+            }
+            else {
+                sb.Append( " Id int identity(1,1) primary key, " );
+            }
+        }
+
+        protected override void addColumn_entity( StringBuilder sb, String columnName ) {
+            sb.Append( columnName );
+            sb.Append( " int default 0, " );
+        }
+
+        protected override void addColumn_Long( StringBuilder sb, string columnName ) {
+            sb.Append( columnName );
+            sb.Append( " long, " );
+        }
+
         protected override void addColumn_Decimal( EntityInfo entity, StringBuilder sb, EntityPropertyInfo ep, String columnName ) {
             if (ep.MoneyAttribute != null) {
                 sb.Append( columnName );

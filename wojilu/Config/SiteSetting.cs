@@ -21,6 +21,7 @@ using System.Text;
 using System.Collections.Generic;
 using wojilu.Web.Handler;
 using wojilu.Web.Mvc;
+using wojilu.Drawing;
 
 namespace wojilu.Config {
 
@@ -43,20 +44,6 @@ namespace wojilu.Config {
         /// 关闭注册，但受邀请的除外
         /// </summary>
         public static readonly int CloseUnlessInvite = 2;
-    }
-
-    public class LoginType {
-
-        /// <summary>
-        /// 注册之后自动登录
-        /// </summary>
-        public static readonly int Open = 0;
-
-        /// <summary>
-        /// 注册之后并不自动登录；必须激活才能登录
-        /// </summary>
-        public static readonly int ActivationEmail = 1;
-
     }
 
     /// <summary>
@@ -84,8 +71,7 @@ namespace wojilu.Config {
     /// <summary>
     /// 显示名称：Name 用户名，RealName 真实姓名，默认为RealName
     /// </summary>
-    public class UserDisplayNameType
-    {
+    public class UserDisplayNameType {
         public static readonly int RealName = 1;
         public static readonly int Name = 2;
     }
@@ -133,6 +119,21 @@ namespace wojilu.Config {
         public String Description { get; set; }
 
         /// <summary>
+        /// 备案号
+        /// </summary>
+        public String BeiAn { get; set; }
+
+        /// <summary>
+        /// 用户聚合首页的默认关键词
+        /// </summary>
+        public String UserPageKeywords { get; set; }
+
+        /// <summary>
+        /// 用户聚合首页的默认的描述
+        /// </summary>
+        public String UserPageDescription { get; set; }
+
+        /// <summary>
         /// 网页默认的标题
         /// </summary>
         public String PageDefaultTitle { get; set; }
@@ -148,7 +149,7 @@ namespace wojilu.Config {
         public Boolean UserNeedApprove { get; set; }
 
         /// <summary>
-        /// 对尚未激活的用户，是否提醒他激活
+        /// 对尚未激活的用户，是否必须激活才能登录
         /// </summary>
         public Boolean AlertActivation { get; set; }
 
@@ -168,11 +169,6 @@ namespace wojilu.Config {
         public int RegisterType { get; set; }
 
         /// <summary>
-        /// 登录限制(1)注册之后自动登录 (2)必须激活才能登录)
-        /// </summary>
-        public int LoginType { get; set; }
-
-        /// <summary>
         /// 顶部用户栏状态(1)显示 (2)隐藏 (3)在关闭注册之后隐藏
         /// </summary>
         public int TopNavDisplay { get; set; }
@@ -184,7 +180,6 @@ namespace wojilu.Config {
         /// </summary>
         public String UserInitApp {
             get {
-                //if (strUtil.IsNullOrEmpty( _initApp )) return "home, blog, photo";
                 if (strUtil.IsNullOrEmpty( _initApp )) return "";
                 return _initApp;
             }
@@ -279,7 +274,7 @@ namespace wojilu.Config {
         /// <summary>
         /// 网站当前皮肤的ID
         /// </summary>
-        public int SkinId { get; set; }
+        public long SkinId { get; set; }
 
         /// <summary>
         /// 用户密码是否采用16位的md5加密方式(默认为否，用于兼容旧的系统)
@@ -290,6 +285,77 @@ namespace wojilu.Config {
         /// 评论内容的长度
         /// </summary>
         public int CommentLength { get { return 500; } }
+
+        private int _UserDescriptionMin;
+
+        /// <summary>
+        /// 用户简介的最少字数
+        /// </summary>
+        public int UserDescriptionMin {
+            get {
+                if (_UserDescriptionMin < 0) return 0;
+                return _UserDescriptionMin;
+            }
+            set {
+                if (value < 0) value = 0;
+                _UserDescriptionMin = value;
+            }
+        }
+
+        private int _UserDescriptionMax;
+
+        /// <summary>
+        /// 用户简介的最大字数
+        /// </summary>
+        public int UserDescriptionMax {
+
+            get {
+                if (_UserDescriptionMax <= 0) return 500;
+                return _UserDescriptionMax;
+            }
+            set {
+                if (value <= 0) value = 500;
+                _UserDescriptionMax = value;
+            }        
+        }
+
+        private int _UserSignatureMin;
+
+        /// <summary>
+        /// 用户论坛签名的最少字数
+        /// </summary>
+        public int UserSignatureMin {
+            get {
+                if (_UserSignatureMin < 0) return 0;
+                return _UserSignatureMin;
+            }
+            set {
+                if (value < 0) value = 0;
+                _UserSignatureMin = value;
+            }
+        }
+
+        private int _UserSignatureMax;
+
+        /// <summary>
+        /// 用户论坛签名的最大字数
+        /// </summary>
+        public int UserSignatureMax {
+
+            get {
+                if (_UserSignatureMax <= 0) return 200;
+                return _UserSignatureMax;
+            }
+            set {
+                if (value <= 0) value = 200;
+                _UserSignatureMax = value;
+            }    
+        }
+
+        /// <summary>
+        /// 注册之后禁止发言发言的时间限制(单位小时)
+        /// </summary>
+        public int PublishTimeAfterReg { get; set; }
 
         private int _TagLength;
 
@@ -466,37 +532,7 @@ namespace wojilu.Config {
             set { _bannedIpInfo = value; }
         }
 
-
         //public Boolean IsWatermark { get; set; }
-
-
-        private int _microblogContentMax;
-        /// <summary>
-        /// 微博内容字数最高限制
-        /// </summary>
-        public int MicroblogContentMax {
-            get {
-                if (_microblogContentMax <= 0) return 140;
-                return _microblogContentMax;
-            }
-            set {
-                _microblogContentMax = value;
-            }
-        }
-
-        private int _microblogPageSize;
-        /// <summary>
-        /// 微博内容字数最高限制
-        /// </summary>
-        public int MicroblogPageSize {
-            get {
-                if (_microblogPageSize <= 0) return 20;
-                return _microblogPageSize;
-            }
-            set {
-                _microblogPageSize = value;
-            }
-        }
 
         //----------------------------------------------------------------
 
@@ -530,40 +566,75 @@ namespace wojilu.Config {
             return sb.ToString();
         }
 
-
         //----------------------------------------------------------------
 
-        public int PhotoThumbHeight { get; set; }
-        public int PhotoThumbWidth { get; set; }
+        /// <summary>
+        /// 上传图片的配置信息，具体内容，请参考 ThumbConfig 的注释
+        /// </summary>
+        public String PhotoThumb { get; set; }
 
-        public int PhotoThumbHeightMedium { get; set; }
-        public int PhotoThumbWidthMedium { get; set; }
+        private Dictionary<String, ThumbInfo> _photoThumbConfig = null;
+        public Dictionary<String, ThumbInfo> GetPhotoThumbConfig() {
 
-        public int PhotoThumbHeightBig { get; set; }
-        public int PhotoThumbWidthBig { get; set; }
+            if (_photoThumbConfig == null) {
 
+                // 默认值
+                if (strUtil.IsNullOrEmpty( this.PhotoThumb )) {
+                    this.PhotoThumb = "s=width:170|height:170|mode:cut, m=width:600|height:600|mode:auto, b=width:1024|height:1024|mode:auto";
+                }
 
-        public int AvatarThumbHeight { get; set; }
-        public int AvatarThumbWidth { get; set; }
+                _photoThumbConfig = ThumbConfig.ReadString( this.PhotoThumb );
+            }
 
-        public int AvatarThumbHeightMedium { get; set; }
-        public int AvatarThumbWidthMedium { get; set; }
+            return _photoThumbConfig;
+        }
 
-        public int AvatarThumbHeightBig { get; set; }
-        public int AvatarThumbWidthBig { get; set; }
+        /// <summary>
+        /// 头像缩略的配置信息，具体内容，请参考 ThumbConfig 的注释
+        /// </summary>
+        public String AvatarThumb { get; set; }
 
-        public Boolean IsSaveAvatarMedium { get; set; }
-        public Boolean IsSaveAvatarBig { get; set; }
+        private Dictionary<String, ThumbInfo> _avatarThumbConfig = null;
+        public Dictionary<String, ThumbInfo> GetAvatarThumbConfig() {
+
+            if (_avatarThumbConfig == null) {
+
+                // 默认值
+                if (strUtil.IsNullOrEmpty( this.AvatarThumb )) {
+                    this.AvatarThumb = "s=width:48|height:48|mode:cut, m=width:100|height:100|mode:cut, b=width:200|height:200|mode:cut";
+                }
+
+                _avatarThumbConfig = ThumbConfig.ReadString( this.AvatarThumb );
+            }
+
+            return _avatarThumbConfig;
+        }
+        //----------------------------------------------------------------
+
 
         public String[] UploadFileTypes { get; set; }
         public String[] UploadPicTypes { get; set; }
 
+        private int _uploadAvatarMaxKB;
         private int _uploadPicMaxMB;
         private int _uploadFileMaxMB;
+
+        /// <summary>
+        /// 用户头像最大上传大小，单位KB
+        /// <para>如果不设置，默认是2000KB</para>
+        /// </summary>
+        public int UploadAvatarMaxKB {
+            get {
+                if (_uploadAvatarMaxKB == 0) return 2000;
+                return _uploadAvatarMaxKB;
+            }
+            set { _uploadAvatarMaxKB = value; }
+        }
 
 
         /// <summary>
         /// 图片最大上传的大小，单位MB
+        /// <para>如果不设置，默认是5M</para>
         /// </summary>
         public int UploadPicMaxMB {
             get {
@@ -575,6 +646,7 @@ namespace wojilu.Config {
 
         /// <summary>
         /// 图片最大上传的大小，单位MB
+        /// <para>如果不设置，默认是20M</para>
         /// </summary>
         public int UploadFileMaxMB {
             get {

@@ -27,10 +27,14 @@ namespace wojilu.Web.Mvc {
     /// </summary>
     public class MvcConfig {
 
-        public static readonly MvcConfig Instance = new MvcConfig();
+        private static MvcConfig _instance = new MvcConfig();
+
+        public static MvcConfig Instance {
+            get { return _instance; }
+        }
 
         /// <summary>
-        /// 路由文件的路径。默认是 /framework/config/route.config
+        /// 路由文件的绝对路径。默认是根目录绝对路径加上 /framework/config/route.config
         /// </summary>
         public String RouteConfigPath { get { return _routeConfigPath; } }
 
@@ -45,14 +49,41 @@ namespace wojilu.Web.Mvc {
         public String UrlExt { get { return _urlExt; } }
 
         /// <summary>
+        /// 网址分隔符，默认是斜杠 "/"，可以配置成横杠 "-"
+        /// </summary>
+        public String UrlSeparator { get { return _urlSeparator; } }
+
+        /// <summary>
+        /// 网址是否小写。默认是false
+        /// </summary>
+        public Boolean IsUrlToLower { get { return _isUrlToLower; } }
+
+        /// <summary>
         /// 视图文件的后缀名。默认是.html，如果不为空，则带前缀.点号
         /// </summary>
         public String ViewExt { get { return _viewExt; } }
 
         /// <summary>
-        /// 视图文件所在目录。默认值是 /framework/views/ ，也可以在 mvc.config 中添加 viewsDir 项自定义
+        /// 视图文件的默认目录，一些不需要区分客户端的模板，比如激活邮件模板等等需要用到。默认值是 /framework/views/
         /// </summary>
-        public String ViewDir { get { return _viewDir; } }
+        public String ViewDir {
+            get { return _viewDir; }
+        }
+
+        /// <summary>
+        /// 视图文件所在目录列表。默认值是 /framework/views/ ，也可以在 mvc.config 设置 viewsDirList ，可以添加多个目录
+        /// </summary>
+        public List<String> ViewDirList { get { return _viewDirList; } }
+
+        /// <summary>
+        /// 视图(模板)过滤器，用于判断：哪些viewsDir应该使用
+        /// </summary>
+        public List<String> ViewsFilter { get { return _viewsFilter; } }
+
+        /// <summary>
+        /// mvc框架的版本号
+        /// </summary>
+        public String Version { get { return _version; } }
 
         /// <summary>
         /// 是否解析appId，默认解析，即将 Mycontroller16/List.aspx 中的16解析成appId
@@ -116,14 +147,28 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         public List<String> Filter { get { return _filterList; } }
 
-        //------------------------------------------------------------------------------------------------------------------------------
+        /// <summary>
+        /// 允许客户端提交的 html tag 白名单
+        /// </summary>
+        public List<String> TagWhitelist { get { return _tagWhiteList; } }
+
+
+        //-----------------------------------------------------------------------------------
 
         /// <summary>
         /// 获取网站发生错误时报错的模板路径，默认是 /framework/views/error.html
         /// </summary>
         /// <returns></returns>
         public String GetErrorTemplatePath() {
-            return strUtil.Join( this.ViewDir, "error" ) + this.ViewExt;
+            return strUtil.Join( this.ViewDir, GetErrorTemplateFile() ) + this.ViewExt;
+        }
+
+        /// <summary>
+        /// 获取网站发生错误时报错的模板文件名，不包括路径，也不包括后缀名。默认是 error
+        /// </summary>
+        /// <returns></returns>
+        public String GetErrorTemplateFile() {
+            return "error";
         }
 
         /// <summary>
@@ -131,7 +176,15 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <returns></returns>
         public String GetMsgTemplatePath() {
-            return strUtil.Join( this.ViewDir, "msg" ) + this.ViewExt;
+            return strUtil.Join( this.ViewDir, GetMsgTemplateFile() ) + this.ViewExt;
+        }
+
+        /// <summary>
+        /// 获取反馈信息(通常使用echo方法时使用)的模板文件名，不包括路径，也不包括后缀名。默认是 msg
+        /// </summary>
+        /// <returns></returns>
+        public String GetMsgTemplateFile() {
+            return "msg";
         }
 
         /// <summary>
@@ -139,7 +192,15 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <returns></returns>
         public String GetMsgBoxTemplatePath() {
-            return strUtil.Join( this.ViewDir, "msgbox" ) + this.ViewExt;
+            return strUtil.Join( this.ViewDir, GetMsgBoxTemplateFile() ) + this.ViewExt;
+        }
+
+        /// <summary>
+        /// 获取弹窗的模板文件名，不包括路径，也不包括后缀名。默认是 msgbox
+        /// </summary>
+        /// <returns></returns>
+        public String GetMsgBoxTemplateFile() {
+            return "msgbox";
         }
 
         /// <summary>
@@ -147,7 +208,15 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <returns></returns>
         public String GetForwardTemplatePath() {
-            return strUtil.Join( this.ViewDir, "forward" ) + this.ViewExt;
+            return strUtil.Join( this.ViewDir, GetForwardTemplateFile() ) + this.ViewExt;
+        }
+
+        /// <summary>
+        /// 获取页面跳转的模板文件名，不包括路径，也不包括后缀名。默认是 forward
+        /// </summary>
+        /// <returns></returns>
+        public String GetForwardTemplateFile() {
+            return "forward";
         }
 
         /// <summary>
@@ -164,16 +233,24 @@ namespace wojilu.Web.Mvc {
             return results;
         }
 
-        //------------------------------------------------------------------------------------------------------------------------------
+        //-----------------------------------------------------------------------------------
+
 
         private String _routeConfigPath;
 
         private List<String> _rootNamespace;
         private List<String> _filterList;
+        private List<String> _tagWhiteList;
 
         private String _urlExt;
         private String _viewExt;
         private String _viewDir;
+        private String _version;
+
+        private List<String> _viewDirList;
+        private List<String> _viewsFilter;
+
+
         private Boolean _isParseAppId;
         private Boolean _isCacheView;
         private Boolean _isActionCache;
@@ -185,6 +262,9 @@ namespace wojilu.Web.Mvc {
         private String _cssVersion;
         private String _staticDomain;
 
+        private String _urlSeparator;
+        private Boolean _isUrlToLower;
+
         private String _noLogError;
 
         private MvcConfig() {
@@ -193,7 +273,7 @@ namespace wojilu.Web.Mvc {
 
             _routeConfigPath = PathHelper.Map( strUtil.Join( cfgHelper.ConfigRoot, "route.config" ) );
 
-            _rootNamespace = getRootNamespace( dic );
+            _rootNamespace = getValueList( dic, "rootNamespace" );
             _isParseAppId = getIsParseAppId( dic );
             _isCacheView = getIsCacheView( dic );
 
@@ -205,7 +285,16 @@ namespace wojilu.Web.Mvc {
             _urlExt = getUrlExt( dic );
             _viewExt = getViewExt( dic );
             _viewDir = getViewDir( dic );
-            _filterList = getFilterList( dic );
+            _version = getVersionDir( dic );
+
+            _viewDirList = getViewDirList( getValueList( dic, "viewsDirList" ) );
+            _viewsFilter = getValueList( dic, "viewsFilter" );
+
+            _filterList = getValueList( dic, "filter" );
+            _tagWhiteList = getValueList( dic, "tagWhiteList" );
+
+            _urlSeparator = getUrlSeparator( dic );
+            _isUrlToLower = getIsUrlToLower( dic );
 
             dic.TryGetValue( "jsVersion", out _jsVersion );
             dic.TryGetValue( "cssVersion", out _cssVersion );
@@ -216,38 +305,18 @@ namespace wojilu.Web.Mvc {
 
         }
 
-
-
-
-        private List<String> getFilterList( Dictionary<String, String> dic ) {
+        private List<String> getValueList( Dictionary<String, String> dic, String keyName ) {
 
             List<String> result = new List<String>();
 
-            String filter;
-            dic.TryGetValue( "filter", out filter );
-            if (strUtil.IsNullOrEmpty( filter )) return result;
+            String rawStr;
+            dic.TryGetValue( keyName, out rawStr );
+            if (strUtil.IsNullOrEmpty( rawStr )) return result;
 
-            String[] arrF = filter.Split( ',' );
-            foreach (String f in arrF) {
-                if (strUtil.IsNullOrEmpty( f )) continue;
-                result.Add( f.Trim() );
-            }
-
-            return result;
-        }
-
-        private List<String> getRootNamespace( Dictionary<String, String> dic ) {
-
-            List<String> result = new List<String>();
-
-            String strNs;
-            dic.TryGetValue( "rootNamespace", out strNs );
-            if (strUtil.IsNullOrEmpty( strNs )) return result;
-
-            String[] arrNs = strNs.Split( ',' );
-            foreach (String ns in arrNs) {
-                if (strUtil.IsNullOrEmpty( ns )) continue;
-                result.Add( ns.Trim() );
+            String[] arr = rawStr.Split( ',' );
+            foreach (String item in arr) {
+                if (strUtil.IsNullOrEmpty( item )) continue;
+                result.Add( item.Trim() );
             }
 
             return result;
@@ -296,6 +365,23 @@ namespace wojilu.Web.Mvc {
             return viewsDir;
         }
 
+        private List<String> getViewDirList( List<String> rDirs ) {
+
+            List<String> list = new List<String>();
+            foreach (String x in rDirs) {
+                if (strUtil.IsNullOrEmpty( x )) continue;
+
+                if (x.StartsWith( cfgHelper.FrameworkRoot ) == false) {
+                    list.Add( strUtil.Join( cfgHelper.FrameworkRoot, x ) );
+                }
+                else {
+                    list.Add( x );
+                }
+            }
+
+            return list;
+        }
+
         private String getViewExt( Dictionary<String, String> dic ) {
 
             String ext;
@@ -304,6 +390,13 @@ namespace wojilu.Web.Mvc {
 
             if (!ext.StartsWith( "." )) return "." + ext;
             return ext;
+        }
+
+        private string getVersionDir( Dictionary<String, String> dic ) {
+            String version;
+            dic.TryGetValue( "version", out version );
+            if (strUtil.IsNullOrEmpty( version )) return "1.9";
+            return version;
         }
 
         private String getUrlExt( Dictionary<String, String> dic ) {
@@ -316,7 +409,30 @@ namespace wojilu.Web.Mvc {
             return ext;
         }
 
+        private String getUrlSeparator( Dictionary<String, String> dic ) {
 
+            String defaultValue = "/";
+
+            String urlSp;
+            dic.TryGetValue( "urlSeparator", out urlSp );
+            if (strUtil.IsNullOrEmpty( urlSp )) return defaultValue;
+
+            urlSp = urlSp.Trim();
+            if (urlSp.Length > 1) return defaultValue;
+
+            return urlSp;
+        }
+
+        private bool getIsUrlToLower( Dictionary<String, String> dic ) {
+            String isLower;
+            dic.TryGetValue( "isUrlToLower", out isLower );
+            if (strUtil.IsNullOrEmpty( isLower )) return false;
+            return cvt.ToBool( isLower );
+        }
+
+        public static void Reset() {
+            _instance = new MvcConfig();
+        }
 
     }
 }

@@ -36,9 +36,9 @@ namespace wojilu.ORM {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( MappingClass ) );
 
-        private IDictionary _assemblyList = new Hashtable();
-        private IDictionary _classList = new Hashtable();
-        private IDictionary _typeList = new Hashtable();
+        private Dictionary<String, Assembly> _assemblyList = new Dictionary<String, Assembly>();
+        private Dictionary<String, EntityInfo> _classList = new Dictionary<String, EntityInfo>();
+        private Dictionary<String, Type> _typeList = new Dictionary<String, Type>();
         private IDictionary _factoryList;
 
         private List<IInterceptor> _interceptorList = new List<IInterceptor>();
@@ -47,7 +47,7 @@ namespace wojilu.ORM {
         /// <summary>
         /// ORM需要加载的所有程序集
         /// </summary>
-        public IDictionary AssemblyList {
+        public Dictionary<String, Assembly> AssemblyList {
             get { return _assemblyList; }
             set { _assemblyList = value; }
         }
@@ -55,7 +55,7 @@ namespace wojilu.ORM {
         /// <summary>
         /// 所有需要持久化的实体的 EntityInfo(每个EntityInfo包括类型、映射的表名等信息)
         /// </summary>
-        public IDictionary ClassList {
+        public Dictionary<String, EntityInfo> ClassList {
             get { return _classList; }
             set { _classList = value; }
         }
@@ -63,7 +63,7 @@ namespace wojilu.ORM {
         /// <summary>
         /// 所有需要持久化的实体的类型(type)
         /// </summary>
-        public IDictionary TypeList {
+        public Dictionary<String, Type> TypeList {
             get { return _typeList; }
             set { _typeList = value; }
         }
@@ -148,8 +148,10 @@ namespace wojilu.ORM {
                 map = loadByReflection();
                 EasyDB.SaveToFile( map, dllPath );
             }
-            else
+            else {
                 logger.Info( "load meta from cache" );
+            }
+
 
             checkMultiDB( map );
 
@@ -209,10 +211,10 @@ namespace wojilu.ORM {
         }
 
 
-        private static IDictionary FinishPropertyInfo( IDictionary mapClassList ) {
-            foreach (DictionaryEntry entry in mapClassList) {
+        private static IDictionary FinishPropertyInfo( Dictionary<String, EntityInfo> mapClassList ) {
+            foreach (KeyValuePair<String, EntityInfo> kv in mapClassList) {
 
-                EntityInfo info = entry.Value as EntityInfo;
+                EntityInfo info = kv.Value;
 
                 foreach (EntityPropertyInfo ep in info.SavedPropertyList) {
 
@@ -220,7 +222,7 @@ namespace wojilu.ORM {
                     //    ep.EntityInfo = mapClassList[ep.Type.FullName] as EntityInfo;
                     //}
 
-                    if (mapClassList.Contains( ep.Type.FullName ) && ep.SaveToDB) {
+                    if (mapClassList.ContainsKey( ep.Type.FullName ) && ep.SaveToDB) {
                         ep.EntityInfo = mapClassList[ep.Type.FullName] as EntityInfo;
                         ep.IsEntity = true;
                         info.EntityPropertyList.Add( ep );
@@ -272,11 +274,11 @@ namespace wojilu.ORM {
 
         private static void cacheInterceptor( MappingClass map ) {
 
-            List<object> interceptor = DbConfig.Instance.Interceptor;
+            List<JsonObject> interceptor = DbConfig.Instance.Interceptor;
             for (int i = 0; i < interceptor.Count; i++) {
-                Dictionary<String, object> info = interceptor[i] as Dictionary<String, object>;
-                String asmName = info["AssemblyName"].ToString();
-                String typeName = info["TypeFullName"].ToString();
+                JsonObject info = interceptor[i];
+                String asmName = info.Get( "AssemblyName" );
+                String typeName = info.Get( "TypeFullName" );
                 IInterceptor obj = rft.GetInstance( asmName, typeName ) as IInterceptor;
                 if (obj == null) {
                     throw new Exception( "load ORM interceptor error( Assembly:" + asmName + ", Type:" + typeName + ")" );
@@ -307,8 +309,9 @@ namespace wojilu.ORM {
             foreach (KeyValuePair<String, ConnectionString> kv in DbConfig.Instance.GetConnectionStringMap()) {
 
                 String connectionString = kv.Value.StringContent;
-                if (strUtil.IsNullOrEmpty( connectionString ))
+                if (strUtil.IsNullOrEmpty( connectionString )) {
                     throw new NotImplementedException( lang.get( "exConnectionString" ) + ":" + kv.Key );
+                }
 
                 DatabaseType dbtype = kv.Value.DbType;
 

@@ -14,8 +14,8 @@ namespace wojilu.Web.Controller.Content.Submit {
     [App( typeof( ContentApp ) )]
     public class MyListController : ControllerBase {
 
-        public ContentTempPostService tpostService { get; set; }
-        public IContentPostService postService { get; set; }
+        public virtual ContentTempPostService tpostService { get; set; }
+        public virtual IContentPostService postService { get; set; }
 
         public MyListController() {
             tpostService = new ContentTempPostService();
@@ -27,7 +27,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             set( "approvedPostLink", to( Approved ) );
         }
 
-        public void Rank() {
+        public virtual void Rank() {
 
             HideLayout( typeof( MyListController ) );
 
@@ -40,7 +40,7 @@ namespace wojilu.Web.Controller.Content.Submit {
 
         }
 
-        private String getRoleName( int submitCount ) {
+        private String getRoleName( long submitCount ) {
 
             ContentApp app = ctx.app.obj as ContentApp;
             ContentSubmitterRole sr = app.GetSubmitterRoleObj();
@@ -55,7 +55,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             return "无";
         }
 
-        public void Index() {
+        public virtual void Index() {
             DataPage<ContentTempPost> list = tpostService.GetByCreator( ctx.viewer.Id, ctx.owner.obj, ctx.app.Id );
             IBlock block = getBlock( "list" );
             foreach (ContentTempPost p in list.Results) {
@@ -70,9 +70,9 @@ namespace wojilu.Web.Controller.Content.Submit {
             set( "page", list.PageBar );
         }
 
-        public void Approved() {
+        public virtual void Approved() {
 
-            DataPage<ContentPost> list = postService.GetByCreator( ctx.viewer.Id, ctx.owner.obj, ctx.app.Id );
+            DataPage<ContentPost> list = postService.GetPageByCreator( ctx.viewer.Id, ctx.owner.obj, ctx.app.Id );
 
             IBlock block = getBlock( "list" );
             foreach (ContentPost p in list.Results) {
@@ -90,7 +90,7 @@ namespace wojilu.Web.Controller.Content.Submit {
 
         }
 
-        public void DeleteApproved( int id ) {
+        public virtual void DeleteApproved( long id ) {
             ContentPost p = postService.GetById( id, ctx.owner.Id);
             if (p == null) {
                 echoError( lang( "exDataNotFound" ) );
@@ -101,7 +101,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             redirect();
         }
 
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             ContentTempPost p = tpostService.GetById( id );
             if (p == null) {

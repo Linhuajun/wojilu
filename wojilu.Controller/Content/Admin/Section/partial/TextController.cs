@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -11,10 +11,10 @@ using wojilu.Common.AppBase;
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
-    public partial class TextController : ControllerBase, IPageSection {
+    public partial class TextController : ControllerBase, IPageAdminSection {
 
 
-        private void bindSectionShow( int sectionId, ContentPost textPost ) {
+        private void bindSectionShow( long sectionId, ContentPost textPost ) {
             String content = textPost == null ? "" : textPost.Content;
             set( "post.Content", content );
 
@@ -32,8 +32,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             set( "section.Title", section.Title );
             IBlock block = getBlock( "list" );
             foreach (ContentPost post in posts.Results) {
-                //block.Set( "post.Content", strUtil.CutString( post.Content, 100 ) );
-                block.Set( "post.Content", strUtil.ParseHtml( post.Content, 100 ) );
+                block.Set( "post.Content", getContent( post ) );
                 block.Set( "post.OrderId", post.OrderId );
                 block.Set( "post.PubDate", post.Created );
                 block.Set( "post.EditUrl", to( Edit, post.Id ) );
@@ -43,15 +42,13 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             set( "page", posts.PageBar );
         }
 
-        private void bindAddInfo( ContentSection section ) {
-            set( "section.Title", section.Title );
-            editor( "Content", "", "300px" );
+        private String getContent( ContentPost post ) {
+
+            String result = strUtil.ParseHtml( post.Content, 100 );
+            if (strUtil.HasText( result )) return result;
+            return post.Created.ToShortDateString();
         }
 
-        private void bindEditInfo( ContentPost post ) {
-            set( "section.Title", post.PageSection.Title );
-            editor( "Content", post.Content, "300px" );
-        }
 
 
     }

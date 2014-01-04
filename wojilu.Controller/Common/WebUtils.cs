@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -17,22 +17,25 @@ namespace wojilu.Web.Controller.Common {
 
     public class WebUtils {
 
-        private static String pageTitleSeparator = "_";
-
+        /// <summary>
+        /// 1.8以前的旧方法，暂时保留。新版请直接使用 ctx.Page.Title = title 设值
+        /// </summary>
+        /// <param name="controller"></param>
+        /// <param name="title"></param>
         public static void pageTitle( ControllerBase controller, String title ) {
-            controller.Page.Title = title + pageTitleSeparator + pageTitlePostfix( controller.ctx );
+            controller.ctx.Page.Title = title;
         }
 
+        /// <summary>
+        /// 1.8以前的旧方法，暂时保留。新版请直接使用 ctx.Page.SetTitle( item1, item2 ) 设值
+        /// </summary>
+        /// <param name="controller"></param>
+        /// <param name="item1"></param>
+        /// <param name="item2"></param>
         public static void pageTitle( ControllerBase controller, String item1, String item2 ) {
-            controller.Page.Title = item1 + pageTitleSeparator + item2 + pageTitleSeparator + pageTitlePostfix( controller.ctx );
+            controller.ctx.Page.SetTitle( item1, item2 );
         }
 
-        private static String pageTitlePostfix( MvcContext ctx ) {
-            if (ctx.owner.obj.GetType() != typeof( Site ))
-                return ctx.owner.obj.Name + pageTitleSeparator + config.Instance.Site.SiteName;
-            else
-                return config.Instance.Site.SiteName;
-        }
 
         //--------------------------------------------------------------------------------------------------------
 
@@ -64,12 +67,12 @@ namespace wojilu.Web.Controller.Common {
 
         public static String getFriendCmd( MvcContext ctx ) {
 
-            int targetId = ctx.owner.Id;
+            long targetId = ctx.owner.Id;
 
             return getFriendCmd( ctx, targetId );
         }
 
-        public static string getFriendCmd( MvcContext ctx, int targetId ) {
+        public static string getFriendCmd(MvcContext ctx, long targetId) {
 
             if (ctx.viewer.Id == targetId) return "";
             if (ctx.viewer.IsFriend( targetId )) return deleteFriendCmd( ctx, targetId );
@@ -78,11 +81,11 @@ namespace wojilu.Web.Controller.Common {
             return friendAndFollowCmd( ctx, targetId );
         }
 
-        private static String deleteFriendCmd( MvcContext ctx, int targetId ) {
+        private static string deleteFriendCmd(MvcContext ctx, long targetId) {
             return "<a href='" + ctx.link.T2( new FriendController().DeleteFriend, targetId ) + "' class=\"deleteCmd cmd\"><span>" + lang.get( "canelFriend" ) + "</span></a>";
         }
 
-        private static String waitingApprovingCmd( MvcContext ctx, int targetId ) {
+        private static string waitingApprovingCmd(MvcContext ctx, long targetId) {
 
             String cmd = "<span>" + lang.get( "inApproveFriend" ) + "...</span>";
             String delpic = string.Format( "<img src=\"{0}\" />", strUtil.Join( sys.Path.Img, "delete.gif" ) );
@@ -92,7 +95,7 @@ namespace wojilu.Web.Controller.Common {
             return cmd;
         }
 
-        private static String friendAndFollowCmd( MvcContext ctx, int targetId ) {
+        private static string friendAndFollowCmd(MvcContext ctx, long targetId) {
             String cmd = "<a href=\"" + ctx.link.T2( new FriendController().AddFriend, targetId ) + "\" class=\"frmBox cmd\" xwidth=\"500\" title=\"" + lang.get( "addAsFriend" ) + "\"><span>" + lang.get( "addAsFriend" ) + "</span></a>";
 
             if (ctx.viewer.IsFollowing( targetId )) {
@@ -104,7 +107,7 @@ namespace wojilu.Web.Controller.Common {
             return cmd;
         }
 
-        public static String getFollowCmd( MvcContext ctx, int targetId ) {
+        public static string getFollowCmd(MvcContext ctx, long targetId) {
 
             if (ctx.viewer.Id == targetId) return "";
 
@@ -117,7 +120,7 @@ namespace wojilu.Web.Controller.Common {
 
         }
 
-        private static Boolean isWaitingFriendApproving( int userId, int targetId ) {
+        private static bool isWaitingFriendApproving(long userId, long targetId) {
             FriendService friendService = new FriendService();
             return friendService.IsWaitingFriendApproving( userId, targetId );
         }

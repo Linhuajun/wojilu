@@ -7,6 +7,8 @@ namespace wojilu.Common.Comments {
     public interface ICommentTarget {
 
         int Replies { get; set; }
+        Type GetAppType();
+
     }
 
 }

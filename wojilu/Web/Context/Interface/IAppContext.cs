@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,15 +21,15 @@ using wojilu.Common.Security;
 namespace wojilu.Web.Context {
 
     /// <summary>
-    /// Ó¦ÓÃ³ÌĞòÉÏÏÂÎÄ½Ó¿Ú
+    /// åº”ç”¨ç¨‹åºä¸Šä¸‹æ–‡æ¥å£
     /// </summary>
     public interface IAppContext {
 
         Type getAppType();
-        int Id { get; set; }
+        long Id { get; set; }
 
         /// <summary>
-        /// µ±Ç° app µÄÃû³Æ
+        /// å½“å‰ app çš„åç§°
         /// </summary>
         String Name { get; }
         ISecurity SecurityObject { get; set; }
@@ -38,7 +38,7 @@ namespace wojilu.Web.Context {
         String Url { get; }
 
         /// <summary>
-        /// µ±Ç° app ¶ÔÏó
+        /// å½“å‰ app å¯¹è±¡
         /// </summary>
         Object obj { get; set; }
 

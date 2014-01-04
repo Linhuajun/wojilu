@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,21 +17,23 @@
 using System;
 using System.Collections;
 using System.Text;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace wojilu.ORM {
 
     /// <summary>
-    /// ÔªÊı¾İÁĞ±í
+    /// å…ƒæ•°æ®åˆ—è¡¨
     /// </summary>
     public class MetaList {
 
-        public MetaList( IDictionary asmList, IDictionary clsList ) {
+        public MetaList( Dictionary<String, Assembly> asmList, Dictionary<String, EntityInfo> clsList ) {
             this.AssemblyList = asmList;
             this.ClassList = clsList;
         }
 
-        public IDictionary AssemblyList { get; set; }
-        public IDictionary ClassList { get; set; }
+        public Dictionary<String, Assembly> AssemblyList { get; set; }
+        public Dictionary<String, EntityInfo> ClassList { get; set; }
 
     }
 

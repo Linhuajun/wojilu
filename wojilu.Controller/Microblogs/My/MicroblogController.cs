@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -18,17 +18,18 @@ using wojilu.Common.Microblogs.Domain;
 using wojilu.Common.Microblogs.Interface;
 using wojilu.Web.Controller.Admin;
 using wojilu.Common;
+using wojilu.Common.Microblogs;
 
 namespace wojilu.Web.Controller.Microblogs.My {
 
     public partial class MicroblogController : ControllerBase {
 
-        public IMicroblogService microblogService { get; set; }
-        public IFollowerService followService { get; set; }
-        public IVisitorService visitorService { get; set; }
-        public MicroblogFavoriteService mfService { get; set; }
-        public MicroblogCommentService commentService { get; set; }
-        public MicroblogAtService matService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
+        public virtual IFollowerService followService { get; set; }
+        public virtual IVisitorService visitorService { get; set; }
+        public virtual MicroblogFavoriteService mfService { get; set; }
+        public virtual MicroblogCommentService commentService { get; set; }
+        public virtual MicroblogAtService matService { get; set; }
 
         public IVideoSpider videoSpider { get; set; }
 
@@ -61,9 +62,9 @@ namespace wojilu.Web.Controller.Microblogs.My {
             set( "moreVisitors", to( new wojilu.Web.Controller.Users.VisitorController().Index ) );
         }
 
-        public void Home() {
+        public virtual void Home() {
 
-            Page.Title = "Œ“µƒŒ¢≤©";
+            Page.Title = "ÊàëÁöÑÂæÆÂçö";
 
 
             load( "publisher", Publisher );
@@ -74,18 +75,19 @@ namespace wojilu.Web.Controller.Microblogs.My {
             set( "user.Face", user.PicSmall );
             set( "user.Name", user.Name );
 
-            DataPage<Microblog> list = microblogService.GetFollowingPage( ctx.owner.obj.Id, config.Instance.Site.MicroblogPageSize );
+            DataPage<Microblog> list = microblogService.GetFollowingPage( ctx.owner.obj.Id, MicroblogAppSetting.Instance.MicroblogPageSize );
             List<MicroblogVo> volist = mfService.CheckFavorite( list.Results, ctx.viewer.Id );
 
             ctx.SetItem( "_microblogVoList", volist );
             ctx.SetItem( "_showUserFace", true );
+            ctx.SetItem( "_showType", "microblog" );
             load( "blogList", new wojilu.Web.Controller.Microblogs.MicroblogController().bindBlogs );
 
             set( "page", list.PageBar );
 
         }
 
-        public void Search() {
+        public virtual void Search() {
 
             view( "Home" );
 
@@ -99,6 +101,7 @@ namespace wojilu.Web.Controller.Microblogs.My {
 
             ctx.SetItem( "_microblogVoList", volist );
             ctx.SetItem( "_showUserFace", true );
+            ctx.SetItem( "_showType", "microblog" );
             load( "blogList", new wojilu.Web.Controller.Microblogs.MicroblogController().bindBlogs );
 
             set( "page", list.PageBar );
@@ -106,13 +109,11 @@ namespace wojilu.Web.Controller.Microblogs.My {
         }
 
 
-        public void Publisher() {
-
-
+        public virtual void Publisher() {
 
             target( new Microblogs.MicroblogSaveController().Create );
 
-            set( "mbTotalCount", config.Instance.Site.MicroblogContentMax );
+            set( "mbTotalCount", MicroblogAppSetting.Instance.MicroblogContentMax );
 
             set( "uploadLink", to( new Microblogs.My.MbSaveController().UploadForm ) );
             set( "getVideoUrl", to( GetVideoInfo ) );
@@ -121,15 +122,15 @@ namespace wojilu.Web.Controller.Microblogs.My {
 
             set( "savPicLink", to( new My.MbSaveController().SavePic ) );
 
-            // swf…œ¥´øÁ”ÚŒ Ã‚
+            // swf‰∏ä‰º†Ë∑®ÂüüÈóÆÈ¢ò
             set( "jsPath", sys.Path.DiskJs );
         }
 
-        public void GetVideoInfo() {
+        public virtual void GetVideoInfo() {
 
             String videoUrl = ctx.Post( "videoUrl" );
             if (strUtil.IsNullOrEmpty( videoUrl )) {
-                echoError( "«ÎÃÓ–¥Õ¯÷∑" );
+                echoError( "ËØ∑Â°´ÂÜôÁΩëÂùÄ" );
                 return;
             }
 
@@ -142,23 +143,24 @@ namespace wojilu.Web.Controller.Microblogs.My {
             echoJsonMsg( "", true, mvt.Id.ToString() );
         }
 
-        public void Atme() {
+        public virtual void Atme() {
 
-            Page.Title = "Ã·µΩŒ“µƒŒ¢≤©";
+            Page.Title = "ÊèêÂà∞ÊàëÁöÑÂæÆÂçö";
 
 
             load( "publisher", Publisher );
 
             set( "user.Name", ctx.owner.obj.Name );
 
-            //  π”√Õ®”√ ”ÕºŒƒº˛
+            // ‰ΩøÁî®ÈÄöÁî®ËßÜÂõæÊñá‰ª∂
             DataPage<Microblog> list = matService.GetByUser( ctx.owner.Id, 20 );
             List<MicroblogVo> volist = mfService.CheckFavorite( list.Results, ctx.viewer.Id );
             ctx.SetItem( "_microblogVoList", volist );
             ctx.SetItem( "_showUserFace", true );
+            ctx.SetItem( "_showType", "microblog" );
             load( "blogList", new wojilu.Web.Controller.Microblogs.MicroblogController().bindBlogs );
 
-            // ±Íº«Œ™“—∂¡
+            // Ê†áËÆ∞‰∏∫Â∑≤ËØª
             User owner = ctx.owner.obj as User;
             if (owner.MicroblogAtUnread > 0 && ctx.viewer.Id == owner.Id) {
                 owner.MicroblogAtUnread = 0;
@@ -166,24 +168,6 @@ namespace wojilu.Web.Controller.Microblogs.My {
             }
 
             set( "page", list.PageBar );
-        }
-
-        [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
-
-            Microblog blog = microblogService.GetById( id );
-            if (blog == null) {
-                throw new NullReferenceException( lang( "exDataNotFound" ) );
-            }
-
-            if (blog.User.Id != ctx.viewer.Id) {
-                throw new Exception( lang( "exNoPermission" ) );
-            }
-
-            microblogService.Delete( blog );
-
-            echoAjaxOk();
-
         }
 
     }

@@ -4,23 +4,20 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
 
-using wojilu.Apps;
-using wojilu.ORM;
+using wojilu.Common;
+using wojilu.Common.AppBase;
 
 using wojilu.Apps.Content.Domain;
 using wojilu.Apps.Content.Interface;
 using wojilu.Apps.Content.Service;
-using wojilu.Common.AppBase;
-using wojilu.Common.AppBase.Interface;
+
 using wojilu.Web.Controller.Content.Utils;
-using wojilu.Common;
 using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Section {
 
@@ -28,86 +25,59 @@ namespace wojilu.Web.Controller.Content.Section {
     [App( typeof( ContentApp ) )]
     public partial class ListController : ControllerBase, IPageSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IAttachmentService attachmentService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public ListController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
-            attachmentService = new AttachmentService();
-            ctService = new ContentCustomTemplateService();
         }
 
-        public void AdminSectionShow( int sectionId ) {
-        }
+        [Data( typeof( ContentSection ) )]
+        public virtual void List( long sectionId ) {
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void List( int sectionId ) {
-            bindPostsInfo( sectionId, false );
-        }
-
-        public void Archive( int sectionId ) {
-            view( "List" );
-            bindPostsInfo( sectionId, true );
-        }
-
-        private void bindPostsInfo( int sectionId, Boolean isArchive ) {
-            ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            if (section == null) {
-                echoRedirect( lang( "exDataNotFound" ) );
-                return;
-            }
-            Page.Title = section.Title;
-
+            ContentSection section = ctx.Get<ContentSection>();
             ContentApp app = ctx.app.obj as ContentApp;
             ContentSetting s = app.GetSettingsObj();
 
-            if (s.ArticleListMode == ArticleListMode.Summary) view( "ListSummary" );
+            DataPage<ContentPost> posts = postService.GetPageBySection( sectionId, s.ListPostPerPage );
 
-            String cpLink = clink.toSection( sectionId, ctx );
-            String apLink = clink.toArchive( sectionId, ctx );
+            bindListCommon( sectionId, section, s, posts );
 
             Boolean isMakeHtml = HtmlHelper.IsMakeHtml( ctx );
-            DataPage<ContentPost> posts;
-            if (isArchive) {
-                posts = postService.GetPageBySectionArchive( section.Id, s.ListPostPerPage );
-                set( "page", posts.GetArchivePage( cpLink, apLink, 3, isMakeHtml ) );
-            }
-            else {
-                posts = postService.GetPageBySection( sectionId, s.ListPostPerPage );
-                set( "page", posts.GetRecentPage( cpLink, apLink, 3, isMakeHtml ) );
-            }
+            String listLink = clink.toSection( sectionId, ctx );
+            set( "page", posts.GetPageBar( listLink, isMakeHtml ) );
 
+        }
+
+
+        private void bindListCommon( long sectionId, ContentSection section, ContentSetting s,
+            DataPage<ContentPost> posts ) {
+            Page.Title = section.Title;
+            if (s.ArticleListMode == ArticleListMode.Summary) view( "ListSummary" );
             bindPostList( section, posts, s );
         }
 
-        public void SectionShow( int sectionId ) {
+
+        public virtual void SectionShow( long sectionId ) {
 
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
                 throw new Exception( lang( "exDataNotFound" ) + "=>page section:" + sectionId );
             }
 
-            TemplateUtil.loadTemplate( this, s, ctService );
-
-            IList posts = postService.GetBySection( ctx.app.Id, sectionId );
+            IList posts = postService.GetBySection( sectionId, s.ListCount );
             bindSectionPosts( posts );
+            set( "sectionId", sectionId );
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             ContentPost post = this.postService.GetById( id, ctx.owner.Id );
-            if (post == null || post.PageSection == null) {
+            if (post == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
                 return;
             }
-
-            postService.AddHits( post );
 
             ctx.SetItem( "ContentPost", post );
 

@@ -11,6 +11,8 @@ using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Utils;
 using wojilu.Apps.Forum.Domain;
 using wojilu.Web.Controller.Admin;
+using wojilu.Aop;
+using wojilu.Apps.Forum.Service;
 
 namespace wojilu.Web.Controller.Forum.Caching {
 
@@ -20,11 +22,11 @@ namespace wojilu.Web.Controller.Forum.Caching {
             IMember owner = ctx.owner.obj;
             if ((owner is Site) == false) return null;
 
-            int appId = ctx.app.Id;
+            long appId = ctx.app.Id;
             return getCacheKey( owner, appId );
         }
 
-        private String getCacheKey( IMember owner, int appId ) {
+        private String getCacheKey( IMember owner, long appId ) {
             return "__action_" + owner.GetType().FullName + "_" + owner.Url.Replace( "/", "" ) + "_" + typeof( wojilu.Web.Controller.Forum.ForumController ).FullName + "_" + appId;
         }
 
@@ -84,10 +86,17 @@ namespace wojilu.Web.Controller.Forum.Caching {
             observe( ad.Start );
             observe( ad.Stop );
 
-
+            Admin.ForumPickController pick = new Admin.ForumPickController();
+            observe( pick.SavePinAd );
+            observe( pick.SavePinTopic );
+            observe( pick.UpdatePin );
+            observe( pick.UpdateTopic );
+            observe( pick.DeletePin );
+            observe( pick.DeleteTopic );
+            observe( pick.Restore );
         }
 
-        public override void UpdateCache( MvcContext ctx ) {
+        public override void AfterAction( MvcContext ctx ) {
 
             if ((ctx.owner.obj is Site) == false) return;
 
@@ -95,7 +104,7 @@ namespace wojilu.Web.Controller.Forum.Caching {
             IMember owner = ctx.owner.obj;
             String key = GetCacheKey( ctx, null );
 
-            if (ctx.app == null || ctx.app.Id <= 0) {
+            if (ctx.app == null || ctx.app.Id <= 0) { // 比如新用户注册成功，那种情况下ctx.app是null
 
                 removeAllForumCache( owner );
 
@@ -119,15 +128,6 @@ namespace wojilu.Web.Controller.Forum.Caching {
                 CacheManager.GetApplicationCache().Remove( cacheKey );
             }
         }
-
-        //private static string getIndexCache( int appId, IMember owner ) {
-        //    MvcContext ctx = MockContext.GetOne( owner, typeof( ForumApp ), appId );
-        //    String content = ControllerRunner.Run( ctx, new wojilu.Web.Controller.Forum.ForumController().Index );
-
-        //    return content;
-        //}
-
-
 
     }
 

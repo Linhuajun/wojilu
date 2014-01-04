@@ -15,25 +15,29 @@ using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Domain;
 using wojilu.Web.Controller.Common;
 using wojilu.Web.Controller.Users;
+using wojilu.Common.Microblogs;
+using wojilu.Common.Comments;
+using wojilu.Members.Sites.Domain;
+using wojilu.Members.Interface;
 
 namespace wojilu.Web.Controller.Microblogs {
 
     public partial class MicroblogController : ControllerBase {
 
-        public IMicroblogService microblogService { get; set; }
-        public IFollowerService followService { get; set; }
-        public IVisitorService visitorService { get; set; }
-        public MicroblogFavoriteService mfService { get; set; }
-        public MicroblogCommentService commentService { get; set; }
-        public MicroblogAtService matService { get; set; }
-        public UserTagService userTagService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
+        public virtual IFollowerService followService { get; set; }
+        public virtual IVisitorService visitorService { get; set; }
+        public virtual MicroblogFavoriteService mfService { get; set; }
+        public virtual IOpenCommentService commentService { get; set; }
+        public virtual MicroblogAtService matService { get; set; }
+        public virtual UserTagService userTagService { get; set; }
 
         public MicroblogController() {
             microblogService = new MicroblogService();
             followService = new FollowerService();
             visitorService = new VisitorService();
             mfService = new MicroblogFavoriteService();
-            commentService = new MicroblogCommentService();
+            commentService = new OpenCommentService();
             matService = new MicroblogAtService();
             userTagService = new UserTagService();
         }
@@ -59,7 +63,7 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
 
-        public void List() {
+        public virtual void List() {
 
             Page.Title = ctx.owner.obj.Name + "的微博_" + config.Instance.Site.SiteName;
             Page.Keywords = ctx.owner.obj.Name + "的微博";
@@ -72,18 +76,19 @@ namespace wojilu.Web.Controller.Microblogs {
 
             set( "user.Name", ctx.owner.obj.Name );
 
-            DataPage<Microblog> list = microblogService.GetPageList( ctx.owner.obj.Id, config.Instance.Site.MicroblogPageSize );
+            DataPage<Microblog> list = microblogService.GetPageList( ctx.owner.obj.Id, MicroblogAppSetting.Instance.MicroblogPageSize );
             List<MicroblogVo> volist = mfService.CheckFavorite( list.Results, ctx.viewer.Id );
 
             ctx.SetItem( "_microblogVoList", volist );
             ctx.SetItem( "_showUserFace", false );
+            ctx.SetItem( "_showType", "microblog" );
             load( "blogList", bindBlogs );
 
             set( "page", list.PageBar );
 
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             Microblog blog = microblogService.GetById( id );
             if (blog == null) {
@@ -91,21 +96,16 @@ namespace wojilu.Web.Controller.Microblogs {
                 return;
             }
 
+            set( "blog.Id", id );
+
             // 详细内容：使用通用视图文件
             loadCommonView( blog );
 
-            // 评论列表
-            DataPage<MicroblogComment> comments = commentService.GetComments( id, 20 );
-            IBlock cblock = getBlock( "comments" );
-            bindComments( cblock, comments.Results );
-            String pager = comments.PageCount > 1 ? comments.PageBar : "";
-            set( "page", pager );
-
             // 评论表单
-            target( new MicroblogCommentsController().SaveReply );
-            set( "c.RootId", id );
-            set( "c.ParentId", 0 );
-            set( "viewer.PicSmall", ctx.viewer.obj.PicSmall );
+            //target( new MicroblogCommentsController().SaveReply );
+            //set( "c.RootId", id );
+            //set( "c.ParentId", 0 );
+            //set( "viewer.PicSmall", ctx.viewer.obj.PicSmall );
         }
 
 
@@ -114,7 +114,7 @@ namespace wojilu.Web.Controller.Microblogs {
 
 
         [NonVisit]
-        public void bindBlogs() {
+        public virtual void bindBlogs() {
 
             List<MicroblogVo> list = (List<MicroblogVo>)ctx.GetItem( "_microblogVoList" );
             Boolean showUserFace = (Boolean)ctx.GetItem( "_showUserFace" );
@@ -132,7 +132,7 @@ namespace wojilu.Web.Controller.Microblogs {
         //------------------------------------------------------------------------------------------------
 
         [Login]
-        public void Forward( int id ) {
+        public virtual void Forward( long id ) {
 
             Microblog blog = microblogService.GetById( id );
             if (blog == null) {
@@ -167,7 +167,7 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
         [HttpPost, DbTransaction]
-        public void Save( int id ) {
+        public virtual void Save( long id ) {
 
             Microblog tblog = microblogService.GetById( id );
 
@@ -199,7 +199,7 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
 
-        private int getParentId( Microblog tblog ) {
+        private long getParentId( Microblog tblog ) {
             if (tblog.ParentId <= 0) return tblog.Id;
             return tblog.ParentId;
         }
@@ -213,18 +213,38 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
 
-        private void saveComment( Microblog tblog, String content ) {
-            MicroblogComment c = new MicroblogComment();
-            c.Root = tblog;
-            c.Content = content;
-            c.User = ctx.viewer.obj as User;
-            c.Ip = ctx.Ip;
+        private void saveComment( Microblog oBlog, String content ) {
 
-            commentService.InsertComment( c, to( new MicroblogController().Show, tblog.Id ) );
+            User creator = oBlog.Creator;
+            IMember owner = User.findById( oBlog.OwnerId );
+
+            OpenComment c = new OpenComment();
+            c.Content = content;
+            c.TargetUrl = MbLink.ToShowFeed( oBlog.User, oBlog.Id );
+
+            c.TargetDataType = oBlog.GetType().FullName;
+            c.TargetDataId = oBlog.Id;
+
+
+            c.TargetTitle = string.Format( "(微博{0}){1}", oBlog.Created.ToShortDateString(), strUtil.ParseHtml( oBlog.Content, 25 ) );
+            c.TargetUserId = oBlog.User.Id;
+
+            c.OwnerId = owner.Id;
+            c.AppId = 0;
+            c.FeedId = oBlog.Id;
+
+            c.Ip = oBlog.Ip;
+            c.Author = creator.Name;
+            c.ParentId = 0;
+            c.AtId = 0;
+
+            c.Member = creator;
+
+            commentService.Create( c );
         }
 
         [HttpPost, DbTransaction]
-        public void SaveFavorite( int id ) {
+        public virtual void SaveFavorite( long id ) {
 
             if (ctx.viewer.IsLogin == false) {
                 echoJsonMsg( "请先登录", false, "" );
@@ -246,7 +266,7 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
         [HttpPost, DbTransaction]
-        public void CancelFavorite( int id ) {
+        public virtual void CancelFavorite( long id ) {
 
             Microblog blog = microblogService.GetById( id );
             if (blog == null) {
@@ -265,7 +285,62 @@ namespace wojilu.Web.Controller.Microblogs {
         //------------------------------------------------------------------------------------------------
 
         [HttpPost, DbTransaction]
-        public void Follow() {
+        public virtual void SaveLike( long mid ) {
+
+            if (ctx.viewer.IsLogin == false) {
+                echoJsonMsg( "请先登录", false, "" );
+                return;
+            }
+
+            if (mid <= 0) {
+                echoText( "mid=" + mid );
+                return;
+            }
+
+            Microblog microblog = Microblog.findById( mid );
+            if (microblog == null) {
+                echoText( "microblog is null. mid=" + mid );
+                return;
+            }
+
+            // 检查是否已经like
+            MicroblogLike flike = MicroblogLike.find( "UserId=" + ctx.viewer.Id + " and MicroblogId=" + mid ).first();
+            if (flike != null) {
+                echoText( "您已经赞过" );
+                return;
+            }
+
+            microblog.Likes = microblog.Likes + 1;
+            microblog.update();
+
+            MicroblogLike microblogLike = new MicroblogLike();
+            microblogLike.User = ctx.viewer.obj as User;
+            microblogLike.Microblog = microblog;
+            microblogLike.Ip = ctx.Ip;
+            microblogLike.insert();
+
+            // target likes
+            if (strUtil.HasText( microblog.DataType )) {
+
+                Type targetType = Entity.GetType( microblog.DataType );
+                if (targetType != null) {
+                    ILike target = ndb.findById( targetType, microblog.DataId ) as ILike;
+                    if (target != null) {
+                        target.Likes = microblog.Likes;
+                        db.update( target );
+                    }
+
+                }
+
+            }
+
+            echoAjaxOk();
+        }
+
+        //------------------------------------------------------------------------------------------------
+
+        [HttpPost, DbTransaction]
+        public virtual void Follow() {
 
             if (ctx.viewer.IsLogin == false) errors.Add( "请先登录" );
             if (ctx.viewer.IsFollowing( ctx.owner.Id )) errors.Add( "已经关注" );
@@ -274,12 +349,12 @@ namespace wojilu.Web.Controller.Microblogs {
                 return;
             }
 
-            followService.Follow( ctx.viewer.Id, ctx.owner.Id );
+            followService.Follow( ctx.viewer.Id, ctx.owner.Id, ctx.Ip );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void CancelFollow() {
+        public virtual void CancelFollow() {
 
             if (ctx.viewer.IsLogin == false) errors.Add( "请先登录" );
             if (ctx.viewer.IsFollowing( ctx.owner.Id ) == false) errors.Add( "尚未关注，不可取消" );

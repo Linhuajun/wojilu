@@ -22,27 +22,29 @@ namespace wojilu.Web.Context {
         private FollowerService followService { get; set; }
         private MessageService msgService { get; set; }
 
-        public ViewerContext() {
+        public ViewerContext( MvcContext ctx ) {
             friendService = new FriendService();
             msgService = new MessageService();
             followService = new FollowerService();
+            this.ctx = ctx;
         }
 
-        public int Id { get; set; }
+        public long Id { get; set; }
         public Boolean IsLogin { get; set; }
         public IList Menus { get; set; }
         public IUser obj { get; set; }
 
+        private MvcContext ctx { get; set; }
 
-        public Result AddFriend( int ownerId, String msg ) {
-            return friendService.AddFriend( this.obj.Id, ownerId, msg );
+        public Result AddFriend(long ownerId, string msg) {
+            return friendService.AddFriend( this.obj.Id, ownerId, msg, ctx.Ip );
         }
 
-        public Boolean IsFriend( int ownerId ) {
+        public bool IsFriend(long ownerId) {
             return friendService.IsFriend( this.obj.Id, ownerId );
         }
 
-        public Boolean IsFollowing( int ownerId ) {
+        public bool IsFollowing(long ownerId) {
             return followService.IsFollowing( this.obj.Id, ownerId );
         }
 
@@ -57,6 +59,7 @@ namespace wojilu.Web.Context {
         public Boolean IsOwnerAdministrator( IMember owner ) {
 
             IRole role = owner.GetUserRole( (IMember)this.obj );
+            if (role == null) return false;
 
             if (owner is User) {
                 return owner.Id == this.Id;

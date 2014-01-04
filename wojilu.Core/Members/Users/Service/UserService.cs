@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
-using wojilu.Web.Url;
 using wojilu.Web.Context;
 
 using wojilu.Members.Users.Interface;
@@ -20,8 +19,6 @@ using wojilu.Common.Money.Service;
 using wojilu.Common.Msg.Interface;
 using wojilu.Common.Msg.Service;
 using wojilu.Common.AppBase;
-using wojilu.Common.Menus.Interface;
-using wojilu.Common.MemberApp.Interface;
 using wojilu.Common.Money.Interface;
 using wojilu.Common.Money.Domain;
 
@@ -29,25 +26,24 @@ namespace wojilu.Members.Users.Service {
 
     public class UserService : IUserService {
 
-        public UserService() {
-            currencyService = new CurrencyService();
-            roleService = new SiteRoleService();
-            userIncomeService = new UserIncomeService();
-            //msgService = new MessageService();
-
-            hashTool = new HashTool();
-        }
-
         public virtual ICurrencyService currencyService { get; set; }
         public virtual ISiteRoleService roleService { get; set; }
         public virtual IUserIncomeService userIncomeService { get; set; }
         public virtual IHashTool hashTool { get; set; }
-        //public IMessageService msgService { get; set; } 
+        public virtual INotificationService ntService { get; set; }
+
+        public UserService() {
+            currencyService = new CurrencyService();
+            roleService = new SiteRoleService();
+            userIncomeService = new UserIncomeService();
+            ntService = new NotificationService();
+            hashTool = new HashTool();
+        }
 
         //----------------------------------------------------------------------
 
         // 请勿删除本方法.ContentController.bindAutoData用到
-        public User GetCurrent() {
+        public virtual User GetCurrent() {
             return null;
         }
 
@@ -94,6 +90,11 @@ namespace wojilu.Members.Users.Service {
         }
 
         public virtual Boolean IsPwdCorrect( User user, String pwd ) {
+
+            if (strUtil.IsNullOrEmpty( user.Pwd )) {
+                return strUtil.IsNullOrEmpty( pwd );
+            }
+
             String hashedPwd = HashPwd( pwd, user.PwdSalt );
             return user.Pwd == hashedPwd;
         }
@@ -101,6 +102,22 @@ namespace wojilu.Members.Users.Service {
         public virtual void UpdatePwd( User user, String pwd ) {
             user.Pwd = HashPwd( pwd, user.PwdSalt );
             db.update( user, "Pwd" );
+        }
+
+        public virtual Result CreateEmail( User user, String email ) {
+            user.Email = email;
+            return db.update( user );
+        }
+
+        public virtual void UpdateEmail( User user, String email ) {
+            user.Email = email;
+            db.update( user, "Email" );
+        }
+
+        public virtual void UpdateEmailAndResetConfirmStatus( User user, String email ) {
+            user.Email = email;
+            user.IsEmailConfirmed = 0;
+            db.update( user );
         }
 
         public virtual String GetLastUserName() {
@@ -134,7 +151,7 @@ namespace wojilu.Members.Users.Service {
         //----------------------------------------------------------------------
 
 
-        public virtual void DeletePostCount( int creatorId ) {
+        public virtual void DeletePostCount( long creatorId ) {
             if (creatorId <= 0) return;
             User user = GetById( creatorId );
             if (user == null) return;
@@ -143,6 +160,96 @@ namespace wojilu.Members.Users.Service {
         }
 
         //----------------------------------------------------------------------
+
+        private Result validateUser( User user ) {
+
+            Result result = new Result();
+
+            if (strUtil.IsNullOrEmpty( user.Name )) {
+                result.Add( lang.get( "exUserName" ) );
+                return result;
+            }
+
+            if (strUtil.IsNullOrEmpty( user.Url )) {
+                result.Add( lang.get( "exUrl" ) );
+                return result;
+            }
+
+            user.Name = user.Name.Trim().TrimEnd( '/' );
+            user.Url = user.Url.Trim().TrimEnd( '/' );
+
+            if (user.Url.IndexOf( "http:" ) >= 0) {
+                result.Add( lang.get( "exUserUrlHttpError" ) );
+            }
+            else {
+                user.Url = strUtil.SubString( user.Url, config.Instance.Site.UserNameLengthMax );
+                user.Url = user.Url.ToLower();
+            }
+
+            if (strUtil.IsUrlItem( user.Url ) == false) {
+                result.Add( lang.get( "exUserUrlError" ) );
+            }
+
+            if (result.HasErrors) {
+                return result;
+            }
+
+
+            if (isNameReserved( user.Name )) {
+                result.Add( lang.get( "exNameFound" ) );
+                return result;
+            }
+
+            if (isUrlReserved( user.Url )) {
+                result.Add( lang.get( "exUrlFound" ) );
+                return result;
+            }
+
+            if (IsExist( user.Name ) != null) {
+                result.Add( lang.get( "exNameFound" ) );
+                return result;
+            }
+
+            if (strUtil.HasText( user.Url ) && IsExistUrl( user.Url ) != null) {
+                result.Add( lang.get( "exUrlFound" ) );
+                return result;
+            }
+
+            return result;
+        }
+
+        public virtual Result RegisterNoPwd( User user ) {
+
+            Result result = validateUser( user );
+            if (result.HasErrors) return result;
+
+            setProfileAndTemplate( user );
+            user.RoleId = SiteRole.NormalMember.Id;
+            result = db.insert( user );
+
+            if (result.HasErrors) {
+                db.delete( user.Profile );
+                return result;
+            }
+
+            if (Component.IsEnableUserSpace() == false) {
+                user.Url = "user" + user.Id;
+                db.update( user, "Url" );
+            }
+
+            sendMsg( user );
+
+            userIncomeService.InitUserIncome( user );
+
+            if (isFirstUser()) {
+                user.RoleId = SiteRole.Administrator.Id;
+                db.update( user, "RoleId" );
+            }
+
+            result.Info = user;
+
+            return result;
+        }
 
         public virtual User Register( User user, MvcContext ctx ) {
 
@@ -250,6 +357,14 @@ namespace wojilu.Members.Users.Service {
             service.SiteSend( title, body, member );
         }
 
+        private void setProfileAndTemplate( User user ) {
+            MemberProfile profile = new MemberProfile();
+            db.insert( profile );
+            user.ProfileId = profile.Id;
+            user.TemplateId = config.Instance.Site.UserTemplateId;
+            user.GroupId = 3;
+        }
+
         private void setProfileAndTemplateAndHashPasswork( User user ) {
             MemberProfile profile = new MemberProfile();
             db.insert( profile );
@@ -259,7 +374,6 @@ namespace wojilu.Members.Users.Service {
 
             user.PwdSalt = hashTool.GetSalt( 4 );
             user.Pwd = HashPwd( user.Pwd, user.PwdSalt );
-
         }
 
 
@@ -269,10 +383,10 @@ namespace wojilu.Members.Users.Service {
         }
 
 
-        public virtual List<User> GetRankedToMakeFriends( int count, List<int> ids ) {
+        public virtual List<User> GetRankedToMakeFriends( int count, List<long> ids ) {
 
             List<User> results = new List<User>();
-            List<User> list = db.find<User>( "order by Credit desc, Hits desc, Id desc" ).list( count );
+            List<User> list = db.find<User>( "status>=0 order by Credit desc, Hits desc, Id desc" ).list( count );
             foreach (User user in list) {
                 if (ids.Contains( user.Id )) continue;
                 results.Add( user );
@@ -282,7 +396,7 @@ namespace wojilu.Members.Users.Service {
 
 
         public virtual List<User> GetRanked( int count ) {
-            return db.find<User>( "order by Credit desc, Hits desc, Id desc" ).list( count );
+            return db.find<User>( "status>=0 order by Credit desc, Hits desc, Id desc" ).list( count );
         }
 
         public virtual List<User> GetRanked( String sortBy, int count ) {
@@ -307,6 +421,7 @@ namespace wojilu.Members.Users.Service {
         }
 
         public virtual List<User> SearchByName( String name ) {
+            if (strUtil.IsNullOrEmpty( name )) return new List<User>();
             name = strUtil.SqlClean( name, 20 );
             return db.find<User>( "Name like  '%" + name + "%' " ).list();
         }
@@ -340,7 +455,7 @@ namespace wojilu.Members.Users.Service {
 
         public virtual void UpdateAvatar( User user, String newPic ) {
 
-            Boolean isFirst = (user.HasUploadPic()==false);
+            Boolean isFirst = (user.HasUploadPic() == false);
 
             user.Pic = newPic;
             db.update( user, "Pic" );
@@ -351,9 +466,34 @@ namespace wojilu.Members.Users.Service {
 
         }
 
+        /// <summary>
+        /// 保存图像、不会增加积分、不会发送邮件鼓励；给管理员发通知
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="newPic"></param>
+        public virtual void UpdateAvatarWhenError( User user, String newPic ) {
+
+            user.Pic = newPic;
+            db.update( user, "Pic" );
+
+            String msg = string.Format( "用户 <a href=\"{0}\">{1}</a> 更新了头像，等待管理员审核", Link.ToMember( user ), user.Name );
+            ntService.send( 0, typeof( Site ).FullName, msg, wojilu.Common.Msg.Enum.NotificationType.Normal );
+
+        }
+
+        /// <summary>
+        /// 仅仅保存图像。不会增加积分、不会发送邮件鼓励、不给管理员发通知
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="newPic"></param>
+        public virtual void UpdateAvatarOnly( User user, String newPic ) {
+            user.Pic = newPic;
+            db.update( user, "Pic" );
+        }
+
         private void addIncomeAndSendMsg( User user ) {
 
-            int actionId = UserAction.User_UpdateAvatar.Id;
+            long actionId = UserAction.User_UpdateAvatar.Id;
             KeyIncomeRule rule = currencyService.GetKeyIncomeRulesByAction( actionId );
 
             int creditValue = rule.Income;
@@ -372,19 +512,22 @@ namespace wojilu.Members.Users.Service {
 
         //-------------------------------------------------------------
 
-        public virtual User GetById( int id ) {
+        public virtual User GetById( long id ) {
             return User.findById( id );
         }
 
         public virtual User GetByName( String name ) {
+            if (strUtil.IsNullOrEmpty( name )) return null;
             return User.find( "Name=:name" ).set( "name", name ).first();
         }
 
         public virtual User GetByUrl( String friendUrl ) {
+            if (strUtil.IsNullOrEmpty( friendUrl )) return null;
             return User.find( "Url=:furl" ).set( "furl", friendUrl ).first();
         }
 
         public virtual User GetByMail( String email ) {
+            if (strUtil.IsNullOrEmpty( email )) return null;
             return db.find<User>( "Email=:email" ).set( "email", email ).first();
         }
 
@@ -410,20 +553,24 @@ namespace wojilu.Members.Users.Service {
         }
 
         public virtual User IsExist( String name ) {
+            if (strUtil.IsNullOrEmpty( name )) return null;
             return User.find( "Name=:name" ).set( "name", name ).first();
         }
 
         public virtual User IsExistUrl( String url ) {
+            if (strUtil.IsNullOrEmpty( url )) return null;
             return User.find( "Url=:url" ).set( "url", url ).first();
         }
 
         public virtual Boolean IsEmailExist( String email ) {
+            if (strUtil.IsNullOrEmpty( email )) throw new ArgumentNullException( "email" );
             User user = User.find( "Email=:email and IsEmailConfirmed=" + EmailConfirm.Confirmed ).set( "email", email ).first();
             return user != null;
         }
 
-        public virtual Boolean IsEmailExist( int userId, String email ) {
-            User user = User.find( "Email=:email and IsEmailConfirmed=" + EmailConfirm.Confirmed + " and Id<>"+userId ).set( "email", email ).first();
+        public virtual Boolean IsEmailExist( long userId, String email ) {
+            if (strUtil.IsNullOrEmpty( email )) throw new ArgumentNullException( "email" );
+            User user = User.find( "Email=:email and IsEmailConfirmed=" + EmailConfirm.Confirmed + " and Id<>" + userId ).set( "email", email ).first();
             return user != null;
         }
 

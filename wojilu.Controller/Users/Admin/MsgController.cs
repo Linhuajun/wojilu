@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -21,10 +21,10 @@ namespace wojilu.Web.Controller.Users.Admin {
 
     public partial class MsgController : ControllerBase {
 
-        public IMessageService msgService { get; set; }
-        public IBlacklistService blacklistService { get; set; }
-        public IUserService userService { get; set; }
-        public IMessageAttachmentService attachmentService { get; set; }
+        public virtual IMessageService msgService { get; set; }
+        public virtual IBlacklistService blacklistService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IMessageAttachmentService attachmentService { get; set; }
 
         public MsgController() {
             msgService = new MessageService();
@@ -41,17 +41,13 @@ namespace wojilu.Web.Controller.Users.Admin {
 
             Boolean isMessageClose = Component.IsClose( typeof( MessageApp ) );
             if (isMessageClose) {
-                echo( "∂‘≤ª∆£¨±æπ¶ƒ‹“—æ≠Õ£”√" );
+                echo( "ÂØπ‰∏çËµ∑ÔºåÊú¨ÂäüËÉΩÂ∑≤ÁªèÂÅúÁî®" );
             }
         }
 
         //-------------------------------------------------------------------------------
 
-        public void All() {
-            set( "myMsgLink", to( Index ) );
-        }
-
-        public void Index() {
+        public virtual void Index() {
             set( "actionTitle", lang( "allMsg" ) );
             set( "adminAction", to( Admin ) );
 
@@ -59,10 +55,10 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "friendLink", Link.To( ctx.viewer.obj, new Users.Admin.Friends.FriendController().SelectBox ) );
             set( "searchTerm", "" );
 
-            bindList( msgService.FindPageAll( ctx.owner.Id ) );
+            bindList( msgService.GetPageAll( ctx.owner.Id ) );
         }
 
-        public void Sent() {
+        public virtual void Sent() {
             set( "adminAction", to( Admin ) );
             set( "actionTitle", lang( "sentMsg" ) );
 
@@ -70,13 +66,13 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "friendLink", Link.To( ctx.viewer.obj, new Users.Admin.Friends.FriendController().SelectBox ) );
             set( "searchTerm", "" );
 
-            DataPage<MessageData> list = msgService.FindPageSent( ctx.owner.Id );
+            DataPage<MessageData> list = msgService.GetPageSent( ctx.owner.Id );
             bindSentList( list );
         }
 
         //---------------------------------
 
-        public void Unread() {
+        public virtual void Unread() {
             set( "actionTitle", lang( "unreadMsg" ) );
             set( "adminAction", to( Admin ) );
 
@@ -84,16 +80,16 @@ namespace wojilu.Web.Controller.Users.Admin {
             bindList( newMsgs );
         }
 
-        public void Deleted() {
+        public virtual void Deleted() {
             set( "actionTitle", lang( "msgTrash" ) );
             set( "adminAction", to( Admin ) );
 
-            bindList( msgService.FindPageTrash( ctx.owner.Id ) );
+            bindList( msgService.GetPageTrash( ctx.owner.Id ) );
         }
 
         //-------------------------------------------------------------------------------------------------
 
-        public void SearchSender() {
+        public virtual void SearchSender() {
             view( "Index" );
 
             target( SearchSender );
@@ -107,7 +103,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
 
-        public void SearchReceiver() {
+        public virtual void SearchReceiver() {
 
             view( "Sent" );
             set( "adminAction", to( Admin ) );
@@ -125,7 +121,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         //-------------------------------------------------------------------------------------------------
 
         [Login]
-        public void New( int id ) {
+        public virtual void New( long id ) {
             target( Create );
 
             User receiver = userService.GetById( id );
@@ -138,14 +134,14 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "m.ToName", receiver == null ? "" : receiver.Name );
             set( "m.Title", "" );
             set( "m.ReplyId", "" );
-            editor( "Content", "", "200px" );
+            set( "Content", "" );
 
             set( "friendLink", Link.To( ctx.viewer.obj, new Users.Admin.Friends.FriendController().SelectBox ) );
             bindUploadInfo();
         }
 
         [Login]
-        public void Forward( int id ) {
+        public virtual void Forward( long id ) {
 
             view( "New" );
             target( Create );
@@ -162,14 +158,14 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "m.ToName", "" );
             set( "m.Title", lang( "forwardPrefix" ) + msgData.Title );
             set( "m.ReplyId", "" );
-            editor( "Content", getForward( msgData.Body ), "200px" );
+            set( "Content", getForward( msgData.Body ) );
 
             set( "friendLink", Link.To( ctx.viewer.obj, new Users.Admin.Friends.FriendController().SelectBox ) );
             bindUploadInfo();
         }
 
         [Login]
-        public void Reply( int id ) {
+        public virtual void Reply( long id ) {
 
             view( "New" );
             target( Create );
@@ -190,22 +186,16 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "m.ToName", msg.SenderName );
             set( "m.Title", lang( "replyPrefix" ) + msgData.Title );
             set( "m.ReplyId", id );
-            editor( "Content", getQuote( msgData.Body ), "200px" );
+            set( "Content", getQuote( msgData.Body ) );
 
             set( "friendLink", Link.To( ctx.viewer.obj, new Users.Admin.Friends.FriendController().SelectBox ) );
             bindUploadInfo();
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
-            User user = ctx.owner.obj as User;
-
-            String receiverName = ctx.Post( "ToName" );
-            int replyId = ctx.PostInt( "replyId" );
-            int[] ids = cvt.ToIntArray( ctx.Post( "attachmentIds" ) );
-
-            Result result = msgService.SendMsg( user, receiverName, ctx.Post( "Title" ), ctx.PostHtml( "Content" ), replyId, ids );
+            Result result = createMsg();
             if (result.IsValid) {
                 echoRedirectPart( lang( "opok" ), to( Sent ), 1 );
             }
@@ -213,10 +203,33 @@ namespace wojilu.Web.Controller.Users.Admin {
                 echoError( result );
             }
         }
+
+        [HttpPost, DbTransaction]
+        public virtual void CreateOk() {
+
+            Result result = createMsg();
+            if (result.IsValid) {
+                echoRedirect( lang( "opok" ), ctx.Post( "returnUrl" ) );
+            }
+            else {
+                echoError( result );
+            }
+        }
+
+        private Result createMsg() {
+            User user = ctx.owner.obj as User;
+
+            String receiverName = ctx.Post( "ToName" );
+            long replyId = ctx.PostLong( "replyId" );
+            long[] ids = cvt.ToLongArray( ctx.Post( "attachmentIds" ) );
+
+            Result result = msgService.SendMsg( user, receiverName, ctx.Post( "Title" ), ctx.PostHtml( "Content" ), replyId, ids );
+            return result;
+        }
         //-------------------------------------------------------------------------------------------------
 
         [Login]
-        public void Read( int id ) {
+        public virtual void Read( long id ) {
 
             Message msg = msgService.GetById( ctx.owner.Id, id );
             if (msg == null) {
@@ -234,7 +247,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             msgService.ReadMsg( msg );
         }
 
-        public void SentMsg( int id ) {
+        public virtual void SentMsg( long id ) {
             view( "MyMsg" );
             MessageData data = msgService.GetDataById( ctx.owner.Id, id );
             if (data == null) {
@@ -242,13 +255,15 @@ namespace wojilu.Web.Controller.Users.Admin {
                 return;
             }
 
+            bindAttachmentPanel( data );
+
             set( "m.ToName", data.ToName );
             set( "m.Title", data.Title );
             set( "m.CreateTime", data.Created );
             set( "m.Content", data.Body );
         }
 
-        public void DownloadAttachment( int id ) {
+        public virtual void DownloadAttachment( long id ) {
 
             MessageAttachment att = attachmentService.GetById( id );
             if (att == null) {
@@ -256,7 +271,8 @@ namespace wojilu.Web.Controller.Users.Admin {
                 return;
             }
 
-            if (attachmentService.IsReceiver( ctx.viewer.Id, att ) == false) {
+            if (attachmentService.IsReceiver( ctx.viewer.Id, att ) == false &&
+                attachmentService.IsSender( ctx.viewer.Id, att ) == false) {
                 echoRedirect( lang( "exNoPermission" ) );
                 return;
             }
@@ -265,9 +281,9 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         //-------------------------------------------------------------------------------------------------
-        
+
         [HttpPost, DbTransaction]
-        public void Admin() {
+        public virtual void Admin() {
 
             User user = ctx.owner.obj as User;
 
@@ -275,12 +291,12 @@ namespace wojilu.Web.Controller.Users.Admin {
                 echoAjaxOk();
             }
             else {
-                actionContent( lang( "exUnknowCmd" ) );
+                content( lang( "exUnknowCmd" ) );
             }
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int msgId ) {
+        public virtual void Delete( long msgId ) {
 
             Message msg = msgService.GetById( ctx.owner.Id, msgId );
             if (msg == null) {
@@ -290,11 +306,7 @@ namespace wojilu.Web.Controller.Users.Admin {
 
             msgService.DeleteToTrash( msg );
 
-
-            redirectUrl( to( All )+"?frm=true" );
-
-
-
+            redirectUrl( to( Index ) + "?frm=true" );
         }
 
 

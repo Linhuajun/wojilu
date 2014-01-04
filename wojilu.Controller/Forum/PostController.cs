@@ -23,11 +23,11 @@ namespace wojilu.Web.Controller.Forum {
     [App( typeof( ForumApp ) )]
     public partial class PostController : ControllerBase {
 
-        public IAttachmentService attachService { get; set; }
-        public IForumBoardService boardService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IModeratorService moderatorService { get; set; }
+        public virtual IAttachmentService attachService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IModeratorService moderatorService { get; set; }
 
 
         public PostController() {
@@ -63,7 +63,7 @@ namespace wojilu.Web.Controller.Forum {
             return _tree;
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             ForumBoard board = getTree().GetById( post.ForumBoardId );
@@ -78,7 +78,7 @@ namespace wojilu.Web.Controller.Forum {
 
             topicService.AddHits( topic );
 
-            WebUtils.pageTitle( this, post.Title, board.Name );
+            ctx.Page.SetTitle( post.Title, board.Name );
 
             List<ForumBoard> pathboards = getTree().GetPath( post.ForumBoardId );
             set( "location", ForumLocationUtil.GetPost( pathboards, post, ctx ) );
@@ -96,13 +96,17 @@ namespace wojilu.Web.Controller.Forum {
 
             set( "topic.Url", to( new TopicController().Show, post.TopicId ) );
 
+            set( "moderatorJson", moderatorService.GetModeratorJson( board ) );
+            set( "creatorId", topic.Creator.Id );
+            set( "tagAction", to( new Edits.TagController().SaveTag, topic.Id ) );
+
             DataPage<ForumPost> replyList = postService.GetPageList( post.TopicId, 200, 0 );
 
             bindReplyList( replyList, post.Id );
         }
 
 
-        private void bindReplyList( DataPage<ForumPost> results, int currentPostId ) {
+        private void bindReplyList( DataPage<ForumPost> results, long currentPostId ) {
 
             IBlock block = getBlock( "replypost" );
             List<ForumPost> replyList = results.Results;

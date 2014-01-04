@@ -25,8 +25,8 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
     [App( typeof( BlogApp ) )]
     public class SysCategoryController : ControllerBase {
 
-        public IBlogSysCategoryService categoryService { get; set; }
-        public IAdminLogService<SiteLog> logService { get; set; }
+        public virtual IBlogSysCategoryService categoryService { get; set; }
+        public virtual IAdminLogService<SiteLog> logService { get; set; }
 
         public SysCategoryController() {
             categoryService = new BlogSysCategoryService();
@@ -38,14 +38,14 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
             logService.Add( (User)ctx.viewer.obj, msg, dataInfo, typeof( BlogSysCategory ).FullName, ctx.Ip );
         }
 
-        public void List() {
+        public virtual void List() {
             target( Add );
             List<BlogSysCategory> categories = categoryService.GetAll();
             bindList( "list", "category", categories, bindLink );
             set( "sortAction", to( SaveSort ) );
         }
 
-        private void bindLink( IBlock tpl, int id ) {
+        private void bindLink( IBlock tpl, long id ) {
             tpl.Set( "category.LinkEdit", to( Edit, id ) );
             tpl.Set( "category.LinkDelete", to( Delete, id ) );
         }
@@ -55,7 +55,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
         [HttpPost, DbTransaction]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             BlogSysCategory target = categoryService.GetById( id );
@@ -77,12 +77,12 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
 
         }
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             BlogSysCategory c = validate( null );
             if (ctx.HasErrors) {
@@ -96,7 +96,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
             echoToParentPart( lang("opok") );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( Update, id );
 
@@ -110,7 +110,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             BlogSysCategory c = categoryService.GetById( id );
             if (c == null) {
@@ -131,7 +131,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Blog {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             BlogSysCategory c = categoryService.GetById( id );
             if (c == null) {

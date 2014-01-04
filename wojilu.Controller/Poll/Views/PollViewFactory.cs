@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
-using wojilu.Serialization;
 using wojilu.Members.Users.Domain;
 using wojilu.Common.Polls.Domain;
 
@@ -35,7 +34,7 @@ namespace wojilu.Apps.Poll.Views {
             return false;
         }
 
-        public PollView GetPollView() {
+        public virtual PollView GetPollView() {
 
             PollView view = new PollView();
             view.Question = poll.Question;
@@ -179,7 +178,7 @@ _run( function() {
             return list;
         }
 
-        public String GetJsonResult() {
+        public virtual String GetJsonResult() {
 
             int total = poll.VoteCount;
 
@@ -194,7 +193,7 @@ _run( function() {
 
 
                 OptionResult opr = new OptionResult( poll, optionList.Length, i );
-                json += JsonString.ConvertObject( opr, false, true );
+                json += Json.ToString( opr );
                 if (i != optionList.Length - 1) json += ", ";
 
             }

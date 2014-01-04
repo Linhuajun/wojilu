@@ -19,7 +19,7 @@ namespace wojilu.Common.Feeds.Domain {
 
         public User Creator { get; set; }
         public String DataType { get; set; }
-        public int DataId { get; set; }
+        public long DataId { get; set; }
 
         public int Replies { get; set; }
 
@@ -36,18 +36,8 @@ namespace wojilu.Common.Feeds.Domain {
 
         public DateTime Created { get; set; }
 
-
-        //private List<User> creatorList = new List<User>();
-
-        //[NotSave]
-        //public List<User> CreatorList {
-        //    get {
-        //        if (creatorList.Count == 0) creatorList.Add( this.Creator );
-        //        return creatorList;
-        //    }
-        //    set { creatorList = value; }
-        //}
-
+        [Column( Length = 40 )]
+        public String Ip { get; set; }
 
     }
 

@@ -30,11 +30,11 @@ namespace wojilu.Apps.Forum.Service {
             incomeService = new UserIncomeService();
         }
 
-        public virtual List<Attachment> GetByPost( int postId ) {
+        public virtual List<Attachment> GetByPost(long postId) {
             return Attachment.find( "PostId=" + postId + " order by OrderId desc, Id asc" ).list();
         }
 
-        public virtual List<Attachment> GetTopicAttachments( int topicId ) {
+        public virtual List<Attachment> GetTopicAttachments(long topicId) {
             return Attachment.find( "TopicId=" + topicId + " order by OrderId desc, Id asc" ).list();
         }
 
@@ -50,11 +50,11 @@ namespace wojilu.Apps.Forum.Service {
             return Attachment.find( "PostId in (" + builder.ToString().TrimEnd( ',' ) + ") order by OrderId desc, Id asc" ).list();
         }
 
-        public virtual DataPage<AttachmentTemp> GetByUser( int userId, int pageSize ) {
+        public virtual DataPage<AttachmentTemp> GetByUser(long userId, int pageSize) {
             return AttachmentTemp.findPage( "OwnerId=" + userId, pageSize );
         }
 
-        public virtual Attachment GetById( int id, String guid ) {
+        public virtual Attachment GetById(long id, string guid) {
             Attachment a = db.findById<Attachment>( id );
             if (a != null && a.Guid != guid) {
                 return null;
@@ -62,7 +62,7 @@ namespace wojilu.Apps.Forum.Service {
             return a;
         }
 
-        public virtual Attachment GetById( int id ) {
+        public virtual Attachment GetById(long id) {
             return Attachment.findById( id );
         }
 
@@ -72,7 +72,7 @@ namespace wojilu.Apps.Forum.Service {
             this.SubstractIncome( attachment.TopicId, downloader );
         }
 
-        public virtual void SubstractIncome( int topicId, User viewer ) {
+        public virtual void SubstractIncome(long topicId, User viewer) {
 
             if (viewer == null || viewer.Id <= 0) return; // 跳过游客
 
@@ -93,12 +93,12 @@ namespace wojilu.Apps.Forum.Service {
             incomeService.AddIncome( viewer, UserAction.Forum_DownloadAttachment.Id, msg );
         }
 
-        private Boolean isFirstDownload( User user, int topicId ) {
+        private bool isFirstDownload(User user, long topicId) {
             AttachmentDownload x = AttachmentDownload.find( "UserId=" + user.Id + " and TopicId=" + topicId ).first();
             return x == null;
         }
 
-        private void addFirstDownloadLog( User user, int topicId ) {
+        private void addFirstDownloadLog(User user, long topicId) {
             AttachmentDownload x = new AttachmentDownload();
             x.UserId = user.Id;
             x.TopicId = topicId;
@@ -112,8 +112,9 @@ namespace wojilu.Apps.Forum.Service {
             attachment.update( "Description" );
         }
 
-        public virtual void UpdateFile( Attachment a, String oldFilePath ) {
+        public virtual void UpdateFile( User user, Attachment a, String oldFilePath ) {
 
+            a.Created = DateTime.Now;
             a.update();
 
             if (a.IsImage) {
@@ -122,6 +123,10 @@ namespace wojilu.Apps.Forum.Service {
             else {
                 Img.DeleteFile( oldFilePath );
             }
+
+            ForumTopicService topicService = new ForumTopicService();
+            ForumPost post = ForumPost.findById( a.PostId );
+            topicService.UpdateLastEditInfo( user, post );
         }
 
         //--------------------------------------------------------------------------------------------------------------
@@ -155,15 +160,16 @@ namespace wojilu.Apps.Forum.Service {
             ForumPost post = topicService.GetPostByTopic( a.TopicId );
             a.PostId = post.Id;
 
-
             Result result = db.insert( a );
 
             refreshTopicCount( a );
 
+            topicService.UpdateLastEditInfo( user, post );
+
             return result;
         }
 
-        public void CreateByTemp( String ids, ForumTopic topic ) {
+        public virtual void CreateByTemp( String ids, ForumTopic topic ) {
 
             int[] arrIds = cvt.ToIntArray( ids );
             if (arrIds.Length == 0) return;
@@ -219,7 +225,7 @@ namespace wojilu.Apps.Forum.Service {
 
         //--------------------------------------------------------------------------------------------------------------
 
-        public virtual void Delete( int id ) {
+        public virtual void Delete(long id) {
             Attachment at = Attachment.findById( id );
             if (at == null) return;
 
@@ -238,7 +244,7 @@ namespace wojilu.Apps.Forum.Service {
         }
 
 
-        public virtual void DeleteTempAttachment( int id ) {
+        public virtual void DeleteTempAttachment(long id) {
 
             AttachmentTemp at = AttachmentTemp.findById( id );
             if (at == null) return;
@@ -249,7 +255,7 @@ namespace wojilu.Apps.Forum.Service {
         }
 
 
-        public virtual void DeleteByPost( int postId ) {
+        public virtual void DeleteByPost(long postId) {
             List<Attachment> attachments = this.GetByPost( postId );
             foreach (Attachment attachment in attachments) {
                 Img.DeleteImgAndThumb( attachment.FileUrl );

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,11 +19,11 @@ using System;
 namespace wojilu.Config {
 
     /// <summary>
-    /// ÅäÖÃÖµµÄ½Ó¿Ú
+    /// é…ç½®å€¼çš„æ¥å£
     /// </summary>
     public interface ISettingValue {
 
-        int Id { get; set; }
+        long Id { get; set; }
         String DataType { get; set; }
 
         String SettingValue { get; set; }

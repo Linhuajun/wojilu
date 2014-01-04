@@ -15,14 +15,15 @@ using wojilu.Web.Controller.Common;
 using wojilu.Web.Controller.Content.Caching;
 using wojilu.Web.Context;
 using wojilu.Members.Sites.Domain;
+using wojilu.Common.AppBase.Interface;
 
 namespace wojilu.Web.Controller.Content {
 
     [App( typeof( ContentApp ) )]
     public class SectionController : ControllerBase {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public SectionController() {
 
@@ -36,34 +37,44 @@ namespace wojilu.Web.Controller.Content {
         public override void Layout() {
         }
 
-        public void Show( int sectionId ) {
-            ContentSection section = showInfo( sectionId );
-            set( "listContent", loadHtml( section.SectionType, "List", sectionId ) );
-        }
-
-
-        public void Archive( int sectionId ) {
-            view( "Show" );
-            ContentSection section = showInfo( sectionId );
-            set( "listContent", loadHtml( section.SectionType, "Archive", sectionId ) );
-        }
-
-        private ContentSection showInfo( int sectionId ) {
+        [Data( typeof( ContentSection ) )]
+        public virtual void Show( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            WebUtils.pageTitle( this, section.Title, ctx.app.Name );
+            if (section == null) {
+                echo( lang( "exDataNotFound" ) );
+                return;
+            }
+            set( "listContent", loadHtml( section.SectionType, "List", sectionId ) );
+            showInfo( section );
+        }
+
+        private void showInfo( ContentSection section ) {
 
             //1)location
             String location = string.Format( "<a href='{0}'>{1}</a> &gt; {2}",
-                to( new ContentController().Index ),
-                ctx.app.Name, 
+                alink.ToApp( ctx.app.obj as IApp, ctx ),
+                ctx.app.Name,
                 "分类查看"
             );
 
             set( "location", location );
 
-            return section;
+            bindMetaInfo( section );
         }
 
+        private void bindMetaInfo( ContentSection section ) {
+
+            ctx.Page.SetTitle( section.Title, ctx.app.Name );
+
+            if (strUtil.HasText( section.MetaKeywords )) {
+                ctx.Page.Keywords = section.MetaKeywords;
+            }
+            else {
+                ctx.Page.Keywords = section.Title;
+            }
+
+            ctx.Page.Description = section.MetaDescription;
+        }
 
 
     }

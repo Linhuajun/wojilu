@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -20,18 +20,16 @@ namespace wojilu.Web.Controller.Download.Admin {
     [App( typeof( DownloadApp ) )]
     public class CategoryController : ControllerBase {
 
-        public void List() {
+        public virtual void List() {
 
             set( "addLink", to( Add ) );
             set( "sortAction", to( SaveSort ) );
 
             List<FileCategory> list = FileCategory.GetRootList();
             bindList( "list", "data", list, bindLink );
-
-
         }
 
-        private void bindLink( IBlock block, int id ) {
+        private void bindLink( IBlock block, long id ) {
             block.Set( "data.LinkEdit", to( Edit, id ) );
             block.Set( "data.LinkDelete", to( Delete, id ) );
         }
@@ -39,7 +37,7 @@ namespace wojilu.Web.Controller.Download.Admin {
         [HttpPost]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             FileCategory acategory = FileCategory.GetById( id );
@@ -63,16 +61,15 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
         }
 
         [HttpPost]
-        public void Create() {
+        public virtual void Create() {
             string name = ctx.Post( "Name" );
             if (strUtil.IsNullOrEmpty( name )) {
-                errors.Add( "«ÎÃÓ–¥√˚≥∆" );
-                run( Add );
+                echoError( "ËØ∑Â°´ÂÜôÂêçÁß∞" );
                 return;
             }
 
@@ -81,10 +78,10 @@ namespace wojilu.Web.Controller.Download.Admin {
             cat.IsThumbView = ctx.PostIsCheck( "IsThumbView" );
             cat.insert();
 
-            echoRedirect( lang( "opok" ), List );
+            echoToParentPart( lang( "opok" ) );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
             target( Update, id );
 
             FileCategory cat = FileCategory.GetById( id );
@@ -97,12 +94,11 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
         [HttpPost]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             string name = ctx.Post( "Name" );
             if (strUtil.IsNullOrEmpty( name )) {
-                errors.Add( "«ÎÃÓ–¥√˚≥∆" );
-                run( Edit, id );
+                echoError( "ËØ∑Â°´ÂÜôÂêçÁß∞" );
                 return;
             }
 
@@ -111,11 +107,11 @@ namespace wojilu.Web.Controller.Download.Admin {
             cat.IsThumbView = ctx.PostIsCheck( "IsThumbView" );
             cat.update();
 
-            echoRedirect( lang( "opok" ), List );
+            echoToParentPart( lang( "opok" ) );
         }
 
         [HttpDelete]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             FileCategory cat = FileCategory.GetById( id );
             if (cat != null) {
                 cat.delete();

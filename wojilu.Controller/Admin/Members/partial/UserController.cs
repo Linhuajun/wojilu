@@ -14,6 +14,7 @@ using wojilu.Data;
 using wojilu.Members.Users.Enum;
 using wojilu.Common.Resource;
 using wojilu.ORM;
+using wojilu.OAuth;
 
 
 namespace wojilu.Web.Controller.Admin.Members {
@@ -23,31 +24,90 @@ namespace wojilu.Web.Controller.Admin.Members {
 
         private void bindUserList( DataPage<User> list ) {
             IBlock block = getBlock( "list" );
-            foreach (User m in list.Results) {
-                block.Set( "user.Name", m.Name );
-                block.Set( "user.RoleName", m.Role.Name );
-                block.Set( "user.RealName", strUtil.SubString( m.RealName, 8 ) );
 
-                //String isEmailConfirm = (m.IsEmailConfirmed == 1 ? "√" : "");
-                String isEmailConfirm = getEmailConfirmStatus( m );
+            List<User> users = list.Results;
+            List<UserConnect> connects = getUserConnects( users );
+
+            foreach (User u in users) {
+                block.Set( "user.Name", u.Name );
+                block.Set( "user.RoleName", u.Role.Name );
+                block.Set( "user.RealName", strUtil.SubString( u.RealName, 8 ) );
+
+                String realNameInfo = strUtil.HasText( u.RealName ) ? "(" + strUtil.SubString( u.RealName, 8 ) + ")" : "";
+                block.Set( "user.RealNameInfo", realNameInfo );
+
+                String isEmailConfirm = getEmailConfirmStatus( u, connects );
                 block.Set( "user.IsEmailConfirm", isEmailConfirm );
-                block.Set( "user.Email", m.Email );
+                String email = getUserEmail( u, connects );
+                block.Set( "user.Email", email );
 
-                block.Set( "user.CreateTime", m.Created.GetDateTimeFormats( 'g' )[0] );
-                block.Set( "user.LastLoginTime", m.LastLoginTime );
-                block.Set( "user.Id", m.Id );
-                block.Set( "user.EditUrl", to( Edit, m.Id ) );
-                block.Set( "user.Url", toUser( m ) );
-                block.Set( "statusIcon", getStatusIcon( m ) );
+                block.Set( "user.CreateTime", u.Created.GetDateTimeFormats( 'g' )[0] );
+                block.Set( "user.LastLoginTime", u.LastLoginTime );
+                block.Set( "user.Id", u.Id );
+                block.Set( "user.EditUrl", to( Edit, u.Id ) );
+                block.Set( "user.Url", toUser( u ) );
+                block.Set( "statusIcon", getStatusIcon( u ) );
+
+                block.Set( "user.Ip", u.LastLoginIp );
+
+                block.Set( "user.PicStatus", u.IsPicError == 1 ? "x" : "" );
+
                 block.Next();
             }
 
             set( "page", list.PageBar );
         }
 
-        private string getEmailConfirmStatus( User user ) {
+        private Boolean isBindConnects( User u, List<UserConnect> connects ) {
+            foreach (UserConnect x in connects) {
+                if (x.User != null && x.User.Id == u.Id) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private string getUserEmail( User u, List<UserConnect> connects ) {
+
+            String email = u.Email;
+            String bindAccounts = "";
+            foreach (UserConnect x in connects) {
+                if ( x.User != null && x.User.Id == u.Id) {
+                    bindAccounts += getConnectName( x.ConnectType ) + ",";
+                }
+            }
+            bindAccounts = bindAccounts.TrimEnd( ',' );
+
+            if (strUtil.HasText( bindAccounts )) {
+                email = string.Format( "<span><img src=\"{0}\" title=\"绑定帐号：{1}\" /></span> ", strUtil.Join( sys.Path.Img, "/s/external-link.png" ), bindAccounts ) + email;
+            }
+
+            return email;
+        }
+
+        private string getConnectName( string connectType ) {
+            AuthConnectConfig x = AuthConnectConfig.GetByType( connectType );
+            return x == null ? "" : x.Name;
+        }
+
+        private List<UserConnect> getUserConnects( List<User> users ) {
+
+            if (users.Count == 0) return new List<UserConnect>();
+
+            String ids = strUtil.GetIds( users );
+            return UserConnect.find( "UserId in (" + ids + ")" ).list();
+        }
+
+        private string getEmailConfirmStatus( User user, List<UserConnect> connects ) {
             if (user.IsEmailConfirmed == EmailConfirm.Confirmed) return "√";
-            if (user.IsEmailConfirmed == EmailConfirm.EmailError) return lang( "EmailError" );
+            if (user.IsEmailConfirmed == EmailConfirm.EmailError) {
+                if (isBindConnects( user, connects )) {
+                    return "--";
+                }
+                else {
+                    return lang( "EmailError" );
+                }
+            }
             if (user.IsEmailConfirmed == EmailConfirm.UnConfirmed) return lang( "UnConfirmed" );
             if (user.IsEmailConfirmed == EmailConfirm.UnSendEmail) return lang( "UnSendEmail" );
             return "";
@@ -104,6 +164,10 @@ namespace wojilu.Web.Controller.Admin.Members {
                     condition += "and IsEmailConfirmed=" + (int)EmailConfirm.UnConfirmed;
                 else if (filter == "EmailError")
                     condition += "and IsEmailConfirmed=" + (int)EmailConfirm.EmailError;
+                else if (filter == "AvatarError")
+                    condition += "and IsPicError=1";
+                else if (filter == "bind")
+                    condition += "and IsBind=1";
 
 
                 else if (filter == "male")
@@ -137,7 +201,7 @@ namespace wojilu.Web.Controller.Admin.Members {
                 set( "s.RealName", "" );
                 set( "s.Email", "" );
 
-                return condition+" ";
+                return condition + " ";
             }
 
             String name = ctx.Get( "name" );
@@ -157,8 +221,8 @@ namespace wojilu.Web.Controller.Admin.Members {
             String email = ctx.Get( "email" );
             set( "s.Email", email );
             if (strUtil.HasText( email )) {
-                name = strUtil.SqlClean( email, 30 );
-                condition += string.Format( "and Email='{0}' ", name );
+                name = strUtil.SqlClean( email, 15 );
+                condition += string.Format( "and Email like '%{0}%' ", name );
             }
 
             return strUtil.TrimStart( condition.Trim(), "and" );
@@ -184,7 +248,7 @@ namespace wojilu.Web.Controller.Admin.Members {
             userStr = userStr.Trim().TrimEnd( ',' );
 
             if (strUtil.IsNullOrEmpty( userStr )) {
-                echoRedirect( lang( "exUserEmailInvalid" ) );
+                echoRedirectPart( lang( "exUserEmailInvalid" ) );
                 return;
             }
 
@@ -192,7 +256,8 @@ namespace wojilu.Web.Controller.Admin.Members {
             set( "userIds", idsStr );
         }
 
-        //-----------------------------------------------------------------------------------------------------
+        //----------------------------------------------------------------------------
+
 
         private Boolean isEmailValid( User user ) {
 
@@ -203,7 +268,7 @@ namespace wojilu.Web.Controller.Admin.Members {
             return reg.IsMatch( user.Email );
         }
 
-        private MsgInfo validateMsg( ) {
+        private MsgInfo validateMsg() {
             return validateMsg( false );
         }
 
@@ -256,6 +321,10 @@ namespace wojilu.Web.Controller.Admin.Members {
             set( "m.Id", m.Id );
             set( "m.Name", m.RealName );
             set( "m.NickName", m.Name );
+
+            set( "m.Url", m.Url );
+
+            bind( "m", m );
 
             String kv = "Name=Value";
             dropList( "Year", AppResource.GetInts( 1910, 2009 ), kv, m.BirthYear );

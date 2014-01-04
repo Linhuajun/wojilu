@@ -12,8 +12,6 @@ using wojilu.Web.Mvc;
 using wojilu.Apps.Content.Domain;
 using wojilu.Apps.Content.Interface;
 using wojilu.Common.AppBase;
-using wojilu.Common.AppBase.Interface;
-using wojilu.Serialization;
 using wojilu.Web.Controller.Content.Utils;
 
 namespace wojilu.Web.Controller.Content.Admin {
@@ -38,11 +36,17 @@ namespace wojilu.Web.Controller.Content.Admin {
             set( "layoutSaveUrl", to( new ContentController().SaveLayout ) );
 
             set( "resizeLink", to( new ContentController().SaveResize ) );
+
+            IBlock xblock = getBlock( "export" );
+            if (ctx.viewer.IsAdministrator()) {
+                xblock.Set( "lnkExport", to( new ExportController().Index ) );
+                xblock.Next();
+            }
         }
 
-        private void bindRowList( ContentApp article, List<ContentSection> sections ) {
+        private void bindRowList( ContentApp app, List<ContentSection> sections ) {
             IBlock block = getBlock( "rowList" );
-            string[] rowList = article.RowList;
+            string[] rowList = app.RowList;
             for (int i = 1; i < (rowList.Length + 1); i++) {
 
                 int columnCount = cvt.ToInt( rowList[i - 1] );
@@ -174,18 +178,15 @@ namespace wojilu.Web.Controller.Content.Admin {
             if (section.TemplateId <= 0) return getJsonResult( section, data );
 
 
-            ContentSectionTemplate tpl = templatelService.GetById( section.TemplateId );
-            Template currentView = utils.getTemplateByFileName( BinderUtils.GetBinderTemplatePath( tpl ) );
-            ISectionBinder binder = BinderUtils.GetBinder( tpl, ctx, currentView );
+            ISectionBinder binder = BinderUtils.GetBinder( section, ctx );
             binder.Bind( section, data );
-
             ControllerBase cb2 = binder as ControllerBase;
             return cb2.utils.getActionResult();
         }
 
         private String getJsonResult( ContentSection section, IList data ) {
 
-            String jsonStr = JsonString.ConvertList( data );
+            String jsonStr = Json.ToString( data );
             String scriptData = string.Format( "	<script>var sectionData{0} = {1};</script>", section.Id, jsonStr );
             if (section.CustomTemplateId <= 0)
                 return scriptData;
@@ -219,18 +220,24 @@ namespace wojilu.Web.Controller.Content.Admin {
             Dictionary<string, string> pd = service.GetParamDefault();
             Dictionary<string, string> presult = new Dictionary<string, string>();
             foreach (KeyValuePair<string, string> pair in pd) {
-                if (pair.Key.Equals( "ownerId" ))
-                    presult.Add( pair.Key, ctx.owner.obj.Id.ToString() );
-                else if (pair.Key.Equals( "viewerId" ))
+                if (pair.Key.Equals( "ownerId" )) {
+                    presult.Add( pair.Key, ctx.owner.Id.ToString() );
+                }
+                else if (pair.Key.Equals( "viewerId" )) {
                     presult.Add( pair.Key, ctx.viewer.Id.ToString() );
-                else
+                }
+                else if (pair.Key.Equals( "appId" )) {
+                    presult.Add( pair.Key, ctx.app.Id.ToString() );
+                }
+                else {
                     presult.Add( pair.Key, pair.Key );
+                }
             }
             return presult;
         }
 
         private String bindData( IBlock sectionBlock, ContentSection articleSection ) {
-            IPageSection section = BinderUtils.GetPageSectionAdmin( articleSection, ctx, "AdminSectionShow" );
+            IPageAdminSection section = BinderUtils.GetPageSectionAdmin( articleSection, ctx, "AdminSectionShow" );
             ControllerBase controller = section as ControllerBase;
             bindSettingLink( sectionBlock, section.GetSettingLink( articleSection.Id ) );
             section.AdminSectionShow( articleSection.Id );

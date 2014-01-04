@@ -30,6 +30,8 @@ namespace wojilu.Web.Mvc.Processors {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( ActionProcessor ) );
 
+        private List<ActionObserver> obList = new List<ActionObserver>();
+
         public override void Process( ProcessContext context ) {
 
             MvcEventPublisher.Instance.BeginProcessAction( context.ctx );
@@ -37,18 +39,31 @@ namespace wojilu.Web.Mvc.Processors {
 
             MvcContext ctx = context.ctx;
 
-            ControllerBase controller = context.getController();
+            ControllerBase controller = ctx.controller;
 
-            // 检查缓存
-            CacheInfo ci = CacheInfo.Init( ctx );
-            Object cacheContent = ci.CheckCache();
+
+            // 1) 检查 action 缓存
+            ActionCacheChecker xChecker = ActionCacheChecker.InitAction( ctx );
+            Object cacheContent = xChecker.GetCache();
             if (cacheContent != null) {
-                logger.Info( "load from actionCache=" + ci.CacheKey );
+                logger.Info( "load from actionCache=" + xChecker.CacheKey );
                 context.setContent( cacheContent.ToString() );
-                getPageMetaFromCache( ctx, ci.CacheKey );
+                setPageMeta_FromCache( ctx, xChecker.CacheKey );
                 return;
             }
 
+            // 2) 运行 before action (获取所有的 ActionObserver)
+            List<ActionObserver> actionObservers = ControllerMeta.GetActionObservers( controller.GetType(), ctx.route.action );
+            if (actionObservers != null) {
+                foreach (ActionObserver x in actionObservers) {
+                    ActionObserver ob = (ActionObserver)ObjectContext.Create( x.GetType() );
+                    obList.Add( ob );
+                    Boolean isContinue = ob.BeforeAction( ctx );
+                    if (!isContinue) return;
+                }
+            }
+
+            // 3) 运行 action
             MethodInfo actionMethod = ctx.ActionMethodInfo; // context.getActionMethod();
 
             // 设值模板并载入全局变量
@@ -57,16 +72,16 @@ namespace wojilu.Web.Mvc.Processors {
             // 运行并处理post值
             ActionRunner.runAction( ctx, controller, actionMethod, controller.utils.runAction );
             if (ctx.utils.isEnd()) {
+                afterAction( ctx );
                 return;
             }
 
             String actionContent = controller.utils.getActionResult();
 
-            // 加入缓存
-            if (ci.IsActionCache) {
-                ci.AddContentToCache( actionContent );
-                // 加入PageMeta
-                addPageMetaToCache( ctx, ci.CacheKey );
+            // 4) 后续缓存处理
+            if (xChecker.IsActionCache) {
+                xChecker.AddCache( actionContent );
+                addPageMeta_ToCache( ctx, xChecker.CacheKey );
             }
 
             actionContent = PostValueProcessor.ProcessPostValue( actionContent, ctx );
@@ -86,18 +101,14 @@ namespace wojilu.Web.Mvc.Processors {
                 else {
                     context.setContent( actionContent );
                 }
-
-
             }
             else {
                 context.setContent( actionContent );
             }
 
-            updateActionCache( ctx );
-
-            MvcEventPublisher.Instance.EndProcessAction( context.ctx );
-
+            afterAction( ctx );
         }
+
 
         //------------------------------------------------------------------------
 
@@ -113,56 +124,56 @@ namespace wojilu.Web.Mvc.Processors {
             }
         }
 
-        //--------------------------------------------------------------------------
+        private void afterAction( MvcContext ctx ) {
 
-        private static void addPageMetaToCache( MvcContext ctx, String cacheKey ) {
-            CacheManager.GetApplicationCache().Put( cacheKey + "_pageMeta", ctx.GetPageMeta() );
+            runAfterAction( ctx );
+
+            MvcEventPublisher.Instance.EndProcessAction( ctx );
         }
 
-        private static void getPageMetaFromCache( MvcContext ctx, String cacheKey ) {
+        private void runAfterAction( MvcContext ctx ) {
+
+            List<String> pages = new List<String>();
+
+            List<IPageCache> observedPages = new List<IPageCache>();
+            foreach (ActionObserver ob in obList) {
+
+                logger.Info( "run after ActionObserver=>" + ob.GetType() );
+                ob.AfterAction( ctx );
+
+                if (ob.GetType().IsSubclassOf( typeof( ActionCache ) )) {
+                    loadObservedPage( (ActionCache)ob, observedPages );
+                }
+            }
+
+            foreach (IPageCache pc in observedPages) {
+                logger.Info( "update IPageCache=" + pc.GetType().FullName );
+                pc.UpdateCache( ctx );
+            }
+        }
+
+        private void loadObservedPage( ActionCache actionCache, List<IPageCache> observedPages ) {
+
+            List<IPageCache> relatedPages = ControllerMeta.GetRelatedPageCache( actionCache.GetType() );
+            if (relatedPages == null) return;
+
+            foreach (IPageCache pc in relatedPages) {
+                if (observedPages.Contains( pc ) == false) observedPages.Add( pc );
+            }
+
+        }
+
+        private static void addPageMeta_ToCache( MvcContext ctx, String cacheKey ) {
+            CacheManager.GetApplicationCache().Put( cacheKey + "_pageMeta", ctx.Page );
+        }
+
+        private static void setPageMeta_FromCache( MvcContext ctx, String cacheKey ) {
 
             PageMeta p = CacheManager.GetApplicationCache().Get( cacheKey + "_pageMeta" ) as PageMeta;
             if (p != null) {
                 ctx.utils.setPageMeta( p );
             }
         }
-
-        //------------------------------------------------------------------------
-
-        private void updateActionCache( MvcContext ctx ) {
-
-            if (ctx.HttpMethod.Equals( "GET" )) return;
-
-            List<String> pages = new List<String>();
-
-            List<IActionCache> relatedCaches = ControllerMeta.GetActionCacheByUpdate( ctx.controller.GetType(), ctx.route.action );
-            if (relatedCaches == null) return;
-
-            List<IPageCache> pageCaches = new List<IPageCache>();
-            foreach (IActionCache ac in relatedCaches) {
-                logger.Info( "update IActionCache=" + ac.GetType().FullName );
-                ac.UpdateCache( ctx );
-                addPageCache( ac, pageCaches );
-            }
-
-            foreach (IPageCache pc in pageCaches) {
-                logger.Info( "update IPageCache=" + pc.GetType().FullName );
-                pc.UpdateCache( ctx );
-            }
-        }
-
-        private void addPageCache( IActionCache ac, List<IPageCache> pageCaches ) {
-
-            List<IPageCache> relatedCaches = ControllerMeta.GetPageCacheByUpdate( ac.GetType() );
-            if (relatedCaches == null) return;
-
-            foreach (IPageCache pc in relatedCaches) {
-                if (pageCaches.Contains( pc ) == false) pageCaches.Add( pc );
-            }
-
-        }
-
-
 
     }
 

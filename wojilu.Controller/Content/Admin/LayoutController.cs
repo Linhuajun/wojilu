@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -16,11 +16,12 @@ namespace wojilu.Web.Controller.Content.Admin {
 
             ContentApp app = ctx.app.obj as ContentApp;
 
-            set( "allPostsLink", to( new PostController().List ) );
-            set( "trashPostsLink", to( new PostController().Trash ) );
+            set( "allPostsLink", to( new Common.PostController().List, 0 ) );
+            set( "trashPostsLink", to( new Common.PostController().Trash ) );
             set( "settingLink", to( new SettingController().Index ) );
             set( "defaultLink", to( new ContentController().Home ) );
-            set( "commentLink", to( new CommentController().AdminList ) );
+
+            set( "commentLink", to( new CommentController().List ) );
 
             IBlock htmlBlock = getBlock( "html" );
             if (ctx.owner.obj is Site) {
@@ -31,7 +32,7 @@ namespace wojilu.Web.Controller.Content.Admin {
             if (app.GetSettingsObj().EnableSubmit == 1) {
                 String slnk = string.Format( "<li style=\"width:100px;\"><a href=\"{0}\" class=\"frmLink\" loadTo=\"adminPortalContainer\" nolayout=3>{1}</a><span></span></li>",
                     to( new SubmitSettingController().List ),
-                    "Õ∂µ›‘±π‹¿Ì" );
+                    "ÊäïÈÄíÂëòÁÆ°ÁêÜ" );
                 set( "submitterLink", slnk );
             }
             else {

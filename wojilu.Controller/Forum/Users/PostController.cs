@@ -23,13 +23,13 @@ namespace wojilu.Web.Controller.Forum.Users {
     [App( typeof( ForumApp ) )]
     public class PostController : ControllerBase {
 
-        public IAttachmentService attachService { get; set; }
-        public IForumBoardService boardService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IModeratorService moderatorService { get; set; }
-        public IForumBuyLogService buyService { get; set; }
-        public IUserIncomeService incomeService { get; set; }
+        public virtual IAttachmentService attachService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IModeratorService moderatorService { get; set; }
+        public virtual IForumBuyLogService buyService { get; set; }
+        public virtual IUserIncomeService incomeService { get; set; }
 
         public PostController() {
             boardService = new ForumBoardService();
@@ -48,16 +48,16 @@ namespace wojilu.Web.Controller.Forum.Users {
             return _tree;
         }
 
-        public void ReplyPost( int id ) {
+        public virtual void ReplyPost( long id ) {
 
             if (!checkLockByPost( id )) return;
 
             view( "Quote" );
             setPostView( id );
-            editor( "Content", "", "250px" );
+            set( "Content", "" );
         }
 
-        public void QuotePost( int id ) {
+        public virtual void QuotePost( long id ) {
             if (!checkLockByPost( id )) return;
 
             view( "Quote" );
@@ -65,15 +65,15 @@ namespace wojilu.Web.Controller.Forum.Users {
             setQuoteContent( post );
         }
 
-        public void ReplyTopic( int id ) {
+        public virtual void ReplyTopic( long id ) {
             if (!checkLock( id )) return;
 
             view( "Quote" );
             setTopicView( id );
-            editor( "Content", "", "250px" );
+            set( "Content", "" );
         }
 
-        public void QuoteTopic( int id ) {
+        public virtual void QuoteTopic( long id ) {
             if (!checkLock( id )) return;
 
             view( "Quote" );
@@ -83,7 +83,12 @@ namespace wojilu.Web.Controller.Forum.Users {
 
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
+
+            if (ForumValidator.IsIntervalShort( ctx )) {
+                echoError( "对不起，您发布太快，请稍等一会儿再发布" );
+                return;
+            }
 
             ForumPost post = ForumValidator.ValidatePost( ctx );
 
@@ -98,24 +103,61 @@ namespace wojilu.Web.Controller.Forum.Users {
 
             if (ctx.HasErrors) {
                 echoError();
+                return;
+            }
+
+            Result result = postService.Insert( post, (User)ctx.viewer.obj, ctx.owner.obj, (IApp)ctx.app.obj );
+            if (result.HasErrors) {
+                echoError( result );
+                return;
+            }
+
+            int lastPageNo = getLastPageNo( post );
+            if (ctx.PostLong( "__ajaxUpdate" ) > 0) {
+                echoAjaxUpdate( post, board, lastPageNo );
             }
             else {
-                Result result = postService.Insert( post, (User)ctx.viewer.obj, ctx.owner.obj, (IApp)ctx.app.obj );
-                if (result.IsValid) {
-
-                    new ForumCacheRemove( boardService, topicService, this ).CreatePost( post );
-
-                    String lnkTopicLastPage = getTopicLastPage( post );
-                    echoRedirect( lang( "opok" ), lnkTopicLastPage );
-                }
-                else {
-                    echoRedirect( result.ErrorsHtml );
-                }
+                String lnkTopicLastPage = getTopicLastPage( post, lastPageNo );
+                echoRedirect( lang( "opok" ), lnkTopicLastPage );
             }
+
+            ForumValidator.AddCreateTime( ctx );
+        }
+
+        private void echoAjaxUpdate( ForumPost post, ForumBoard board, int lastPageNo ) {
+            if (ctx.PostLong( "currentPageId" ) == lastPageNo) {
+                String postHtml = getReturnHtml( post, board );
+                echoJsonMsg( "ajax", true, postHtml );
+            }
+            else {
+                String lnkTopicLastPage = getTopicLastPage( post, lastPageNo );
+                echoJsonMsg( "redirect", true, lnkTopicLastPage );
+            }
+        }
+
+        private int getLastPageNo( ForumPost post ) {
+            int pageNo = postService.GetPageCount( post.TopicId, getPageSize( ctx.app.obj ) );
+            return pageNo;
+        }
+
+        private String getReturnHtml( ForumPost post, ForumBoard board ) {
+
+            ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
+            List<ForumPost> posts = new List<ForumPost>();
+            posts.Add( post );
+
+            ctx.SetItem( "forumBoard", board );
+            ctx.SetItem( "forumTopic", topic );
+            ctx.SetItem( "posts", posts );
+            ctx.SetItem( "attachs", new List<Attachment>() );
+            ctx.SetItem( "pageSize", -1 );
+
+            String postHtml = loadHtml( new Forum.TopicController().PostLoop );
+            return postHtml;
         }
         //-----------------------------------------------------------------------------
 
-        public void Buy( int postId ) {
+        public virtual void Buy( long postId ) {
 
             ForumPost post = postService.GetById( postId, ctx.owner.obj );
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
@@ -131,11 +173,11 @@ namespace wojilu.Web.Controller.Forum.Users {
                 return;
             }
 
-            set( "ActionLink", to( SaveBuy, postId ) + "?boardId=" + ctx.GetInt( "boardId" ) );
+            set( "ActionLink", to( SaveBuy, postId ) + "?boardId=" + ctx.GetLong( "boardId" ) );
         }
 
         [HttpPost]
-        public void SaveBuy( int postId ) {
+        public virtual void SaveBuy( long postId ) {
             ForumPost post = postService.GetById( postId, ctx.owner.obj );
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
             if (boardError( topic )) return;
@@ -163,7 +205,7 @@ namespace wojilu.Web.Controller.Forum.Users {
         }
 
         private Boolean boardError( ForumTopic topic ) {
-            if (ctx.GetInt( "boardId" ) != topic.ForumBoard.Id) {
+            if (ctx.GetLong( "boardId" ) != topic.ForumBoard.Id) {
                 echoRedirect( lang( "exNoPermission" ) + ": borad id error" );
                 return true;
             }
@@ -171,14 +213,14 @@ namespace wojilu.Web.Controller.Forum.Users {
         }
 
         private Boolean boardError( ForumPost post ) {
-            if (ctx.GetInt( "boardId" ) != post.ForumBoardId) {
+            if (ctx.GetLong( "boardId" ) != post.ForumBoardId) {
                 echoRedirect( lang( "exNoPermission" ) + ": borad id error" );
                 return true;
             }
             return false;
         }
 
-        public void SetReward( int id ) {
+        public virtual void SetReward( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             if (topic == null) {
@@ -201,7 +243,7 @@ namespace wojilu.Web.Controller.Forum.Users {
             bindPostList( list );
         }
 
-        public void RewardList( int id ) {
+        public virtual void RewardList( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             if (topic == null) {
@@ -219,7 +261,7 @@ namespace wojilu.Web.Controller.Forum.Users {
             bindRewardList( list );
         }
 
-        public void AddReward( int id ) {
+        public virtual void AddReward( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
@@ -234,7 +276,7 @@ namespace wojilu.Web.Controller.Forum.Users {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveReward( int id ) {
+        public virtual void SaveReward( long id ) {
 
             int rewardValue = ctx.PostInt( "PostReward" );
             if (rewardValue <= 0) {
@@ -344,12 +386,12 @@ namespace wojilu.Web.Controller.Forum.Users {
         //---------------------------------------------------------------------------
 
 
-        private Boolean checkLock( int topicId ) {
+        private Boolean checkLock( long topicId ) {
             ForumTopic topic = topicService.GetById( topicId, ctx.owner.obj );
             return checkIsLockPrivate( topic );
         }
 
-        private Boolean checkLockByPost( int postId ) {
+        private Boolean checkLockByPost( long postId ) {
             ForumPost post = postService.GetById( postId, ctx.owner.obj );
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
             return checkIsLockPrivate( topic );
@@ -363,9 +405,8 @@ namespace wojilu.Web.Controller.Forum.Users {
             return true;
         }
 
-        private string getTopicLastPage( ForumPost post ) {
+        private string getTopicLastPage( ForumPost post, int pageNo ) {
             String lnk = to( new wojilu.Web.Controller.Forum.TopicController().Show, post.TopicId );
-            int pageNo = postService.GetPageCount( post.TopicId, getPageSize( ctx.app.obj ) );
             lnk = PageHelper.AppendNo( lnk, pageNo );
 
             if (ctx.web.PathReferrer.IndexOf( "reload=true" ) < 0) {
@@ -397,14 +438,13 @@ namespace wojilu.Web.Controller.Forum.Users {
 
             String signature = string.Format( " <a href=\"{0}\">{1}</a> at {2} {3}", toUser( post.Creator ), post.Creator.Name, post.Created.ToString( "g" ), lnk );
 
-
-            String content = string.Format( "<div class=\"quoteContainer\"><div class=\"quote\"><div class=\"qSpan\">{0}<div class=\"quoteAuthor\">{1}</div></div></div></div>", post.Content, signature );
+            String content = string.Format( "<blockquote>{0}<p class=\"quote-user\">{1}</p></blockquote>", post.Content, signature );
             content += "<p>&nbsp;</p>";
 
-            editor( "Content", content, "350px" );
+            set( "Content", content );
         }
 
-        private ForumPost setPostView( int id ) {
+        private ForumPost setPostView( long id ) {
 
             ForumPost post = postService.GetById( id, ctx.owner.obj );
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
@@ -425,7 +465,7 @@ namespace wojilu.Web.Controller.Forum.Users {
             return post;
         }
 
-        private ForumPost setTopicView( int id ) {
+        private ForumPost setTopicView( long id ) {
 
             ForumPost post = postService.GetPostByTopic( id );
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );

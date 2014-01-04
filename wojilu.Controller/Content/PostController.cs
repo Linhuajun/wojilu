@@ -1,56 +1,67 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
-using wojilu.DI;
+using wojilu.ORM;
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
+
+using wojilu.Common.AppBase.Interface;
+using wojilu.Common.Tags;
+
+using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Section;
+using wojilu.Web.Controller.Content.Utils;
+
 using wojilu.Apps.Content.Domain;
 using wojilu.Apps.Content.Interface;
 using wojilu.Apps.Content.Service;
-using wojilu.Web.Controller.Content.Section;
-using wojilu.Web.Context;
-using wojilu.Web.Controller.Common;
-using wojilu.Web.Controller.Content.Utils;
-using wojilu.Web.Controller.Content.Caching;
+using System.Text;
+using wojilu.Web.Utils;
 using wojilu.Common.AppBase;
-using wojilu.Members.Sites.Domain;
-using wojilu.Common.Tags;
-using wojilu.ORM;
-using wojilu.Common.AppBase.Interface;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content {
 
     [App( typeof( ContentApp ) )]
     public class PostController : ControllerBase {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual ContentPostSectionService psService { get; set; }
+        public virtual IAttachmentService attachmentService { get; set; }
 
         public PostController() {
             LayoutControllerType = typeof( Section.LayoutController );
 
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
+            attachmentService = new AttachmentService();
+            psService = new ContentPostSectionService();
         }
 
         [CacheAction( typeof( ContentLayoutCache ) )]
         public override void Layout() {
         }
 
-        public void Recent() {
+        public virtual void Recent() {
 
-            DataPage<ContentPost> list = postService.GetByApp( ctx.app.Id, 50 );
+            DataPage<ContentPost> list = postService.GetByApp( ctx.app.Id, ContentSetting.ListRecentPageSize );
             bindPosts( list );
 
-            Page.Title = ctx.app.Name + "◊Ó–¬Œƒ’¬";
+            String cpLink = clink.toRecent( ctx );
+            Boolean isMakeHtml = HtmlHelper.IsMakeHtml( ctx );
+
+            int pageWidth = ContentSetting.ListPageWidth;
+            set( "page", list.GetPageBar( cpLink, isMakeHtml ) );
         }
 
+
         private void bindPosts( DataPage<ContentPost> posts ) {
+            Page.Title = ctx.app.Name + "ÊúÄÊñ∞ÊñáÁ´†";
             IBlock block = getBlock( "list" );
             foreach (ContentPost post in posts.Results) {
 
@@ -60,20 +71,21 @@ namespace wojilu.Web.Controller.Content {
                 BinderUtils.bindListItem( block, post, ctx );
                 block.Next();
             }
-            set( "page", posts.PageBar );
         }
 
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
             ContentPost post = postService.GetById( id, ctx.owner.Id );
 
             if (post == null) {
-                echo( lang( "exDataNotFound" ) );
+                echo( lang( "exDataNotFound" ) + "=ContentPost" );
                 return;
             }
-            else if (post.PageSection == null) {
-                echo( lang( "exDataNotFound" ) + ":PageSection is null" );
+
+            ContentSection section = psService.GetFirstSectionByPost( post.Id );
+            if (section == null) {
+                echo( lang( "exDataNotFound" ) + "=ContentSection" );
                 return;
             }
 
@@ -83,34 +95,17 @@ namespace wojilu.Web.Controller.Content {
                 return;
             }
 
+
             //----------------------------------------------------------------------------------------------------
 
-            // 0) page meta
-            bindMetaInfo( post );
-
             // 1) location
-            String location = string.Format( "<a href='{0}'>{1}</a>", to( new ContentController().Index ),
-    ctx.app.Name );
-            location = location + string.Format( " &gt; <a href='{0}'>{1}</a> &gt; {2}", clink.toSection( post.PageSection.Id, ctx ), post.PageSection.Title, alang( "postDetail" ) );
-            set( "location", location );
+            set( "location", getLocation( post, section ) );
 
             // 2) detail
-            set( "detailContent", loadHtml( post.PageSection.SectionType, "Show", post.Id ) );
+            set( "detailContent", loadHtml( section.SectionType, "Show", post.Id ) );
 
             // 3) comment
-            //loadComment( post );
-            if (post.CommentCondition == wojilu.Common.AppBase.CommentCondition.Close) {
-                set( "thisUrl", "#" );
-            }
-            else {
-                String commentUrl = t2( new wojilu.Web.Controller.Open.CommentController().List )
-                    + "?url=" + clink.toPost( post, ctx )
-                    + "&dataType=" + typeof( ContentPost ).FullName
-                    + "&dataTitle=" + post.Title
-                    + "&dataUserId=" + post.Creator.Id
-                    + "&dataId=" + post.Id;
-                set( "thisUrl", commentUrl );
-            }
+            set( "commentUrl", getCommentUrl( post ) );
 
             // 4) related posts
             loadRelatedPosts( post );
@@ -118,34 +113,147 @@ namespace wojilu.Web.Controller.Content {
             // 5) prev/next
             bindPrevNext( post );
 
-            // 6) tag
-            String tag = post.Tag.List.Count > 0 ? post.Tag.HtmlString : "";
-            set( "post.Tag", tag );
+            // 6) other info, tag, src, summary
+            String tag = post.Tag.List.Count > 0 ? tag = "tag: " + post.Tag.HtmlString : "";
+            set( "post.Tag", (post.Tag.List.Count > 0 ? tag = "tag: " + post.Tag.HtmlString : "") );
+            set( "post.Source", getSrc( post ) );
+            set( "post.Title", post.GetTitle() );
+            set( "post.Replies", getReplies( post ) );
+            set( "post.Submitter", getSubmitter( post ) );
+            bindSummary( post );
 
             // 7) digg
             set( "lnkDiggUp", to( DiggUp, post.Id ) );
             set( "lnkDiggDown", to( DiggDown, post.Id ) );
 
-            // 8) link
-            String postUrl = getFullUrl( alink.ToAppData( post, ctx ) );
-            set( "post.Url", postUrl );
-            bind( "post", post );
+            // 9) ÈôÑ‰ª∂
+            set( "attachmentList", getAttachmentList( post ) );
 
+            // 10) page metaÔºåÊúÄÂêé‰∏Ä‰∏™ÁªëÂÆöÔºåË¶ÜÁõñÂêÑ Section Ëá™Â∑±ÁöÑÈÖçÁΩÆ
+            bindMetaInfo( post );
+
+            // 11) ÁªüËÆ°‰ø°ÊÅØ
+            set( "lnkStats", to( Stats, id ) );
+
+            bind( "post", post );
         }
 
-        //private String getCommentTarget( ContentPost post ) {
-        //    return typeof( ContentPost ).FullName + "_" + post.Id;
-        //}
+        private string getCommentUrl( ContentPost post ) {
 
-        private String getFullUrl( String url ) {
-            if (url == null) return "";
-            if (url.StartsWith( "http" )) return url;
-            return strUtil.Join( ctx.url.SiteAndAppPath, url );
+            if (post.CommentCondition == CommentCondition.Close) {
+                return "#";
+            }
+
+            return t2( new wojilu.Web.Controller.Open.CommentController().List )
+                + "?url=" + alink.ToAppData( post, ctx )
+                + "&dataType=" + typeof( ContentPost ).FullName
+                + "&dataTitle=" + post.Title
+                + "&dataUserId=" + post.Creator.Id
+                + "&dataId=" + post.Id
+                + "&appId=" + post.AppId;
+        }
+
+        private String getLocation( ContentPost post, ContentSection section ) {
+            String location = string.Format( "<a href='{0}'>{1}</a>", alink.ToApp( ctx.app.obj as IApp, ctx ),
+    ctx.app.Name );
+
+            location = location + string.Format( " &gt; <a href='{0}'>{1}</a> &gt; {2}", clink.toSection( section.Id, ctx ), section.Title, alang( "postDetail" ) );
+            return location;
+        }
+
+        private string getSubmitter( ContentPost post ) {
+            if (post.Creator != null) {
+                return string.Format( "<a href=\"{0}\" target=\"_blank\">{1}</a>", toUser( post.Creator ), post.Creator.Name );
+            }
+            else {
+                return "Êó†";
+            }
+        }
+
+        private String getReplies( ContentPost post ) {
+
+            String replies = lang( "commentClosed" );
+
+            if (post.CommentCondition != CommentCondition.AllowAll) return replies;
+
+            if (post.Replies == 0) {
+                replies = string.Format( "{0}:0", lang( "comment" ) );
+            }
+            else {
+                replies = string.Format( "{0}:{1} <a href=\"#comments\">{2}</a>", lang( "comment" ), post.Replies, lang( "viewByHit" ) );
+            }
+            return replies;
+        }
+
+        private void bindSummary( ContentPost post ) {
+            IBlock block = getBlock( "summary" );
+            if (strUtil.HasText( post.Summary )) {
+                block.Set( "post.Summary", post.Summary );
+                block.Next();
+            }
+        }
+
+        private String getSrc( ContentPost post ) {
+            String src = null;
+            if (strUtil.HasText( post.SourceLink )) {
+                if (post.SourceLink.ToLower().StartsWith( "http:" )) {
+                    src = lang( "src" ) + string.Format( ": <a href=\"{0}\" target=\"_blank\">{0}</a>", post.SourceLink );
+                }
+                else {
+                    src = lang( "src" ) + ": " + post.SourceLink;
+                }
+            }
+            return src;
+        }
+
+
+        private String getAttachmentList( ContentPost data ) {
+
+            if (data.Attachments <= 0) return "";
+
+            if (data.IsAttachmentLogin == 1 && ctx.viewer.IsLogin == false) {
+                return "<div class=\"downloadWarning\"><div>" + alang( "downloadNeedLogin" ) + "</div></div>";
+            }
+
+            List<ContentAttachment> attachList = attachmentService.GetAttachmentsByPost( data.Id );
+
+            StringBuilder sb = new StringBuilder();
+            String created = attachList[0].Created.ToString();
+            sb.Append( "<div class=\"hr\"></div><div class=\"attachmentTitleWrap\"><div class=\"attachmentTitle\">" + alang( "attachment" ) + " <span class=\"note\">(" + created + ")</span> " );
+            sb.Append( "</div></div><ul class=\"attachmentList unstyled\">" );
+
+            foreach (ContentAttachment attachment in attachList) {
+
+                string fileName = attachment.GetFileShowName();
+
+                if (isImage( attachment )) {
+
+                    sb.AppendFormat( "<li><div>{0} <span class=\"note\">({1}KB)</span></div>", fileName, attachment.FileSizeKB );
+                    sb.AppendFormat( "<div><a href=\"{0}\" target=\"_blank\"><img src=\"{1}\" /></a></div>",
+                        attachment.FileUrl, attachment.FileMediuUrl );
+                    sb.Append( "</li>" );
+
+                }
+                else {
+
+
+                    sb.AppendFormat( "<li><div>{0} <span class=\"note right10\">({1}KB)</span>", fileName, attachment.FileSizeKB );
+                    sb.AppendFormat( "<img src=\"{1}\" /><a href=\"{0}\" target=\"_blank\">" + alang( "hitDownload" ) + "</a></div>", to( new Common.AttachmentController().Show, attachment.Id ) + "?id=" + attachment.Guid, strUtil.Join( sys.Path.Img, "/s/download.png" ) );
+                    sb.Append( "</li>" );
+                }
+            }
+            sb.Append( "</ul>" );
+
+            return string.Format( "<div id=\"attachmentPanel\">{0}</div>", sb.ToString() );
+        }
+
+        private Boolean isImage( ContentAttachment attachment ) {
+            return Uploader.IsImage( attachment.Type );
         }
 
         private void bindMetaInfo( ContentPost post ) {
 
-            WebUtils.pageTitle( this, post.Title, ctx.app.Name );
+            ctx.Page.SetTitle( post.GetTitle(), ctx.app.Name );
 
             if (strUtil.HasText( post.MetaKeywords ))
                 this.Page.Keywords = post.MetaKeywords;
@@ -160,10 +268,10 @@ namespace wojilu.Web.Controller.Content {
 
 
         [HttpPost, DbTransaction]
-        public void DiggUp( int id ) {
+        public virtual void DiggUp( long id ) {
 
             if (ctx.viewer.IsLogin == false) {
-                echoText( "±ÿ–Îµ«¬º≤≈ƒ‹≤Ÿ◊˜£¨«Îœ»µ«¬º" );
+                echoText( "ÂøÖÈ°ªÁôªÂΩïÊâçËÉΩÊìç‰ΩúÔºåËØ∑ÂÖàÁôªÂΩï" );
                 return;
             }
 
@@ -176,7 +284,7 @@ namespace wojilu.Web.Controller.Content {
 
             ContentDigg digg = ContentDigg.find( "UserId=" + ctx.viewer.Id + " and PostId=" + post.Id ).first();
             if (digg != null) {
-                echoText( "ƒ„“—æ≠≤Ÿ◊˜£¨«ÎŒ÷ÿ∏¥" );
+                echoText( "‰Ω†Â∑≤ÁªèÊìç‰ΩúÔºåËØ∑ÂãøÈáçÂ§ç" );
                 return;
             }
 
@@ -195,10 +303,10 @@ namespace wojilu.Web.Controller.Content {
         }
 
         [HttpPost, DbTransaction]
-        public void DiggDown( int id ) {
+        public virtual void DiggDown( long id ) {
 
             if (ctx.viewer.IsLogin == false) {
-                echoText( "±ÿ–Îµ«¬º≤≈ƒ‹≤Ÿ◊˜£¨«Îœ»µ«¬º" );
+                echoText( "ÂøÖÈ°ªÁôªÂΩïÊâçËÉΩÊìç‰ΩúÔºåËØ∑ÂÖàÁôªÂΩï" );
                 return;
             }
 
@@ -211,7 +319,7 @@ namespace wojilu.Web.Controller.Content {
 
             ContentDigg digg = ContentDigg.find( "UserId=" + ctx.viewer.Id + " and PostId=" + post.Id ).first();
             if (digg != null) {
-                echoText( "ƒ„“—æ≠≤Ÿ◊˜£¨«ÎŒ÷ÿ∏¥" );
+                echoText( "‰Ω†Â∑≤ÁªèÊìç‰ΩúÔºåËØ∑ÂãøÈáçÂ§ç" );
                 return;
             }
 
@@ -234,8 +342,8 @@ namespace wojilu.Web.Controller.Content {
             ContentPost prev = postService.GetPrevPost( post );
             ContentPost next = postService.GetNextPost( post );
 
-            String lnkPrev = prev == null ? "(√ª¡À)" : string.Format( "<a href=\"{0}\">{1}</a>", alink.ToAppData( prev, ctx ), prev.Title );
-            String lnkNext = next == null ? "(√ª¡À)" : string.Format( "<a href=\"{0}\">{1}</a>", alink.ToAppData( next, ctx ), next.Title );
+            String lnkPrev = prev == null ? "(Ê≤°‰∫Ü)" : string.Format( "<a href=\"{0}\">{1}</a>", alink.ToAppData( prev, ctx ), prev.Title );
+            String lnkNext = next == null ? "(Ê≤°‰∫Ü)" : string.Format( "<a href=\"{0}\">{1}</a>", alink.ToAppData( next, ctx ), next.Title );
 
             set( "prevPost", lnkPrev );
             set( "nextPost", lnkNext );
@@ -243,10 +351,14 @@ namespace wojilu.Web.Controller.Content {
 
         private void loadRelatedPosts( ContentPost post ) {
 
-            List<DataTagShip> list = postService.GetRelatedDatas( post );
+            List<DataTagShip> list = postService.GetRelatedDatas( post, 21 );
             IBlock block = getBlock( "related" );
 
+            List<IAppData> addList = new List<IAppData>();
+
             foreach (DataTagShip dt in list) {
+
+                if (dt.DataId == post.Id && dt.TypeFullName.Equals( typeof( ContentPost ).FullName )) continue;
 
                 EntityInfo ei = Entity.GetInfo( dt.TypeFullName );
                 if (ei == null) continue;
@@ -254,31 +366,60 @@ namespace wojilu.Web.Controller.Content {
                 IAppData obj = ndb.findById( ei.Type, dt.DataId ) as IAppData;
                 if (obj == null) continue;
 
+                if (hasAdded( addList, obj )) continue;
+
                 block.Set( "p.Title", obj.Title );
-                block.Set( "p.Link", alink.ToAppData( obj, ctx ) );
+
+                String lnkPost = "";
+                if (obj is ContentPost) {
+                    lnkPost = alink.ToAppData( obj, ctx ); // ÊöÇÊó∂Âè™Êúâ ContentPost ÊîØÊåÅ Html ÈùôÊÄÅÈ°µÈù¢ÁîüÊàê
+                }
+                else {
+                    lnkPost = alink.ToAppData( obj );
+                }
+
+                block.Set( "p.Link", lnkPost );
                 block.Set( "p.Created", obj.Created );
 
                 block.Next();
-
             }
-
-
         }
 
-        private void loadComment( ContentPost post ) {
+        private bool hasAdded( List<IAppData> xlist, IAppData obj ) {
 
-            ContentApp app = ctx.app.obj as ContentApp;
+            foreach (IAppData x in xlist) {
+                if (x.Id == obj.Id && x.GetType() == obj.GetType()) return true;
+            }
+            return false;
+        }
 
-            if (post.CommentCondition == CommentCondition.Close || app.GetSettingsObj().AllowComment == 0) {
-                set( "commentSection", "" );
+        public virtual void Stats( long id ) {
+
+            Dictionary<String, String> dic = new Dictionary<String, String>();
+            dic["hits"] = "0";
+            dic["diggUp"] = "0";
+            dic["diggDown"] = "0";
+            dic["diggUpPercent"] = "";
+            dic["diggDownPercent"] = "";
+
+            ContentPost post = postService.GetById( id, ctx.owner.Id );
+
+            if (post == null) {
+                echoJson( dic );
                 return;
             }
 
-            ctx.SetItem( "createAction", to( new ContentCommentController().Create, post.Id ) );
-            ctx.SetItem( "commentTarget", post );
-            load( "commentSection", new ContentCommentController().ListAndForm );
-        }
+            postService.AddHits( post );
 
+
+            dic["hits"] = post.Hits.ToString();
+            dic["diggUp"] = post.DiggUp.ToString();
+            dic["diggDown"] = post.DiggDown.ToString();
+            dic["diggUpPercent"] = post.DiggUpPercent;
+            dic["diggDownPercent"] = post.DiggDownPercent;
+
+            echoJson( dic );
+        }
 
 
     }

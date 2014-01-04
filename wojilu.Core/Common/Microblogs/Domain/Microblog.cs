@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -9,17 +9,24 @@ using wojilu.Members.Users.Domain;
 using System.Collections.Generic;
 using wojilu.Drawing;
 using wojilu.Common.AppBase.Interface;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Comments;
 
 namespace wojilu.Common.Microblogs.Domain {
 
-
     [Serializable]
-    public class Microblog : ObjectBase<Microblog>, IAppData {
+    public class Microblog : ObjectBase<Microblog>, IAppData, ILike, ICommentTarget {
 
 
+        /// <summary>
+        /// å¾®åšä½œè€…
+        /// </summary>
         public User User { get; set; }
 
-        public int ParentId { get; set; } // ×ª·¢Î¢²©
+        /// <summary>
+        /// è½¬å‘å¾®åš
+        /// </summary>
+        public long ParentId { get; set; } // è½¬å‘å¾®åš
 
         [LongText]
         public String Content { get; set; }
@@ -28,20 +35,51 @@ namespace wojilu.Common.Microblogs.Domain {
         public String Ip { get; set; }
 
         public int Replies { get; set; }
-        public int Reposts { get; set; } // ×ª·¢ÊıÁ¿
+        public int Reposts { get; set; } // è½¬å‘æ•°é‡
+        public int Likes { get; set; }
 
         public DateTime Created { get; set; }
 
+        public int SaveStatus { get; set; }
+
+        //-----------------------------------------------------------
+
+        /// <summary>
+        /// æ ¹æ® DataType å’Œ DataId åŠ è½½ OpenCommentï¼›
+        /// ä»¥åŠæ ¹æ®å®ƒå’Œ target åŒæ­¥ likes ç­‰ä¿¡æ¯
+        /// </summary>
+        public String DataType { get; set; }
+
+        /// <summary>
+        /// æ ¹æ® DataType å’Œ DataId åŠ è½½ OpenCommentï¼›
+        /// ä»¥åŠæ ¹æ®å®ƒå’Œ target åŒæ­¥ likes ç­‰ä¿¡æ¯
+        /// </summary>
+        public long DataId { get; set; }
+
         //-------------------------------------------------------------------
 
-        public String PageUrl { get; set; } // Êı¾İµÄÀ´Ô´ÍøÖ·£¬±ÈÈçÊÓÆµµÄ²¥·ÅÒ³Ãæ
+        /// <summary>
+        /// è§†é¢‘ï¼šæ’­æ”¾é¡µé¢
+        /// </summary>
+        public String PageUrl { get; set; }
+
+        /// <summary>
+        /// è§†é¢‘ï¼šflashç½‘å€
+        /// </summary>
         public String FlashUrl { get; set; }
-        public String PicUrl { get; set; } // ÍâÕ¾µÄÍ¼Æ¬£¬±ÈÈçÊÓÆµ½ØÍ¼
+
+        /// <summary>
+        /// è§†é¢‘ï¼šç¼©ç•¥å›¾
+        /// </summary>
+        public String PicUrl { get; set; }
 
 
         //-------------------------------------------------------------------
 
-        public String Pic { get; set; } // ´æ´¢ÔÚ·şÎñÆ÷ÉÏµÄÉÏ´«µÄÍ¼Æ¬
+        /// <summary>
+        /// ä¸Šä¼ çš„å›¾ç‰‡
+        /// </summary>
+        public String Pic { get; set; }
 
 
         [NotSave]
@@ -51,7 +89,7 @@ namespace wojilu.Common.Microblogs.Domain {
                     return sys.Path.GetAvatarOriginal( this.Pic );
                 }
                 else {
-                    return sys.Path.GetPhotoThumb( this.Pic, ThumbnailType.Medium );
+                    return sys.Path.GetPhotoThumb( this.Pic, "m" );
                 }
             }
         }
@@ -63,7 +101,7 @@ namespace wojilu.Common.Microblogs.Domain {
                     return sys.Path.GetAvatarThumb( this.Pic, ThumbnailType.Big );
                 }
                 else {
-                    return sys.Path.GetPhotoThumb( this.Pic, ThumbnailType.Big );
+                    return sys.Path.GetPhotoThumb( this.Pic, "b" );
                 }
             }
         }
@@ -75,7 +113,6 @@ namespace wojilu.Common.Microblogs.Domain {
                     return sys.Path.GetAvatarOriginal( this.Pic );
                 }
                 else {
-
                     return sys.Path.GetPhotoOriginal( this.Pic );
                 }
             }
@@ -88,7 +125,19 @@ namespace wojilu.Common.Microblogs.Domain {
                     return sys.Path.GetAvatarThumb( this.Pic, ThumbnailType.Medium );
                 }
                 else {
-                    return sys.Path.GetPhotoThumb( this.Pic, ThumbnailType.Small );
+                    return sys.Path.GetPhotoThumb( this.Pic, "s" );
+                }
+            }
+        }
+
+        [NotSave]
+        public String PicSx {
+            get {
+                if (isUserAvatar()) {
+                    return sys.Path.GetAvatarThumb( this.Pic, ThumbnailType.Medium );
+                }
+                else {
+                    return sys.Path.GetPhotoThumb( this.Pic, "sx" );
                 }
             }
         }
@@ -98,13 +147,18 @@ namespace wojilu.Common.Microblogs.Domain {
             return this.Pic.IndexOf( "face/" ) > 0;
         }
 
+        [NotSave]
+        public Boolean IsPic {
+            get { return strUtil.HasText( this.Pic ); }
+        }
+
 
         //-------------------------------------------------------------------------
 
-        #region IAppData ³ÉÔ±
+        #region IAppData æˆå‘˜
 
         [NotSave]
-        public int AppId { get { return 0; } set { } }
+        public long AppId { get { return 0; } set { } }
 
         [NotSave]
         public User Creator { get { return this.User; } set { this.User = value; } }
@@ -113,7 +167,7 @@ namespace wojilu.Common.Microblogs.Domain {
         public string CreatorUrl { get { return this.User.Url; } set { } }
 
         [NotSave]
-        public int OwnerId { get { return this.User.Id; } set { } }
+        public long OwnerId { get { return this.User.Id; } set { } }
 
         [NotSave]
         public string OwnerType { get { return typeof( User ).FullName; } set { } }
@@ -122,12 +176,17 @@ namespace wojilu.Common.Microblogs.Domain {
         public string OwnerUrl { get { return this.User.Url; } set { } }
 
         [NotSave]
-        public string Title { get { return "Î¢²©: " + strUtil.ParseHtml( this.Content, 50 ); } set { } }
+        public string Title { get { return "å¾®åš: " + strUtil.ParseHtml( this.Content, 50 ); } set { } }
 
         [NotSave]
         public int AccessStatus { get { return 0; } set { } }
 
         #endregion
+
+
+        public Type GetAppType() {
+            return null;
+        }
     }
 
 }

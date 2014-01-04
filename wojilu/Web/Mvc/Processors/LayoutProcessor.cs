@@ -35,7 +35,7 @@ namespace wojilu.Web.Mvc.Processors {
             if (context.ctx.utils.isSkipCurrentProcessor()) return;
 
             MvcContext ctx = context.ctx;
-            ControllerBase controller = context.getController();
+            ControllerBase controller = ctx.controller;
 
             if (controller.utils.isHided( controller.GetType() )) {
                 return;
@@ -49,8 +49,8 @@ namespace wojilu.Web.Mvc.Processors {
 
 
             //检查缓存
-            CacheInfo ci = CacheInfo.InitLayout( ctx );
-            Object cacheContent = ci.CheckCache();
+            ActionCacheChecker ci = ActionCacheChecker.InitLayout( ctx );
+            Object cacheContent = ci.GetCache();
             if (cacheContent != null) {
                 logger.Info( "load from layoutCache=" + ci.CacheKey );
                 context.setContent( HtmlCombiner.combinePage( cacheContent.ToString(), actionContent ) );
@@ -61,16 +61,12 @@ namespace wojilu.Web.Mvc.Processors {
 
             // 加入缓存
             if (ci.IsActionCache) {
-                ci.AddContentToCache( layoutContent );
+                ci.AddCache( layoutContent );
             }
 
-            if (ctx.utils.isEnd()) {
-                context.endMsgByText( layoutContent );
-            }
-            else {
-                context.setContent( HtmlCombiner.combinePage( layoutContent, actionContent ) );
-            }
+            if (ctx.utils.isEnd()) return;
 
+            context.setContent( HtmlCombiner.combinePage( layoutContent, actionContent ) );
         }
 
 

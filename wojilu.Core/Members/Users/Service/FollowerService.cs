@@ -4,16 +4,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 using wojilu.Web.Mvc;
-using wojilu.Members.Users.Domain;
+
+using wojilu.Common.Msg.Enum;
+using wojilu.Common.Msg.Service;
 using wojilu.Common.Feeds.Domain;
 using wojilu.Common.Feeds.Service;
-using wojilu.Common.Msg.Service;
-using wojilu.Common.Msg.Enum;
+
+using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Interface;
-using wojilu.Serialization;
+using wojilu.Common.Microblogs;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Microblogs.Service;
 
 namespace wojilu.Members.Users.Service {
 
@@ -27,7 +30,7 @@ namespace wojilu.Members.Users.Service {
             userService = new UserService();
         }
 
-        public virtual Boolean IsFollowing( int userId, int targetId ) {
+        public virtual bool IsFollowing(long userId, long targetId) {
 
             Follower f = db.find<Follower>( "User.Id=:userId and Target.Id=:targetId" )
              .set( "userId", userId )
@@ -36,7 +39,7 @@ namespace wojilu.Members.Users.Service {
             return f != null;
         }
 
-        public virtual Follower Follow( int userId, int targetId ) {
+        public virtual Follower Follow(long userId, long targetId, string ip) {
 
             if (userId <= 0) return null;
             if (targetId <= 0) return null;
@@ -50,6 +53,7 @@ namespace wojilu.Members.Users.Service {
             Follower f = new Follower();
             f.User = user;
             f.Target = target;
+            f.Ip = ip;
             db.insert( f );
 
             recountUsers( userId );
@@ -58,43 +62,30 @@ namespace wojilu.Members.Users.Service {
             return f;
         }
 
-        public virtual void FollowWithFeedNotification( int userId, int targetId ) {
+        public virtual void FollowWithFeedNotification(long userId, long targetId, string ip) {
 
-            Follower f = this.Follow( userId, targetId );
+            Follower f = this.Follow( userId, targetId, ip );
             if (f != null) {
                 addFeedInfo( f );
                 addNotification( f );
             }
         }
 
+        private void addFeedInfo( Follower f ) {
+            String msg = MbTemplate.GetFeed( "¹Ø×¢ÁË", f.Target.Name, Link.ToMember( f.Target ), "", f.Target.PicSX );
+            IMicroblogService microblogService = ObjectContext.Create<IMicroblogService>( typeof( MicroblogService ) );
+            microblogService.AddSimplePrivate( f.User, msg, typeof( Follower ).FullName, f.Target.Id, f.Ip );
+        }
+
         private void addNotification( Follower f ) {
-            int receiverId = f.Target.Id;
+            long receiverId = f.Target.Id;
             String msg = "<a href='" + Link.ToMember( f.User ) + "'>" + f.User.Name + "</a> " + lang.get( "followedYou" );
             new NotificationService().send( receiverId, typeof( User ).FullName, msg, NotificationType.Follow );
         }
 
-        private void addFeedInfo( Follower f ) {
-            Feed feed = new Feed();
-            feed.Creator = f.User;
-            feed.DataType = typeof( Follower ).FullName;
-            feed.TitleTemplate = "{*actor*} " + lang.get( "follow" ) + " {*friend*}";
-
-            String userLink = Link.ToMember( f.Target );
-
-            Dictionary<string, object> dic = new Dictionary<string, object>();
-            String flnk = string.Format( "<a href=\"{0}\">{1}</a>", userLink, f.Target.Name );
-            dic.Add( "friend", flnk );
-            dic.Add( "friendId", f.Target.Id );
-            String templateData = JSON.DicToString( dic );
-
-            feed.TitleData = templateData;
-
-            new FeedService().publishUserAction( feed );
-        }
-
         //----------------------------------------------------------------------------------------------------------
 
-        public virtual Result DeleteFollow( int userId, int targetId ) {
+        public virtual Result DeleteFollow(long userId, long targetId) {
             Follower f = db.find<Follower>( "User.Id=:userId and Target.Id=:targetId" )
                 .set( "userId", userId )
                 .set( "targetId", targetId )
@@ -116,18 +107,18 @@ namespace wojilu.Members.Users.Service {
 
         //----------------------------------------------------------------------------------------------------------
 
-        public virtual List<User> GetRecentFollowing( int userId, int count ) {
+        public virtual List<User> GetRecentFollowing(long userId, int count) {
             List<Follower> followers = db.find<Follower>( "User.Id=" + userId ).list( count );
             return populateTarget( followers );
         }
 
-        public virtual List<User> GetRecentFollowers( int targetId, int count ) {
+        public virtual List<User> GetRecentFollowers(long targetId, int count) {
             if (count == 0) count = 10;
             List<Follower> followers = db.find<Follower>( "Target.Id=" + targetId ).list( count );
             return populateUser( followers );
         }
 
-        public virtual List<User> GetRecentFriendsAndFollowers( int targetId, int count ) {
+        public virtual List<User> GetRecentFriendsAndFollowers(long targetId, int count) {
             List<User> friends = friendService.FindFriends( targetId, count );
             List<User> followers = GetRecentFollowers( targetId, count );
             List<User> results = new List<User>();
@@ -141,24 +132,18 @@ namespace wojilu.Members.Users.Service {
         }
 
 
-        public virtual DataPage<User> GetFollowingPage( int userId ) {
+        public virtual DataPage<User> GetFollowingPage(long userId) {
             return GetFollowingPage( userId, 20 );
         }
 
-        public virtual DataPage<User> GetFollowingPage( int userId, int pageSize ) {
+        public virtual DataPage<User> GetFollowingPage(long userId, int pageSize) {
             DataPage<Follower> followers = db.findPage<Follower>( "User.Id=" + userId, pageSize );
-            DataPage<User> list = new DataPage<User>();
-            list.Results = populateTarget( followers.Results );
-            list.CopyStats( followers );
-            return list;
+            return followers.Convert<User>( populateTarget( followers.Results ) );
         }
 
-        public virtual DataPage<User> GetFollowersPage( int targetId ) {
+        public virtual DataPage<User> GetFollowersPage(long targetId) {
             DataPage<Follower> followers = db.findPage<Follower>( "Target.Id=" + targetId );
-            DataPage<User> list = new DataPage<User>();
-            list.Results = populateUser( followers.Results );
-            list.CopyStats( followers );
-            return list;
+            return followers.Convert<User>( populateUser( followers.Results ) );
         }
 
         private List<User> populateTarget( List<Follower> followers ) {
@@ -187,7 +172,7 @@ namespace wojilu.Members.Users.Service {
         }
 
 
-        public virtual String GetFollowingIds( int userId ) {
+        public virtual string GetFollowingIds(long userId) {
             List<User> fs = GetRecentFollowing( userId, -1 );
             String ids = "";
             foreach (User user in fs) {
@@ -199,7 +184,7 @@ namespace wojilu.Members.Users.Service {
 
         //-------------------------------------------------------------------------------------
 
-        private void recountUsers( int userId ) {
+        private void recountUsers(long userId) {
 
             User user = userService.GetById( userId );
             if (user == null) return;

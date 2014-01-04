@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -15,10 +15,11 @@ using wojilu.Common;
 using wojilu.Common.Resource;
 using wojilu.Common.Security;
 using wojilu.Web;
+using System.Collections.Generic;
 
 namespace wojilu.Members.Users.Domain {
 
-    [Table("Users")]
+    [Table( "Users" )]
     [Serializable]
     public class User : ObjectBase<User>, IUser, IShareData, IHits {
 
@@ -27,7 +28,7 @@ namespace wojilu.Members.Users.Domain {
         }
 
         public User() { }
-        public User( int id ) { Id = id; }
+        public User( long id ) { Id = id; }
 
         [Column( Length = 20 )]
         public String Name { get; set; }
@@ -40,12 +41,12 @@ namespace wojilu.Members.Users.Domain {
         public String Title { get; set; }
         public String Url { get; set; }
 
-        public int ProfileId { get; set; }
+        public long ProfileId { get; set; }
         public int GroupId { get; set; }
 
         // 网站对用户的分类，待扩展功能
         public int CategoryId { get; set; }
-        public int TemplateId { get; set; }
+        public long TemplateId { get; set; }
 
         public String Email { get; set; }
         public String QQ { get; set; }
@@ -68,7 +69,7 @@ namespace wojilu.Members.Users.Domain {
         public int BirthMonth { get; set; }
         public int BirthDay { get; set; }
 
-        public int getAge () {
+        public int getAge() {
             return DateTime.Now.Year - BirthYear;
         }
 
@@ -106,11 +107,14 @@ namespace wojilu.Members.Users.Domain {
         public String Security { get; set; }
         public DateTime Created { get; set; }
 
-        public int RankId { get; set; }
+        public long RankId { get; set; }
 
         public int IsEmailConfirmed { get; set; } // 是否邮件激活了
 
-        private int _roleId;
+        public int IsBind { get; set; } // 是否绑定过第三方帐号
+        public long LoginType { get; set; } // 登录类型(本地登录为空，第三方登录的值是 UserConnect.Id)
+
+        private long _roleId;
         private String _pic;
 
         [Column( Length = 150 )]
@@ -122,7 +126,12 @@ namespace wojilu.Members.Users.Domain {
             set { _pic = value; }
         }
 
-        public int RoleId {
+        /// <summary>
+        /// 头像在审核之后，是否不符要求
+        /// </summary>
+        public int IsPicError { get; set; }
+
+        public long RoleId {
             get {
                 if (this.Id > 0 && _roleId == 0) {
                     _roleId = SiteRole.NormalMember.Id;
@@ -143,23 +152,23 @@ namespace wojilu.Members.Users.Domain {
 
 
         [NotSave]
-        public String PicMedium {
-            get { return sys.Path.GetAvatarThumb( this.Pic, ThumbnailType.Medium ); }
+        public String PicM {
+            get { return sys.Path.GetAvatarThumb( this.Pic, "m" ); }
         }
 
         [NotSave]
-        public String PicBig {
-            get { return sys.Path.GetAvatarThumb( this.Pic, ThumbnailType.Big ); }
+        public String PicSX {
+            get { return sys.Path.GetAvatarThumb( this.Pic, "sx" ); }
         }
 
         [NotSave]
-        public String PicOriginal {
+        public String PicO {
             get { return sys.Path.GetAvatarOriginal( this.Pic ); }
         }
 
         [NotSave]
         public String PicSmall {
-            get { return sys.Path.GetAvatarThumb( this.Pic ); }
+            get { return sys.Path.GetAvatarThumb( this.Pic, "s" ); }
         }
 
         public Boolean HasUploadPic() {
@@ -232,9 +241,9 @@ namespace wojilu.Members.Users.Domain {
         }
 
         // 在 null object 模式下保存真实的ID
-        private int _realId;
+        private long _realId;
         [NotSave]
-        public int RealId {
+        public long RealId {
             get {
                 if (_realId <= 0) return this.Id;
                 return _realId;
@@ -246,20 +255,30 @@ namespace wojilu.Members.Users.Domain {
         /// 显示的名称：UserName用户名，RealName真实姓名
         /// </summary>
         [NotSave]
-        public string DisplayName
-        {
-            get
-            {
-                if (config.Instance.Site.UserDisplayName == Config.UserDisplayNameType.RealName && String.IsNullOrEmpty(this.RealName) != true)
+        public string DisplayName {
+            get {
+                if (config.Instance.Site.UserDisplayName == Config.UserDisplayNameType.RealName && String.IsNullOrEmpty( this.RealName ) != true)
                     return this.RealName;
                 else if (config.Instance.Site.UserDisplayName == Config.UserDisplayNameType.Name)
                     return this.Name;
-                else if (String.IsNullOrEmpty(this.RealName) != true)
+                else if (String.IsNullOrEmpty( this.RealName ) != true)
                     return this.RealName;
                 else
                     return this.Name;
             }
         }
-    }
-}
 
+        public Boolean IsPicAlert() {
+
+            if (config.Instance.Site.AlertUserPic == false) return false;
+            if (HasUploadPic() == false) return true;
+            return IsPicError == 1;
+        }
+
+
+        [NotSave]
+        public Boolean IsLogin { get; set; }
+
+    }
+
+}

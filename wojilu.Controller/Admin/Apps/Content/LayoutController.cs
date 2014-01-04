@@ -5,7 +5,7 @@
 using System;
 using System.Collections;
 using System.Text;
-
+using wojilu.Apps.Content.Interface;
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
 using wojilu.Apps.Content.Domain;
@@ -17,7 +17,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Content {
     [App( typeof( ContentApp ) )]
     public class LayoutController : ControllerBase {
 
-        public SysPostService sysblogService { get; set; }
+        public virtual ISysPostService sysblogService { get; set; }
 
         public LayoutController() {
             sysblogService = new SysPostService();
@@ -26,7 +26,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Content {
         public override void Layout() {
             set( "listLink", to( new MainController().Index ) );
             set( "trashLink", to( new MainController().Trash ) );
-            set( "commentLink", to( new CommentController().List ) + "?type=" + typeof( ContentPostComment ).FullName );
+            set( "commentLink", to( new CommentController().List ) );
 
             int trashCount = sysblogService.GetDeleteCount();
             set( "trashCount", trashCount );

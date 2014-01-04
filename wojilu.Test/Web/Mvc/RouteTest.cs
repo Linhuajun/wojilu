@@ -218,33 +218,6 @@ book/{author};default:{controller=_.Book,action=List}
             Assert.AreEqual( result.getItem( "typeid" ), "12" );
             Assert.AreEqual( 1, result.id );
 
-
-
-
-
-
-        }
-
-        [Test]
-        public void testStringParam() {
-
-            // 以下测试暂不支持
-
-            //            string routecfg = @"
-            //~/{controller}/{id};default:{action=Show};requirements:{id=int}
-            //~/{controller}/{action};requirements:{controller=letter,action=letter}
-            //~/{controller}/{id}/{action};
-            //~/{controller}/{action}/{query};requirements:{controller=letter,action=letter}
-            //";
-
-            //            RouteTable.GetRoutes().Clear();
-            //            RouteTable.Init( routecfg );
-
-            //            Route result = RouteTool.RecognizePath( "blog/show/电影" );
-
-            //            Assert.AreEqual( "blog", result.controller );
-            //            Assert.AreEqual( "show", result.action );
-            //            Assert.AreEqual( "电影", result.query );
         }
 
         [Test]
@@ -255,10 +228,6 @@ book/{author};default:{controller=_.Book,action=List}
 ~/{controller}/{action};requirements:{controller=letter}
 ~/{controller}/{id}/{action};
 ";
-            //            routecfg = @"
-            //~/{controller}/{id}/{action};requirements:{controller=letter,id=int,action=letter}
-            //~/{controller}/{id}/{action}/{page};requirements:{controller=letter,id=int,action=letter,page=page}";
-
 
             RouteTable.GetRoutes().Clear();
             RouteTable.Init( routecfg );
@@ -334,10 +303,6 @@ book/{author};default:{controller=_.Book,action=List}
 ~/{controller}/{id}/{action};
 ";
 
-            //            routecfg = @"
-            //~/{controller}/{id}/{action};requirements:{controller=letter,id=int,action=letter}
-            //~/{controller}/{id}/{action}/{page};requirements:{controller=letter,id=int,action=letter,page=page}";
-
             RouteTable.GetRoutes().Clear();
             RouteTable.Init( routecfg );
 
@@ -361,6 +326,14 @@ book/{author};default:{controller=_.Book,action=List}
 
             Assert.AreEqual( "myapp.newdata", rt3.ns );
             Assert.AreEqual( 38, rt3.appId );
+
+            Route x4 = RouteTool.RecognizePath( "/Forum11/Board/21" );
+            Assert.AreEqual( "Board", x4.controller );
+            Assert.AreEqual( "Show", x4.action );
+            Assert.AreEqual( 11, x4.appId );
+            Assert.AreEqual( 21, x4.id );
+            Assert.AreEqual( 1, x4.page );
+
         }
 
         [Test]
@@ -758,45 +731,66 @@ home/{userName}/{controller}/{action};requirements:{controller=letter,action=let
             //Assert.AreEqual( "lisi", rt2.getItem( "userName" ) );
         }
 
+        [Test]
+        public void testLong() {
+
+            string routecfg = @"
+~/{controller}/{id}/{action};
+";
+
+            RouteTable.GetRoutes().Clear();
+            RouteTable.Init( routecfg );
+
+
+            Route result = RouteTool.RecognizePath( "blog/163304481793130496/show" );
+
+            Assert.AreEqual( "blog", result.controller );
+            Assert.AreEqual( "show", result.action );
+            Assert.AreEqual( 163304481793130496, result.id );
+            Assert.AreEqual( 1, result.page );
+        }
+
     }
 
 
-    /// <summary>
-    /// 路由中获取 owner 类型(只有当本类型存在，才可以在路由中启用owner)
-    /// </summary>
-    public class User : IMember {
+    ///// <summary>
+    ///// 路由中获取 owner 类型(只有当本类型存在，才可以在路由中启用owner)
+    ///// </summary>
+    //public class User : IMember {
 
-        // 路由中开头的值
-        public string GetUrl() { return "space"; }
+    //    // 路由中开头的值
+    //    public string GetUrl() { return "space"; }
 
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Url { get; set; }
-        public int TemplateId { get; set; }
-        public int Status { get; set; }
-        public DateTime Created { get; set; }
-        public System.Collections.IList GetRoles() { return new ArrayList(); }
-        public wojilu.Common.Security.IRole GetAdminRole() { return null; }
-        public wojilu.Common.Security.IRole GetUserRole( IMember user ) { return null; }
-    }
+    //    public int Id { get; set; }
+    //    public string Name { get; set; }
+    //    public string Url { get; set; }
+    //    public int TemplateId { get; set; }
+    //    public int Status { get; set; }
+    //    public DateTime Created { get; set; }
+    //    public System.Collections.IList GetRoles() { return new ArrayList(); }
+    //    public wojilu.Common.Security.IRole GetAdminRole() { return null; }
+    //    public wojilu.Common.Security.IRole GetUserRole( IMember user ) { return null; }
+    //}
 
-    /// <summary>
-    /// 路由中获取 owner 类型(只有当本类型存在，才可以在路由中启用owner)
-    /// </summary>
-    public class Group : IMember {
+    ///// <summary>
+    ///// 路由中获取 owner 类型(只有当本类型存在，才可以在路由中启用owner)
+    ///// </summary>
+    //public class Group : IMember {
 
-        // 路由中开头的值
-        public string GetUrl() { return "group"; }
+    //    // 路由中开头的值
+    //    public string GetUrl() { return "group"; }
 
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Url { get; set; }
-        public int TemplateId { get; set; }
-        public int Status { get; set; }
-        public DateTime Created { get; set; }
-        public System.Collections.IList GetRoles() { return new ArrayList(); }
-        public wojilu.Common.Security.IRole GetAdminRole() { return null; }
-        public wojilu.Common.Security.IRole GetUserRole( IMember user ) { return null; }
-    }
+    //    public int Id { get; set; }
+    //    public string Name { get; set; }
+    //    public string Url { get; set; }
+    //    public int TemplateId { get; set; }
+    //    public int Status { get; set; }
+    //    public DateTime Created { get; set; }
+    //    public System.Collections.IList GetRoles() { return new ArrayList(); }
+    //    public wojilu.Common.Security.IRole GetAdminRole() { return null; }
+    //    public wojilu.Common.Security.IRole GetUserRole( IMember user ) { return null; }
+    //}
+
+
 
 }

@@ -18,35 +18,22 @@ using wojilu.Web.Controller.Content.Utils;
 
 namespace wojilu.Web.Controller.Content.Section {
 
-
     [App( typeof( ContentApp ) )]
     public class TextController : ControllerBase, IPageSection {
 
-
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public TextController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
-            ctService = new ContentCustomTemplateService();
         }
 
-        public void AdminSectionShow( int sectionId ) {
-        }
-
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
-            return new List<IPageSettingLink>();
-        }
-
-        public void SectionShow( int sectionId ) {
+        public virtual void SectionShow( long sectionId ) {
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
                 throw new Exception( lang( "exDataNotFound" ) + "=>page section:" + sectionId );
             }
-
-            TemplateUtil.loadTemplate( this, s, ctService );
 
             ContentPost posts = this.postService.GetFirstPost( ctx.app.Id, sectionId );
             if (posts != null) {
@@ -57,15 +44,11 @@ namespace wojilu.Web.Controller.Content.Section {
             }
         }
 
-        public void List( int sectionId ) {
+        public virtual void List( long sectionId ) {
             run( new ListController().List, sectionId );
         }
 
-        public void Archive( int sectionId ) {
-            run( new ListController().Archive, sectionId );
-        }
-
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
             run( new ListController().Show, id );
         }
 

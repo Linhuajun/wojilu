@@ -57,7 +57,7 @@ namespace wojilu.Web.Mvc {
         /// 页面元信息(包括Title/Keywords/Description/RssLink)
         /// </summary>
         public PageMeta Page {
-            get { return this.ctx.GetPageMeta(); }
+            get { return this.ctx.Page; }
         }
 
         internal void setContext( MvcContext wctx ) {
@@ -135,6 +135,27 @@ namespace wojilu.Web.Mvc {
             else {
                 utils.setCurrentView( utils.getTemplateByAction( actionViewName ) );
             }
+        }
+
+        /// <summary>
+        /// 手动指定当前 action 的视图文件(指定视图文件之后，默认的模板将被忽略)
+        /// </summary>
+        /// <param name="action"></param>
+        public void view( aAction action ) {
+            view( action.Method );
+        }
+
+        /// <summary>
+        /// 手动指定当前 action 的视图文件(指定视图文件之后，默认的模板将被忽略)
+        /// </summary>
+        /// <param name="action"></param>
+        public void view( aActionWithId action ) {
+            view( action.Method );
+        }
+
+        internal void view( MethodInfo actionMethod ) {
+            if (actionMethod == null) throw new ArgumentNullException( "actionViewName" );
+            utils.setCurrentView( utils.getTemplateByAction( actionMethod ) );
         }
 
         /// <summary>
@@ -237,7 +258,7 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <param name="action"></param>
         /// <param name="id"></param>
-        protected void target( aActionWithId action, int id ) {
+        protected void target(aActionWithId action, long id) {
             set( "ActionLink", to( action, id ) );
         }
 
@@ -256,7 +277,20 @@ namespace wojilu.Web.Mvc {
                 return;
             }
 
-            Editor ed = Editor.NewOne( propertyName, propertyValue, height, sys.Path.Editor, MvcConfig.Instance.JsVersion, Editor.ToolbarType.Basic );
+            IEditor ed = EditorFactory.NewOne( propertyName, propertyValue, height, Editor.ToolbarType.Basic );
+            ed.AddUploadUrl( ctx );
+            set( "Editor", ed );
+        }
+
+        /// <summary>
+        /// 编辑器，包括全部的工具栏
+        /// </summary>
+        /// <param name="propertyName">属性名称(也是编辑器名称)</param>
+        /// <param name="propertyValue">需要被编辑的内容</param>
+        /// <param name="height">编辑器高度(必须手动指定px单位)</param>
+        protected void editorFull( String propertyName, String propertyValue, String height ) {
+
+            IEditor ed = EditorFactory.NewOne( propertyName, propertyValue, height, Editor.ToolbarType.Full );
             ed.AddUploadUrl( ctx );
             set( "Editor", ed );
         }
@@ -287,7 +321,7 @@ namespace wojilu.Web.Mvc {
             List<String> editorList = ctx.GetItem( currentEditorKey ) as List<String>;
             if (editorList != null && editorList.Contains( propertyName )) throw new Exception( lang( "exEditorNameUnique" ) );
 
-            Editor ed = Editor.NewOne( propertyName, propertyValue, height, sys.Path.Editor, MvcConfig.Instance.JsVersion, toolbar );
+            IEditor ed = EditorFactory.NewOne( propertyName, propertyValue, height, toolbar );
             ed.AddUploadUrl( ctx );
             if (editorList != null && editorList.Count > 0) ed.IsUnique = false;
             set( varName, ed );
@@ -297,18 +331,6 @@ namespace wojilu.Web.Mvc {
             ctx.SetItem( currentEditorKey, editorList );
         }
 
-        /// <summary>
-        /// 编辑器，包括全部的工具栏
-        /// </summary>
-        /// <param name="propertyName">属性名称(也是编辑器名称)</param>
-        /// <param name="propertyValue">需要被编辑的内容</param>
-        /// <param name="height">编辑器高度(必须手动指定px单位)</param>
-        protected void editorFull( String propertyName, String propertyValue, String height ) {
-
-            Editor ed = Editor.NewOne( propertyName, propertyValue, height, sys.Path.Editor, MvcConfig.Instance.JsVersion, Editor.ToolbarType.Full );
-            ed.AddUploadUrl( ctx );
-            set( "Editor", ed );
-        }
 
         /// <summary>
         /// 下拉控件(用数组填充)
@@ -430,7 +452,7 @@ namespace wojilu.Web.Mvc {
         /// <param name="action"></param>
         /// <param name="id"></param>
         /// <returns>返回一个链接</returns>
-        public String to( aActionWithId action, int id ) {
+        public string to(aActionWithId action, long id) {
             return ctx.link.To( action, id );
         }
 
@@ -449,7 +471,7 @@ namespace wojilu.Web.Mvc {
         /// <param name="action"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public String t2( aActionWithId action, int id ) {
+        public string t2(aActionWithId action, long id) {
             return ctx.link.T2( action, id );
         }
 
@@ -461,6 +483,13 @@ namespace wojilu.Web.Mvc {
             return Link.ToUser( friendlyUrl );
         }
 
+        /// <summary>
+        /// 设置当前 action 返回的内容（一旦设置，先前绑定的模板内容将被覆盖）
+        /// </summary>
+        /// <param name="content"></param>
+        public void content( String content ) {
+            utils.setActionContent( content );
+        }
 
         /// <summary>
         /// 设置当前 action 返回的内容（一旦设置，先前绑定的模板内容将被覆盖）
@@ -497,10 +526,28 @@ namespace wojilu.Web.Mvc {
         }
 
         /// <summary>
+        /// 显示信息，并发出 http 状态码 (HttpStatus.BadRequest_400 等等)
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="httpStatusCode"></param>
+        public void echoStatus( String msg, String httpStatusCode ) {
+            ctx.utils.endMsg( msg, httpStatusCode );
+        }
+
+        /// <summary>
+        /// 将对象序列化，然后输出到客户端(ContentType="application/json")，不再输出布局页面
+        /// </summary>
+        /// <param name="msg"></param>
+        public void echoJson( Object obj ) {
+            setJsonContentType();
+            echoText( Json.ToString( obj ) );
+        }
+
+        /// <summary>
         /// 将json字符串直接输出到客户端(ContentType="application/json")，不再输出布局页面
         /// </summary>
         /// <param name="msg"></param>
-        protected void echoJson( String jsonString ) {
+        public void echoJson( String jsonString ) {
             setJsonContentType();
             echoText( jsonString );
         }
@@ -515,10 +562,46 @@ namespace wojilu.Web.Mvc {
         }
 
         /// <summary>
-        /// 将字符串 ok 显示到客户端
+        /// 将字符串 ok 显示到客户端，等效于echoText( "ok" )
         /// </summary>
         protected void echoAjaxOk() {
             echoText( "ok" );
+        }
+
+
+        /// <summary>
+        /// 将操作结果返回到客户端
+        /// </summary>
+        /// <param name="result"></param>
+        protected void echoResult( Result result ) {
+            echoResult( result, null );
+        }
+
+        /// <summary>
+        /// 将操作结果返回到客户端
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="okMsg">成功的提示信息(可为空)</param>
+        protected void echoResult( Result result, String okMsg ) {
+
+            if (result == null) result = new Result();
+
+            if (result.HasErrors) {
+                echoError( result );
+            }
+            else {
+                if (ctx.utils.isAjax) {
+                    echoAjaxOk();
+                }
+                else {
+                    if (strUtil.HasText( okMsg )) {
+                        echoRedirectPart( okMsg );
+                    }
+                    else {
+                        echoRedirectPart( lang( "opok" ) );
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -552,7 +635,7 @@ namespace wojilu.Web.Mvc {
         }
 
         /// <summary>
-        /// 显示 json 信息给客户端，提示是否 valid ，返回 {IsValid:true, Msg:"", Info:""}
+        /// 显示 json 信息给客户端，提示是否 valid ，返回 {"IsValid":true, "Msg":"", "Info":"这里是字符串"}
         /// </summary>
         /// <param name="msg"></param>
         /// <param name="isValid"></param>
@@ -562,10 +645,28 @@ namespace wojilu.Web.Mvc {
         }
 
         /// <summary>
-        /// 将 json 信息 {Msg:"ok", IsValid:true, Info:""} 显示给客户端
+        /// 显示 json 信息给客户端，提示是否 valid ，返回 {"IsValid":true, "Msg":"", "Info":{这里是具体的json对象信息}}
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="isValid"></param>
+        /// <param name="otherObject"></param>
+        protected void echoJsonMsg( String msg, Boolean isValid, Object otherObject ) {
+            echoJson( MvcUtil.renderValidatorJsonObject( msg, isValid, otherObject ) );
+        }
+
+        /// <summary>
+        /// 将 json 信息 {"Msg":"ok", "IsValid":true, "Info":""} 显示给客户端
         /// </summary>
         protected void echoJsonOk() {
             echoJsonMsg( "ok", true, "" );
+        }
+
+        /// <summary>
+        /// 将 json 信息 {"Msg": msg, "IsValid":true, "Info":""} 显示给客户端
+        /// </summary>
+        /// <param name="msg"></param>
+        protected void echoJsonOk( String msg ) {
+            echoJsonMsg( msg, true, "" );
         }
 
         private void setJsonContentType() {
@@ -770,7 +871,7 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <param name="action"></param>
         /// <param name="id"></param>
-        public void redirect( aActionWithId action, int id ) {
+        public void redirect(aActionWithId action, long id) {
             redirectUrl( ctx.link.To( action, id ) );
         }
 
@@ -779,7 +880,7 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <param name="action"></param>
         /// <param name="id"></param>
-        public void redirect( String action, int id ) {
+        public void redirect(string action, long id) {
             redirectUrl( Link.To( ctx.owner.obj, LinkHelper.GetControllerName( base.GetType() ), action, id ) );
         }
 
@@ -812,13 +913,20 @@ namespace wojilu.Web.Mvc {
                 ctx.web.Redirect( url, false );
             }
             else {
-                ctx.utils.end();
-                ctx.utils.skipRender();
-                ctx.utils.clearResource();
-                ctx.web.Redirect( url, false );
+                redirectDirect( url );
             }
         }
 
+        /// <summary>
+        /// 直接跳转，不经过layout参数处理
+        /// </summary>
+        /// <param name="url"></param>
+        public void redirectDirect( String url ) {
+            ctx.utils.end();
+            ctx.utils.skipRender();
+            ctx.utils.clearResource();
+            ctx.web.Redirect( url, false );
+        }
 
         private Boolean hasNolayout() {
             return ctx.utils.getNoLayout() > 0 || referrerHasNolayout();
@@ -922,6 +1030,16 @@ namespace wojilu.Web.Mvc {
         }
 
         /// <summary>
+        /// 将某 action 的内容加载到指定位置
+        /// </summary>
+        /// <param name="sectionName">需要加载内容的位置</param>
+        /// <param name="action">被加载的 action</param>
+        /// <param name="id"></param>
+        protected void load(string sectionName, aActionWithId action, long id) {
+            set( sectionName, loadHtml( action, id ) );
+        }
+
+        /// <summary>
         /// 获取某 action 的内容
         /// </summary>
         /// <param name="controller"></param>
@@ -938,7 +1056,7 @@ namespace wojilu.Web.Mvc {
         /// <param name="action"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public String loadHtml( String controller, String action, int id ) {
+        public string loadHtml(string controller, string action, long id) {
             return ControllerRunner.Run( ctx, controller, action, id );
         }
 
@@ -949,36 +1067,7 @@ namespace wojilu.Web.Mvc {
         /// <param name="action"></param>
         /// <returns></returns>
         public String loadHtml( aAction action ) {
-
-            String result;
-
-            if (isSameType( action.Method )) {
-
-                String actionName = action.Method.Name;
-                Template originalView = utils.getCurrentView();
-
-                setView( action.Method );
-                action();
-
-                Template resultView = utils.getCurrentView();
-                utils.setCurrentView( originalView );
-                result = resultView.ToString();
-            }
-            else {
-
-                // 如果继承
-                String actionName = action.Method.Name;
-                ControllerBase otherController = ControllerFactory.FindController( action.Method.DeclaringType, ctx );
-                otherController.view( actionName );
-                otherController.utils.runAction( actionName );
-                result = otherController.utils.getCurrentView().ToString();
-                //result = otherController.utils.getActionResult();
-
-                // 如果没有继承
-                //result = ControllerRunner.Run( action, ctx );
-            }
-
-            return result;
+            return ControllerRunner.Run( this, action );
         }
 
         /// <summary>
@@ -987,35 +1076,8 @@ namespace wojilu.Web.Mvc {
         /// <param name="action"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public String loadHtml( aActionWithId action, int id ) {
-
-            String result;
-
-            if (isSameType( action.Method )) {
-
-                String actionName = action.Method.Name;
-                Template originalView = utils.getCurrentView();
-
-                setView( action.Method );
-
-                action( id );
-
-                Template resultView = utils.getCurrentView();
-                utils.setCurrentView( originalView );
-                result = resultView.ToString();
-            }
-            else {
-
-                //ControllerBase targetController = action.Target as ControllerBase;
-                //ControllerFactory.InjectController( targetController, ctx );
-                //targetController.view( action.Method.Name );
-                //action( id );
-                //result = targetController.utils.getCurrentView().ToString();
-
-                result = ControllerRunner.Run( ctx, action, id );
-            }
-
-            return result;
+        public string loadHtml(aActionWithId action, long id) {
+            return ControllerRunner.Run( this, action, id );
         }
 
         /// <summary>
@@ -1032,19 +1094,7 @@ namespace wojilu.Web.Mvc {
                 return;
             }
 
-            if (isSameType( action.Method )) {
-                setView( action.Method );
-                action();
-            }
-            else {
-
-                //ControllerBase mycontroller = ControllerFactory.FindController( action.Method.DeclaringType, ctx );
-                //mycontroller.view( action.Method.Name );
-                //action.Method.Invoke( mycontroller, null );
-                //actionContent( mycontroller.utils.getActionResult() );
-
-                actionContent( ControllerRunner.Run( ctx, action ) );
-            }
+            content( ControllerRunner.Run( this, action ) );
         }
 
         /// <summary>
@@ -1052,7 +1102,7 @@ namespace wojilu.Web.Mvc {
         /// </summary>
         /// <param name="action"></param>
         /// <param name="id"></param>
-        protected void run( aActionWithId action, int id ) {
+        protected void run(aActionWithId action, long id) {
 
             if (ctx.utils.isAjax) {
                 if (ctx.HasErrors)
@@ -1062,65 +1112,8 @@ namespace wojilu.Web.Mvc {
                 return;
             }
 
-            if (isSameType( action.Method )) {
-                setView( action.Method );
-                action( id );
-            }
-            else {
-
-                //ControllerBase mycontroller = ControllerFactory.FindController( action.Method.DeclaringType, ctx );
-                //mycontroller.view( action.Method.Name );
-                //action.Method.Invoke( mycontroller, new object[] { id } );
-                //actionContent( mycontroller.utils.getActionResult() );
-
-                actionContent( ControllerRunner.Run( ctx, action, id ) );
-            }
+            content( ControllerRunner.Run( this, action, id ) );
         }
-
-
-
-        /// <summary>
-        /// 运行其他 action，并将运行结果作为当前 action 的内容
-        /// </summary>
-        /// <param name="controllerType">被运行的 action 所属的 controller 类型</param>
-        /// <param name="actionName">action 名称</param>
-        /// <param name="args">需要的参数</param>
-        protected void run( String controllerFullTypeName, String actionName, params object[] args ) {
-
-            Type controllerType = ObjectContext.Instance.TypeList[controllerFullTypeName];
-
-            if (controllerType == base.GetType()) {
-
-                view( actionName );
-                MethodInfo method = base.GetType().GetMethod( actionName );
-                if (method == null) {
-                    throw new Exception( "action " + wojilu.lang.get( "exNotFound" ) );
-                }
-                else {
-                    method.Invoke( this, args );
-                }
-
-            }
-            else {
-                actionContent( ControllerRunner.Run( ctx, controllerFullTypeName, actionName, args ) );
-            }
-        }
-
-        private Boolean isSameType( MethodInfo method ) {
-            Boolean result = this.GetType() == method.DeclaringType || this.GetType().IsSubclassOf( method.DeclaringType );
-            return result;
-        }
-
-        private void setView( MethodInfo method ) {
-            if (this.GetType().IsSubclassOf( method.DeclaringType )) {
-                String filePath = MvcUtil.getParentViewPath( method, ctx.route.getRootNamespace( method.DeclaringType.FullName ) );
-                this.utils.setCurrentView( this.utils.getTemplateByFileName( filePath ) );
-            }
-            else {
-                view( method.Name );
-            }
-        }
-
 
         //------------------------------------------------------------------------
 

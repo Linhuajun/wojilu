@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -22,7 +22,7 @@ namespace wojilu.Members.Groups.Domain {
         public GroupCategory Category { get; set; }
 
         public User Creator { get; set; }
-        public int TemplateId { get; set; }
+        public long TemplateId { get; set; }
 
         public String Name { get; set; }
         public String Url { get; set; }
@@ -51,7 +51,7 @@ namespace wojilu.Members.Groups.Domain {
         public int IsLock { get; set; }
         public int IsSystemHide { get; set; }
 
-        public int IsCloseJoinCmd { get; set; } // ÊÇ·ñÒş²ØÉêÇë¼ÓÈëÃüÁî¡£
+        public int IsCloseJoinCmd { get; set; } // æ˜¯å¦éšè—ç”³è¯·åŠ å…¥å‘½ä»¤ã€‚
 
         [LongText]
         public String Security { get; set; }
@@ -95,6 +95,10 @@ namespace wojilu.Members.Groups.Domain {
 
         public String GetUrl() {
             return "group";
+        }
+
+        public Boolean HasLogo() {
+            return strUtil.HasText( this.Logo );
         }
 
     }

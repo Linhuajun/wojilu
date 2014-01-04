@@ -19,8 +19,8 @@ namespace wojilu.Web.Controller.Forum {
     [App( typeof( ForumApp ) )]
     public partial class BoardController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
-        public IModeratorService moderatorService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IModeratorService moderatorService { get; set; }
 
         private ForumBoard fb = null;
         private List<ForumBoard> boardsPath = null;
@@ -38,70 +38,70 @@ namespace wojilu.Web.Controller.Forum {
         }
 
         [CacheAction( typeof( ForumBoardCache ) )]
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
             showPrivate( id );
         }
 
-        public void Category( int id ) {
+        public virtual void Category( long id ) {
             view( "Show" );
-            ctx.SetItem( "forumCategory", ctx.GetInt("categoryId") );
+            ctx.SetItem( "forumCategory", ctx.GetLong("categoryId") );
             showPrivate( id );
         }
 
         //------------------------------------------
-        public void Views( int id ) {
+        public virtual void Views( long id ) {
             view( "Show" );
             ctx.SetItem( "forumSort", "views" );
             showPrivate( id );
         }
-        public void Replies( int id ) {
+        public virtual void Replies( long id ) {
             view( "Show" );
             ctx.SetItem( "forumSort", "replies" );
             showPrivate( id );
         }
-        public void Replied( int id ) {
+        public virtual void Replied( long id ) {
             view( "Show" );
             ctx.SetItem( "forumSort", "replied" );
             showPrivate( id );
         }
-        public void Created( int id ) {
+        public virtual void Created( long id ) {
             view( "Show" );
             ctx.SetItem( "forumSort", "created" );
             showPrivate( id );
         }
         //------------------------------------------
-        public void All( int id ) {
+        public virtual void All( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "all" );
             showPrivate( id );
         }
-        public void Day( int id ) {
+        public virtual void Day( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "day" );
             showPrivate( id );
         }
 
-        public void DayTwo( int id ) {
+        public virtual void DayTwo( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "day2" );
             showPrivate( id );
         }
-        public void Week( int id ) {
+        public virtual void Week( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "week" );
             showPrivate( id );
         }
-        public void Month( int id ) {
+        public virtual void Month( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "month" );
             showPrivate( id );
         }
-        public void MonthThree( int id ) {
+        public virtual void MonthThree( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "month3" );
             showPrivate( id );
         }
-        public void MonthSix( int id ) {
+        public virtual void MonthSix( long id ) {
             view( "Show" );
             ctx.SetItem( "forumRecentTime", "month6" );
             showPrivate( id );
@@ -109,7 +109,7 @@ namespace wojilu.Web.Controller.Forum {
 
         //------------------------------------------
 
-        private void showPrivate( int id ) {
+        private void showPrivate( long id ) {
 
 
             this.boardsPath = getTree().GetPath( id );
@@ -118,8 +118,8 @@ namespace wojilu.Web.Controller.Forum {
 
             if (fb == null) return;
 
-            WebUtils.pageTitle( this, this.fb.Name );
-            Page.Description = this.fb.Description;
+            ctx.Page.Title = this.fb.Name;
+            ctx.Page.Description = this.fb.Description;
 
             // 1、当前路径
             set( "location", ForumLocationUtil.GetBoard( this.boardsPath, ctx ) );
@@ -139,7 +139,7 @@ namespace wojilu.Web.Controller.Forum {
 
         }
 
-        private Boolean hasPermission( int id ) {
+        private Boolean hasPermission( long id ) {
 
             this.boardsPath = getTree().GetPath( id );
 

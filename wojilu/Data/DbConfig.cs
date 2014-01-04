@@ -16,15 +16,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
 
+using wojilu.IO;
 using wojilu.ORM;
 using wojilu.Reflection;
 using wojilu.Serialization;
 using wojilu.Web;
-using System.IO;
-using System.Web;
-using wojilu.IO;
 
 namespace wojilu.Data {
 
@@ -44,15 +42,17 @@ namespace wojilu.Data {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( DbConfig ) );
 
+        private static DbConfig _instance = loadConfig( getConfigPath() );
+
         public DbConfig() {
-            this.ConnectionStringTable = new Dictionary<String, object>();
-            this.AssemblyList = new List<object>();
-            this.DbType = new Dictionary<String, object>();
+            this.ConnectionStringTable = new Dictionary<String, String>();
+            this.AssemblyList = new List<String>();
+            this.DbType = new Dictionary<String, String>();
             this.IdType = wojilu.Data.IdType.Auto;
-            this.Interceptor = new List<object>();
+            this.Interceptor = new List<JsonObject>();
             this.IsCheckDatabase = true;
             this.ContextCache = true;
-            this.Mapping = new List<object>();
+            this.Mapping = new List<MappingInfo>();       
         }
 
         /// <summary>
@@ -63,12 +63,14 @@ namespace wojilu.Data {
         /// <summary>
         /// 配置的缓存内容(单例模式缓存)
         /// </summary>
-        public static DbConfig Instance = loadConfig( getConfigPath() );
+        public static DbConfig Instance {
+            get { return _instance; }
+        }
 
         /// <summary>
         /// 直接解析json的结果：多个数据库连接字符串(connectionString)的键值对
         /// </summary>
-        public Dictionary<String, object> ConnectionStringTable { get; set; }
+        public Dictionary<String, String> ConnectionStringTable { get; set; }
 
         private Dictionary<String, ConnectionString> _connectionStringMap = new Dictionary<String, ConnectionString>();
 
@@ -87,7 +89,7 @@ namespace wojilu.Data {
         /// <summary>
         /// 直接解析json的结果：数据库类型
         /// </summary>
-        public Dictionary<String, object> DbType { get; set; }
+        public Dictionary<String,String> DbType { get; set; }
 
         /// <summary>
         /// 实体键值类型
@@ -106,7 +108,7 @@ namespace wojilu.Data {
         /// <summary>
         /// 直接解析json的结果：程序集列表
         /// </summary>
-        public List<object> AssemblyList { get; set; }
+        public List<String> AssemblyList { get; set; }
 
         /// <summary>
         /// 是否坚持数据库，如果检查，则会将尚未创建的数据表自动创建
@@ -149,12 +151,12 @@ namespace wojilu.Data {
         /// <summary>
         /// 直接解析json的结果：数据表映射
         /// </summary>
-        public List<object> Mapping { get; set; }
+        public List<MappingInfo> Mapping { get; set; }
 
         /// <summary>
         /// 拦截器列表
         /// </summary>
-        public List<object> Interceptor { get; set; }
+        public List<JsonObject> Interceptor { get; set; }
 
         /// <summary>
         /// 反射优化模式，目前只实现了 CodeDom 方式
@@ -186,7 +188,7 @@ namespace wojilu.Data {
         private Dictionary<String, MappingInfo> _mappings = new Dictionary<String, MappingInfo>();
 
         private void addMapping( MappingInfo mi ) {
-            _mappings.Add( mi.TypeName, mi );
+            _mappings.Add( mi.name, mi );
         }
 
         /// <summary>
@@ -199,10 +201,19 @@ namespace wojilu.Data {
 
         //----------------------------------------------------------------------
 
-        private static DbConfig loadConfig( String cfgPath ) {
+        public static DbConfig loadConfig( String cfgPath ) {
 
             String str = file.Read( cfgPath );
-            DbConfig dbc = JSON.ToObject<DbConfig>( str );
+            return loadConfigByString( str );
+        }
+
+        public static DbConfig loadConfigByString( String str ) {
+
+            DbConfig dbc = Json.Deserialize<DbConfig>( str );
+
+            if (dbc.AssemblyList.Count == 0) {
+                logger.Warn( "AssemblyList.Count == 0" );
+            }
 
             loadMappingInfo( dbc );
             checkConnectionString( dbc );
@@ -212,15 +223,8 @@ namespace wojilu.Data {
 
         private static void loadMappingInfo( DbConfig dbc ) {
             if (dbc.Mapping.Count == 0) return;
-            foreach (Dictionary<String, object> dic in dbc.Mapping) {
-
-                MappingInfo mi = new MappingInfo();
-
-                if (dic.ContainsKey( "name" )) mi.TypeName = dic["name"].ToString();
-                if (dic.ContainsKey( "database" )) mi.Database = dic["database"].ToString();
-                if (dic.ContainsKey( "table" )) mi.Table = dic["table"].ToString();
-
-                dbc.addMapping( mi );
+            foreach (MappingInfo x in dbc.Mapping) {
+                dbc.addMapping( x );
             }
         }
 
@@ -236,10 +240,10 @@ namespace wojilu.Data {
 
             Dictionary<String, ConnectionString> connStringMap = new Dictionary<String, ConnectionString>();
 
-            Dictionary<String, String> newString = new Dictionary<string, string>();
-            foreach (KeyValuePair<String, object> kv in result.ConnectionStringTable) {
+            Dictionary<String, String> newString = new Dictionary<String, String>();
+            foreach (KeyValuePair<String, String> kv in result.ConnectionStringTable) {
 
-                String connectionString = kv.Value.ToString();
+                String connectionString = kv.Value;
                 DatabaseType dbtype = getDbType( kv.Key, connectionString, result );
 
                 ConnectionString objConnString = new ConnectionString {
@@ -257,6 +261,7 @@ namespace wojilu.Data {
                 if ((dbtype == DatabaseType.Access)) {
                     String connectionItem = dialect.GetConnectionItem( connectionString, ConnectionItemType.Database );
                     logger.Info( "database path original:" + connectionItem );
+                    if (connectionItem == null) throw new Exception( "没有设置access地址：" + connectionString );
 
                     if (IsRelativePath( connectionItem )) {
                         connectionItem = PathHelper.Map( strUtil.Join( SystemInfo.ApplicationPath, connectionItem ) );
@@ -277,14 +282,14 @@ namespace wojilu.Data {
             result.SetConnectionStringMap( connStringMap );
         }
 
-        private static bool IsRelativePath( string connectionItem ) {
+        private static bool IsRelativePath( String connectionItem ) {
             return connectionItem.IndexOf( ":" ) < 0;
         }
 
         private static DatabaseType getDbType( String dbname, String connectionString, DbConfig result ) {
 
-            foreach (KeyValuePair<String, Object> kv in result.DbType) {
-                if (kv.Key == dbname) return DbTypeChecker.GetFromString( kv.Value.ToString() );
+            foreach (KeyValuePair<String, String> kv in result.DbType) {
+                if (kv.Key == dbname) return DbTypeChecker.GetFromString( kv.Value );
             }
 
             DatabaseType dbtype = DbTypeChecker.GetDatabaseType( connectionString );
@@ -304,19 +309,51 @@ namespace wojilu.Data {
             return (String)DbConfig.Instance.ConnectionStringTable[db];
         }
 
+        /// <summary>
+        /// 获取默认数据库的ConnectionString
+        /// </summary>
+        /// <returns></returns>
+        public static String GetConnectionString() {
+            return GetConnectionString( DefaultDbName );
+        }
+
+        /// <summary>
+        /// 获取数据库类型
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static String GetDatabaseType( String db ) {
+            String ret;
+            DbConfig.Instance.DbType.TryGetValue( db, out ret );
+            return ret;
+        }
+
+        /// <summary>
+        /// 获取默认数据库的类型
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static String GetDatabaseType() {
+            return GetDatabaseType( DefaultDbName );
+        }
 
         internal static void SaveConnectionString( String connectionString ) {
 
             String cfgPath = getConfigPath();
 
             if (DbConfig.Instance.ConnectionStringTable == null)
-                DbConfig.Instance.ConnectionStringTable = new Dictionary<String, object>();
+                DbConfig.Instance.ConnectionStringTable = new Dictionary<String, String>();
 
             DbConfig.Instance.ConnectionStringTable[DefaultDbName] = connectionString;
 
             String str = JsonString.ConvertObject( DbConfig.Instance, true );
 
             file.Write( cfgPath, str );
+        }
+
+
+        public static void Reset() {
+            _instance = loadConfig( getConfigPath() );
         }
 
     }

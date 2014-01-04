@@ -17,9 +17,9 @@ namespace wojilu.Web.Controller.Content.Submit {
     [App( typeof( ContentApp ) )]
     public class PostController : ControllerBase {
 
-        public IContentSectionService sectionService { get; set; }
-        public IContentPostService postService { get; set; }
-        public ContentTempPostService tempPostService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual ContentTempPostService tempPostService { get; set; }
 
         public PostController() {
             sectionService = new ContentSectionService();
@@ -27,7 +27,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             tempPostService = new ContentTempPostService();
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             List<ContentSection> sections = sectionService.GetInputSectionsByApp( ctx.app.Id );
             List<ContentSection> allowedSections = getAllowedSections( sections );
@@ -52,7 +52,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             }
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
             ContentTempPost p = tempPostService.GetById( id );
             if (p == null) {
                 echo( lang( "exDataNotFound" ) );
@@ -75,16 +75,15 @@ namespace wojilu.Web.Controller.Content.Submit {
 
         //----------------------------------------------------------------------
 
-        public void SubmitPost( int sectionId ) {
+        public virtual void SubmitPost( long sectionId ) {
 
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             set( "section.Name", s.Title );
 
             target( SavePost, sectionId );
-            editor( "Content", "", "300px" );
         }
 
-        public void SavePost( int sectionId ) {
+        public virtual void SavePost( long sectionId ) {
 
             if (shouldApprove( ctx.viewer.obj ) ) {
                 saveTempPost( sectionId, null );
@@ -116,7 +115,7 @@ namespace wojilu.Web.Controller.Content.Submit {
 
         //----------------------------------------------------------------------
 
-        public void SubmitVideo( int sectionId ) {
+        public virtual void SubmitVideo( long sectionId ) {
             target( SaveVideo, sectionId );
 
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
@@ -124,7 +123,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             set( "section.Name", s.Title );
         }
 
-        public void SaveVideo( int sectionId ) {
+        public virtual void SaveVideo( long sectionId ) {
 
             if (shouldApprove( ctx.viewer.obj ) ) {
                 saveTempPost( sectionId, typeof( ContentVideo ) );
@@ -151,7 +150,7 @@ namespace wojilu.Web.Controller.Content.Submit {
 
 
 
-        public void WarningTip() {
+        public virtual void WarningTip() {
             IBlock block = getBlock( "warning" );
             IBlock tblock = getBlock( "tip" );
             if (shouldApprove( ctx.viewer.obj ) ) {
@@ -213,7 +212,7 @@ namespace wojilu.Web.Controller.Content.Submit {
         }
 
 
-        private void saveTempPost( int sectionId, Type postType ) {
+        private void saveTempPost( long sectionId, Type postType ) {
 
             ContentTempPost post = new ContentTempPost();
             post.Creator = (User)ctx.viewer.obj;

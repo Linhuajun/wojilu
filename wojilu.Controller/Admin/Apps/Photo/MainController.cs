@@ -1,33 +1,33 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
-using wojilu.Apps.Photo.Domain;
-using wojilu.Apps.Photo.Service;
-using wojilu.Common.AppBase;
-using wojilu.Apps.Photo.Interface;
-using wojilu.Members.Sites.Service;
-using wojilu.Members.Sites.Interface;
 using wojilu.Web.Controller.Security;
+using wojilu.Common.AppBase;
+
 using wojilu.Members.Interface;
 using wojilu.Members.Sites.Domain;
+using wojilu.Members.Sites.Service;
+
+using wojilu.Apps.Photo.Domain;
+using wojilu.Apps.Photo.Interface;
+using wojilu.Apps.Photo.Service;
 
 namespace wojilu.Web.Controller.Admin.Apps.Photo {
 
     [App( typeof( PhotoApp ) )]
     public partial class MainController : ControllerBase {
 
-        public ISysPhotoService photoService { get; set; }
-        public IPhotoPostService postService { get; set; }
-        public IPickedService pickedService { get; set; }
-        public IPhotoSysCategoryService categoryService { get; set; }
-        public IAdminLogService<SiteLog> logService { get; set; }
+        public virtual ISysPhotoService photoService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IPickedService pickedService { get; set; }
+        public virtual IPhotoSysCategoryService categoryService { get; set; }
+        public virtual IAdminLogService<SiteLog> logService { get; set; }
 
         public MainController() {
             photoService = new SysPhotoService();
@@ -37,9 +37,19 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
             logService = new SiteLogService();
         }
 
-        private static readonly int pageSize = 36;
+        public static readonly int pageSize = 40;
 
-        public void Index( int id ) {
+        public override void Layout() {
+
+            List<PhotoSysCategory> categories = categoryService.GetAll();
+            bindList( "categories", "c", categories, bindCatLink );
+        }
+
+        private void bindCatLink( IBlock tpl, long id ) {
+            tpl.Set( "c.LinkCategory", to( new MainController().Index, id ) );
+        }
+
+        public virtual void Index( long id ) {
 
             DataPage<PhotoPost> list = photoService.GetSysPostPage( id, pageSize );
             bindList( "list", "photo", list.Results, bindLink );
@@ -50,30 +60,16 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
             target( Admin );
         }
 
-        public void Picked() {
-            target( Admin );
-            DataPage<PhotoPost> list = pickedService.GetAll();
-            bindList( "list", "photo", list.Results, bindLink );
-            set( "page", list.PageBar );
-        }
-
-        public void Trash() {
-            target( Admin );
-            DataPage<PhotoPost> list = photoService.GetSysPostTrashPage( pageSize );
-            bindList( "list", "photo", list.Results, bindLink );
-            set( "page", list.PageBar );
-        }
-
 
         [HttpPost, DbTransaction]
-        public void Admin() {
+        public virtual void Admin() {
 
             String ids = ctx.Post( "choice" );
             String cmd = ctx.Post( "action" );
-            int categoryId = ctx.PostInt( "categoryId" );
+            long categoryId = ctx.PostLong( "categoryId" );
 
             if (strUtil.IsNullOrEmpty( cmd ) || cvt.IsIdListValid( ids ) == false) {
-                actionContent( lang( "exCmd" ) );
+                content( lang( "exCmd" ) );
                 return;
             }
 
@@ -85,68 +81,30 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
 
                 echoAjaxOk();
             }
-            else if ("unpick".Equals( cmd )) {
-                pickedService.UnPickPost( ids );
-                log( SiteLogString.UnPickPhotoPost(), ids );
 
-                echoAjaxOk();
-            }
             else if ("delete".Equals( cmd )) {
                 PhotoPost.updateBatch( "set SaveStatus=" + SaveStatus.SysDelete, condition );
                 log( SiteLogString.DeleteSysPhotoPost(), ids );
                 echoAjaxOk();
             }
-            else if ("deleteTrue".Equals( cmd )) {
-                photoService.SystemDeleteListTrue( ids );
-                log( SiteLogString.DeleteSysPhotoPostTrue(), ids );
-                echoAjaxOk();
-            }
-            else if ("unDelete".Equals( cmd )) {
-                photoService.SystemUnDeleteList( ids );
-                log( SiteLogString.UnDeleteSysPhotoPost(), ids );
-                echoAjaxOk();
-            }
+
             else if ("category".Equals( cmd )) {
-                if (categoryId <= 0) {
-                    actionContent( lang( "exCategoryNotFound" ) );
+                if (categoryId < 0) {
+                    content( lang( "exCategoryNotFound" ) );
                     return;
                 }
+
+                if (categoryId == zeroCatId) categoryId = 0;
+
                 PhotoPost.updateBatch( "set SysCategoryId=" + categoryId, condition );
                 log( SiteLogString.MovePhotoPost(), ids );
 
                 echoAjaxOk();
             }
             else
-                actionContent( lang( "exCmd" ) );
+                content( lang( "exCmd" ) );
         }
 
-
-        //[HttpDelete, DbTransaction]
-        //public void Delete( int id ) {
-        //    PhotoPost post = postService.GetById( id );
-        //    if (post == null) {
-        //        echoTo( lang( "exDataNotFound" ) );
-        //        return;
-        //    }
-        //    photoService.SystemDelete( post );
-        //    log( SiteLogString.DeleteSysPhotoPost(), post );
-
-        //    redirect( Index, -1 );
-        //}
-
-        //[HttpPut, DbTransaction]
-        //public void UnDelete( int id ) {
-
-        //    PhotoPost post = postService.GetById_Admin( id );
-        //    if (post == null) {
-        //        echoRedirect( lang( "exDataNotFound" ) );
-        //        return;
-        //    }
-        //    photoService.SystemUnDelete( post );
-        //    log( SiteLogString.UnDeleteSysPhotoPost(), post );
-
-        //    redirect( Trash );
-        //}
 
     }
 

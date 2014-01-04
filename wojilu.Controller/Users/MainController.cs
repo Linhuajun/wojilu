@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -6,17 +6,17 @@ using System;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
+using wojilu.Web.Mvc.Attr;
 
-using wojilu.Members.Users.Service;
-using wojilu.Members.Users.Domain;
-using wojilu.Members.Sites.Service;
 using wojilu.Common.Onlines;
 using wojilu.Common.Resource;
+
+using wojilu.Members.Sites.Service;
+using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Interface;
-using wojilu.Web.Controller.Common;
-using wojilu.Web.Mvc.Attr;
+using wojilu.Members.Users.Service;
+
 using wojilu.Web.Controller.Users.Caching;
-using wojilu.Serialization;
 
 namespace wojilu.Web.Controller.Users {
 
@@ -24,7 +24,7 @@ namespace wojilu.Web.Controller.Users {
 
         public IUserService userService;
         public ISiteRoleService roleService;
-        public UserTagService userTagService { get; set; }
+        public virtual UserTagService userTagService { get; set; }
 
 
         public MainController() {
@@ -41,13 +41,32 @@ namespace wojilu.Web.Controller.Users {
 
             List<User> picked = userService.GetPickedList( 20 );
             bindUsers( picked, "picked" );
+
+            // ÂΩìÂâçapp/moduleÊâÄÊúâÈ°µÈù¢ÔºåÊâÄÂ±ûÁöÑÈ¶ñÈ°µ
+            ctx.SetItem( "_moduleUrl", to( Index ) );
+
+            bindAdminLink();
+        }
+
+        private void bindAdminLink() {
+            set( "feedLink", to( new wojilu.Web.Controller.Admin.FeedAdminController().Index ) );
+            set( "feedLink", to( new wojilu.Web.Controller.Admin.Mb.MicroblogController().Index ) );
+
+            set( "userListLink", to( new wojilu.Web.Controller.Admin.Members.UserController().Index ) );
+            set( "siteMsgLink", to( new wojilu.Web.Controller.Admin.Members.SiteMsgController().Index ) );
+            set( "importLink", to( new wojilu.Web.Controller.Admin.Members.ImportController().Index ) );
+            set( "settingLink", to( new wojilu.Web.Controller.Admin.Members.UserSettingController().Index ) );
+            set( "regLink", to( new wojilu.Web.Controller.Admin.Members.UserRegController().Index ) );
+            set( "templateLink", to( new wojilu.Web.Controller.Admin.Members.EmailConfirmController().EditTemplate ) );
         }
 
         [CachePage( typeof( UserMainPageCache ) )]
         [CacheAction( typeof( UserMainIndexCache ) )]
-        public void Index() {
+        public virtual void Index() {
 
-            WebUtils.pageTitle( this, lang( "user" ) );
+            ctx.Page.Title = lang( "user" );
+            ctx.Page.Keywords = config.Instance.Site.UserPageKeywords;
+            ctx.Page.Description = config.Instance.Site.UserPageDescription;
 
             set( "lnkRank", to( Rank ) );
             set( "lnkOnlineAll", to( OnlineAll ) );
@@ -62,15 +81,15 @@ namespace wojilu.Web.Controller.Users {
             bindUsers( newList, "users" );
         }
 
-        public void OnlineUserData() {
+        public virtual void OnlineUserData() {
 
             List<OnlineUser> users = OnlineService.GetRecent( 20 );
-            echoJson( JsonString.ConvertList( users ) );
+            echoJson( users );
         }
 
-        public void Rank() {
+        public virtual void Rank() {
 
-            WebUtils.pageTitle( this, lang( "userCharts" ) );
+            ctx.Page.Title = lang( "userCharts" );
 
             int rankCount = 20;
 
@@ -93,9 +112,9 @@ namespace wojilu.Web.Controller.Users {
             bindUsers( rankPosts, "Posts" );
         }
 
-        public void OnlineUser() {
+        public virtual void OnlineUser() {
 
-            WebUtils.pageTitle( this, lang( "onlineUsers" ) );
+            ctx.Page.Title = lang( "onlineUsers" );
 
             DataPage<OnlineUser> users = DataPage<OnlineUser>.GetPage( OnlineService.GetLoggerUser(), 70 );
             bindOnlineInfos( users.Results );
@@ -116,44 +135,23 @@ namespace wojilu.Web.Controller.Users {
         private void bindOnlineInfos( List<OnlineUser> users ) {
             IBlock block = getBlock( "onlines" );
             foreach (OnlineUser user in users) {
-                block.Set( "u.Name", user.UserName );
-                block.Set( "u.Face", user.UserPicUrl );
-                block.Set( "u.Link", user.UserUrl );
+                bindUserSingle( block, user );
                 block.Next();
             }
         }
 
-        public void OnlineAll() {
+        public virtual void OnlineAll() {
 
-            WebUtils.pageTitle( this, "À˘”–‘⁄œﬂ”√ªß" );
+            ctx.Page.Title = "ÊâÄÊúâÂú®Á∫øÁî®Êà∑";
 
-            //DataPage<OnlineUser> users = cdb.findPage<OnlineUser>( 70 ); // ¥À¥¶Œ¥≈≈–Ú
-            DataPage<OnlineUser> users = DataPage<OnlineUser>.GetPage( OnlineService.GetAll(), 70 ); // “—≈≈–Ú
+            DataPage<OnlineUser> users = DataPage<OnlineUser>.GetPage( OnlineService.GetAll(), 70 ); // Â∑≤ÊéíÂ∫è
 
             set( "onlineCount", users.RecordCount );
 
             IBlock block = getBlock( "onlines" );
             foreach (OnlineUser user in users.Results) {
 
-                String lblValue = "°æ" + lang( "ipAddress" ) + "°ø" + user.Ip +
-    "\n°æ" + lang( "osInfo" ) + "°ø" + user.Agent +
-    "\n°æ" + lang( "startTime" ) + "°ø" + user.StartTime.ToString() +
-    "\n°æ" + lang( "lastActive" ) + "°ø" + user.LastActive.ToString() +
-    "\n°æ" + lang( "clocation" ) + "°ø" + user.Location;
-
-
-                if (user.UserId > 0) {
-                    block.Set( "u.Name", user.UserName );
-                    block.Set( "u.Face", user.UserPicUrl );
-                    block.Set( "u.Link", user.UserUrl );
-                }
-                else {
-                    block.Set( "u.Name", UserFactory.Guest.Name );
-                    block.Set( "u.Face", UserFactory.Guest.PicSmall );
-                    block.Set( "u.Link", "javascript:;" );
-                }
-
-                block.Set( "u.Info", lblValue );
+                bindUserSingle( block, user );
 
                 block.Next();
             }
@@ -162,9 +160,34 @@ namespace wojilu.Web.Controller.Users {
             set( "page", users.PageBar );
         }
 
-        public void ListAll() {
+        private void bindUserSingle( IBlock block, OnlineUser user ) {
 
-            WebUtils.pageTitle( this, lang( "allUser" ) );
+            String ip = ctx.viewer.IsAdministrator() ? user.Ip : user.GetIp( 1 );
+
+            String lblValue = "„Äê" + lang( "ipAddress" ) + "„Äë" + ip +
+"\n„Äê" + lang( "osInfo" ) + "„Äë" + user.Agent +
+"\n„Äê" + lang( "startTime" ) + "„Äë" + user.StartTime.ToString() +
+"\n„Äê" + lang( "lastActive" ) + "„Äë" + user.LastActive.ToString() +
+"\n„Äê" + lang( "clocation" ) + "„Äë" + user.Location;
+
+
+            if (user.UserId > 0) {
+                block.Set( "u.Name", user.UserName );
+                block.Set( "u.Face", user.UserPicUrl );
+                block.Set( "u.Link", user.UserUrl );
+            }
+            else {
+                block.Set( "u.Name", UserFactory.Guest.Name );
+                block.Set( "u.Face", UserFactory.Guest.PicSmall );
+                block.Set( "u.Link", "javascript:;" );
+            }
+
+            block.Set( "u.Info", lblValue );
+        }
+
+        public virtual void ListAll() {
+
+            ctx.Page.Title = lang( "allUser" );
 
             DataPage<User> list = userService.GetAllValid( 56 );
             bindUsers( list.Results, "list" );
@@ -172,9 +195,9 @@ namespace wojilu.Web.Controller.Users {
         }
 
 
-        public void Tag( int id ) {
+        public virtual void Tag( long id ) {
 
-            Page.Title = "∏˘æ›tagÀ—À˜”√ªß";
+            Page.Title = "Ê†πÊçÆtagÊêúÁ¥¢Áî®Êà∑";
             target( Tag, 0 );
 
 
@@ -215,13 +238,16 @@ namespace wojilu.Web.Controller.Users {
 
         }
 
-        public void Search() {
+        public virtual void Search() {
 
             HideLayout( typeof( MainController ) );
 
+            // ÂΩìÂâçapp/moduleÊâÄÊúâÈ°µÈù¢ÔºåÊâÄÂ±ûÁöÑÈ¶ñÈ°µ
+            ctx.SetItem( "_moduleUrl", to( Index ) );
+
             set( "userMainLink", to( Index ) );
 
-            WebUtils.pageTitle( this, lang( "searchUser" ) );
+            ctx.Page.Title = lang( "searchUser" );
 
             set( "ActionLink", ctx.url.Path );
             bindDropList();

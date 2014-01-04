@@ -150,9 +150,9 @@ namespace wojilu.Test.Common {
 
 
     public class Node : INode {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
-        public int ParentId { get; set; }
+        public long ParentId { get; set; }
 
         public string Title {
             get { return this.Name + this.Id + "....."; }
@@ -163,6 +163,23 @@ namespace wojilu.Test.Common {
 
         public string Bind( INode node ) {
             return string.Format( "<option value=\"{0}\">{1}</option>" + Environment.NewLine, node.Id, node.Name );
+        }
+
+
+        public bool IsOpen( INode node ) {
+            return true;
+        }
+
+        public string GetTarget( INode node ) {
+            return "";
+        }
+
+        public string GetUrl( INode node ) {
+            return "";
+        }
+
+        public string GetName( INode node ) {
+            return node.Name;
         }
     }
 }

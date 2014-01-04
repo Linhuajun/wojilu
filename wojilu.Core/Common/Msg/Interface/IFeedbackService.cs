@@ -5,25 +5,22 @@
 using System;
 using System.Collections.Generic;
 
-using wojilu.Common.Feeds.Interface;
 using wojilu.Common.Msg.Domain;
 
 namespace wojilu.Common.Msg.Interface {
 
     public interface IFeedbackService {
 
-        IFeedService feedService { get; set; }
         INotificationService nfService { get; set; }
 
-        Feedback GetById( int id );
-        List<Feedback> GetRecent( int count, int userId );
-        DataPage<Feedback> GetPageList( int userId );
-
-        void Insert( Feedback f );
-        void Reply( Feedback parent, Feedback feedback );
+        Feedback GetById(long id);
+        List<Feedback> GetRecent(int count, long userId);
+        DataPage<Feedback> GetPageList(long userId);
 
         void Delete( Feedback f );
 
+        void Insert( Feedback feedback, String lnkReplyList );
+        void Reply( Feedback parent, Feedback feedback, String lnkReplyList );
     }
 
 }

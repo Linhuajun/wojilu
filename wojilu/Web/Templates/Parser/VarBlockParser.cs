@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,23 +42,13 @@ namespace wojilu.Web.Templates.Parser {
         public override Token getToken() {
 
             VarToken token = new VarToken();
+            token.setType( TokenType.Var );
 
             token.setName( this.objVar.GetFullVarName() );
 
-            int dotIndex = token.getName().IndexOf( '.' );
-            if (dotIndex > 0 && dotIndex < token.getName().Length) {
-
-                token.setIsObject( true );
-
-                String[] arrp = token.getName().Split( '.' );
-
-                token.setObjName( arrp[0] );
-                token.setObjAccessor( arrp );
-
-            }
-
-            token.setRawLabelAndVar( this.objVar.GetFullLabelAndVar() );
-
+            VarInfo varInfo = VarInfo.Init( token.getName() );
+            varInfo.setRawLabelAndVar( this.objVar.GetFullLabelAndVar() );
+            token.setVarInfo( varInfo );
 
             return token;
 

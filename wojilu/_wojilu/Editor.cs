@@ -17,13 +17,93 @@
 using System;
 using System.Text;
 using wojilu.Web.Context;
+using wojilu.Web.Mvc;
 
 namespace wojilu {
+
+    public class EditorFactory {
+
+        public static IEditor NewOne( String propertyName, String propertyValue, String height, Editor.ToolbarType toolbar ) {
+
+            IEditor x = new UEditor();
+            x.Init( propertyName, propertyValue, height, toolbar );
+            return x;
+        }
+    }
+
+    public interface IEditor {
+        void AddUploadUrl( MvcContext ctx );
+        void Init( String propertyName, String propertyValue, String height, Editor.ToolbarType toolbar );
+        Boolean IsUnique { get; set; }
+    }
+
+    public class UEditor : IEditor {
+
+        private String _propertyName;
+        private String _propertyValue;
+        private String _height;
+        private Editor.ToolbarType _toolbar;
+
+        public void Init( String propertyName, String propertyValue, String height, Editor.ToolbarType toolbar ) {
+            _propertyName = propertyName;
+            _propertyValue = propertyValue;
+            _height = height;
+            _toolbar = toolbar;
+        }
+
+        public void AddUploadUrl( MvcContext ctx ) {
+        }
+
+        public Boolean IsUnique { get; set; }
+
+        public override string ToString() {
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendFormat( "<script type=\"text/plain\" id=\"{0}\" name=\"{0}\">", _propertyName );
+            sb.Append( _propertyValue );
+            sb.Append( "</script>" );
+
+            sb.Append( "<script>" );
+            sb.Append( "_run(function(){" );
+
+            int line = (_toolbar == Editor.ToolbarType.Basic ? 1 : 2);
+            String height = "";
+            if (strUtil.HasText( _height )) {
+                height = strUtil.TrimEnd( _height.Trim(), "px" ).Trim();
+                height = ".height("+height+")";
+            }
+
+            sb.AppendFormat( "wojilu.editor.bind('{0}').line({1}){2}.show();", _propertyName, line, height );
+
+            sb.Append( "})" );
+            sb.Append( "</script>" );
+
+            return sb.ToString();
+        }
+
+    }
+
 
     /// <summary>
     /// 在 web 中使用的富文本编辑器
     /// </summary>
-    public class Editor {
+    public class Editor : IEditor {
+
+        public void Init( String propertyName, String propertyValue, String height, Editor.ToolbarType toolbar ) {
+
+            _controlName = propertyName;
+            _content = propertyValue;
+            _height = height;
+            _Toolbar = toolbar;
+
+            _width = "100%";
+            _editorPath = sys.Path.Editor;
+
+            _isUnique = true;
+            _jsVersion = MvcConfig.Instance.JsVersion;
+
+        }
 
         /// <summary>
         /// 工具栏类型
@@ -119,20 +199,12 @@ namespace wojilu {
             get { return _width; }
         }
 
-        ///// <summary>
-        ///// 编辑器变量名称(js中使用)
-        ///// </summary>
-        //public String EditVarName {
-        //    get { return String.Format( "{0}Editor", ControlName.Replace( ".", "" ) ); }
-        //}
-
         /// <summary>
         /// 需要编辑的内容(html格式)
         /// </summary>
         public String Content {
             get {
                 if (strUtil.HasText( _content )) {
-                    //return _content.Replace( "'", "&prime;" ).Replace( "\n", "" ).Replace( "\r", "" );
                     return strUtil.EncodeTextarea( _content );
                 }
                 return String.Empty;
@@ -160,30 +232,7 @@ namespace wojilu {
 
         }
 
-        private Editor( String controlName, String content, String width, String height, String editorPath, ToolbarType toolbarType ) {
-            _controlName = String.Format( "{0}", controlName );
-            _content = content;
-            _width = width;
-            _height = height;
-            _editorPath = editorPath;
-            _Toolbar = toolbarType;
-        }
-
-        /// <summary>
-        /// 创建编辑器(页面中第一个)
-        /// </summary>
-        /// <param name="controlName"></param>
-        /// <param name="content"></param>
-        /// <param name="height"></param>
-        /// <param name="editorPath"></param>
-        /// <param name="jsVersion"></param>
-        /// <param name="toolbarType"></param>
-        /// <returns></returns>
-        public static Editor NewOne( String controlName, String content, String height, String editorPath, String jsVersion, ToolbarType toolbarType ) {
-            Editor result = new Editor( controlName, content, "100%", height, editorPath, toolbarType );
-            result._isUnique = true;
-            result._jsVersion = jsVersion;
-            return result;
+        public Editor() {
         }
 
         private String Render() {

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,16 +19,17 @@ using System.Text;
 
 using wojilu.Data;
 using wojilu.ORM;
+using wojilu.Net;
 
 namespace wojilu.Common.Onlines {
 
     /// <summary>
-    /// ÔÚÏßÓÃ»§ĞÅÏ¢·â×°
+    /// åœ¨çº¿ç”¨æˆ·ä¿¡æ¯å°è£…
     /// </summary>
     [NotSave]
     public class OnlineUser : CacheObject, IComparable {
 
-        public int UserId { get; set; }
+        public long UserId { get; set; }
         public String UserName { get; set; }
         public String UserUrl { get; set; }
         public String UserPicUrl { get; set; }
@@ -49,6 +50,9 @@ namespace wojilu.Common.Onlines {
         public String Ip { get; set; }
         public String TrueIp { get; set; }
 
+        public String GetIp( int hideLength ) {
+            return IpUtil.GetIpWild( this.Ip, hideLength );
+        }
 
         public int CompareTo( Object obj ) {
             OnlineUser target = obj as OnlineUser;

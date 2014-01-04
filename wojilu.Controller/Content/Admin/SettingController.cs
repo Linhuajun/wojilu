@@ -1,14 +1,16 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
-using wojilu.Serialization;
+
 using wojilu.Apps.Content.Domain;
-using wojilu.DI;
-using wojilu.Members.Sites.Domain;
-using wojilu.Web.Context;
 using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Admin {
 
@@ -16,41 +18,40 @@ namespace wojilu.Web.Controller.Content.Admin {
     public class SettingController : ControllerBase {
 
         public SettingController() {
-            base.LayoutControllerType = typeof( PostController );
             HideLayout( typeof( wojilu.Web.Controller.Content.LayoutController ) );
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             target( Save );
             ContentApp app = ctx.app.obj as ContentApp;
             bindSettings( app.GetSettingsObj() );
 
             set( "submitSettingLink", to( new SubmitSettingController().EditRole ) );
+            set( "submitLink", to( new Submit.PostController().Index ) );
+            set( "submitAdminLink", to( new Submit.AdminController().Index));
         }
 
-        public void Save() {
+        public virtual void Save() {
 
-            ContentSetting s = ctx.PostValue<ContentSetting>();
+            ContentApp app = ctx.app.obj as ContentApp;
+
+            ContentSetting s = ctx.PostValue( app.GetSettingsObj() ) as ContentSetting;
 
             s.AllowComment = ctx.PostIsCheck( "contentSetting.AllowComment" );
             s.AllowAnonymousComment = ctx.PostIsCheck( "contentSetting.AllowAnonymousComment" );
             s.EnableSubmit = ctx.PostIsCheck( "contentSetting.EnableSubmit" );
 
-            if (HtmlHelper.IsHtmlDirError( s.StaticDir, ctx.errors )) {
-                echoError();
-                return;
-            }
+            s.MetaDescription = strUtil.CutString( s.MetaDescription, 500 );
 
-            ContentApp app = ctx.app.obj as ContentApp;
-            app.Settings = JsonString.ConvertObject( s );
+            app.Settings = Json.ToString( s );
             app.update();
 
             echoRedirect( lang( "opok" ) );
         }
 
 
-        public void bindSettings( ContentSetting s ) {
+        public virtual void bindSettings( ContentSetting s ) {
 
             String chk = "checked=\"checked\"";
 
@@ -66,7 +67,6 @@ namespace wojilu.Web.Controller.Content.Admin {
             set( "s.RankPics", dropList( "RankPics", 1, 20, s.RankPics ) );
             set( "s.RankVideos", dropList( "RssCount", 1, 20, s.RankVideos ) );
 
-            set( "s.CacheSeconds", dropList( "CacheSeconds", 0, 600, s.CacheSeconds ) );
             set( "s.SummaryLength", dropList( "SummaryLength", 50, 600, s.SummaryLength ) );
 
             Dictionary<string, string> dic = new Dictionary<string, string>();
@@ -75,7 +75,9 @@ namespace wojilu.Web.Controller.Content.Admin {
 
             dropList( "contentSetting.ArticleListMode", dic, s.ArticleListMode.ToString() );
 
-            set( "s.StaticDir", s.StaticDir );
+            set( "s.StaticDir", s.StaticPath );
+            set( "s.MetaKeywords", s.MetaKeywords );
+            set( "s.MetaDescription", s.MetaDescription );
 
         }
 

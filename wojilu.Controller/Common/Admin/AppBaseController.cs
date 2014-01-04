@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 using wojilu.Web.Url;
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
 
-using wojilu.DI;
 using wojilu.Common.AppInstall;
 using wojilu.Common.AppBase;
 using wojilu.Common.Menus.Interface;
@@ -20,19 +20,21 @@ using wojilu.Members.Users.Domain;
 
 using wojilu.Web.Controller.Security;
 using wojilu.Common.AppBase.Interface;
-using System.Collections.Generic;
+using wojilu.Common.Themes;
 
 namespace wojilu.Web.Controller.Common.Admin {
 
     public partial class AppBaseController : ControllerBase {
 
-        public IAppInstallerService appinfoService { get; set; }
+        public virtual IAppInstallerService appinfoService { get; set; }
 
-        public IMemberAppService userAppService { get; set; }
-        public IMenuService menuService { get; set; }
+        public virtual IMemberAppService userAppService { get; set; }
+        public virtual IMenuService menuService { get; set; }
+        public virtual IThemeService themeService { get; set; }
 
         public AppBaseController() {
             appinfoService = new AppInstallerService();
+            themeService = new ThemeService();
         }
 
         public virtual void log( String msg, IMemberApp app ) {
@@ -46,21 +48,15 @@ namespace wojilu.Web.Controller.Common.Admin {
             set( "appListLink", to( Index ) );
         }
 
-        public void Index() {
-            //set( "addAppLink", to( Select ) );
-            //set( "appListLink", to( List ) );
-            //load( "list", List );
-            //}
-
-            //public void List() {
+        public virtual void Index() {
             IList apps = userAppService.GetByMember( ctx.owner.Id );
             bindAppList( apps );
             set( "sortAction", to( SortMenu ) );
         }
 
-        public void SortMenu() {
+        public virtual void SortMenu() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             IMemberApp app = getApp( id );
@@ -73,13 +69,11 @@ namespace wojilu.Web.Controller.Common.Admin {
 
                 new SortUtil<IMemberApp>( app, list ).MoveUp();
                 echoJsonOk();
-            }
-            else if (cmd == "down") {
+            } else if (cmd == "down") {
 
                 new SortUtil<IMemberApp>( app, list ).MoveDown();
                 echoJsonOk();
-            }
-            else {
+            } else {
                 echoError( lang( "exUnknowCmd" ) );
             }
 
@@ -88,7 +82,7 @@ namespace wojilu.Web.Controller.Common.Admin {
 
         //----------------------------------------------------------------------------------------------------------------
 
-        public void ViewUrl( int id ) {
+        public virtual void ViewUrl( long id ) {
 
             IMemberApp app = getApp( id );
 
@@ -99,13 +93,13 @@ namespace wojilu.Web.Controller.Common.Admin {
             set( "app.Url", url );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
             IMemberApp app = getApp( id );
             target( Update, id );
             bindAppEdit( app );
         }
 
-        public void NewApp( int id ) {
+        public virtual void NewApp( long id ) {
 
             AppInstaller info = getAppInfo( id );
 
@@ -118,6 +112,44 @@ namespace wojilu.Web.Controller.Common.Admin {
 
             target( Create );
             bindAppInfo( info );
+
+            List<ITheme> themeList = themeService.GetThemeList( info );
+            if (themeList.Count > 0) {
+                String lnkThemeList = to( ThemeList, info.Id ) + "";
+                set( "themeList", "<tr><td class=\"tdL\">主题类型</td><td><iframe id=\"tmplist\" src=\"" + lnkThemeList + "?frm=true\" frameborder=\"0\" scrolling=\"auto\" style=\"width:580px;\"></iframe></td></tr>" );
+
+            } else {
+                set( "themeList", "" );
+            }
+
+        }
+
+        public virtual void ThemeList( long appInstallerId ) {
+
+            AppInstaller info = getAppInfo( appInstallerId );
+
+            List<ITheme> themeList = themeService.GetThemeList( info );
+            bindList( "list", "x", themeList, bindThemePic );
+        }
+
+        private void bindThemePic( IBlock block, String lbl, Object obj ) {
+
+            ITheme theme = (ITheme)obj;
+
+            if (strUtil.IsNullOrEmpty( theme.Pic )) {
+                block.Set( "x.PicOrDesc", string.Format( "<div class=\"desc\"><div class=\"desc-inner\">{0}</div></div>", theme.Description ) );
+            } else {
+                block.Set( "x.PicOrDesc", string.Format( "<img src=\"{0}\" title=\"{1}\" />", getPicShow( theme.Pic ), theme.Description ) );
+            }
+
+        }
+
+        private String getPicShow( String pic ) {
+            if (strUtil.IsNullOrEmpty( pic )) return "";
+            if (pic.StartsWith( "http:" )) return pic;
+            if (pic.StartsWith( "/" )) return pic;
+            return strUtil.Join( sys.Path.Static, "/theme/wojilu.Apps.Content/" ) + pic;
+
         }
 
         private Boolean checkInstall( AppInstaller info ) {
@@ -131,7 +163,7 @@ namespace wojilu.Web.Controller.Common.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             int appInfoId = cvt.ToInt( ctx.Post( "appInfoId" ) );
             AppInstaller info = getAppInfo( appInfoId );
@@ -144,21 +176,47 @@ namespace wojilu.Web.Controller.Common.Admin {
             if (!checkInstall( info )) return;
 
             String name = ctx.Post( "Name" );
-            //AccessStatus accs = AccessStatusUtil.GetPostValue( ctx.PostInt( "AccessStatus" ) );
             AccessStatus accs = AccessStatus.Public;
 
+            if (strUtil.IsNullOrEmpty( name )) {
+                echoError( "请填写名称" );
+                return;
+            }
 
+            // 自定义安装
             Type appType = ObjectContext.Instance.TypeList[info.TypeFullName];
             if (rft.IsInterface( appType, typeof( IAppInstaller ) )) {
-                IAppInstaller customInstaller = ObjectContext.CreateObject( appType ) as IAppInstaller;
-                IMemberApp capp = customInstaller.Install( ctx, ctx.owner.obj, name, accs );
+
+                // 主题ID
+                String themeId = ctx.Post( "themeId" );
+
+                IAppInstaller customInstaller = ObjectContext.Create( appType ) as IAppInstaller;
+                IMemberApp capp = customInstaller.Install( ctx, ctx.owner.obj, name, accs, themeId, "" );
                 intiAppPermission( capp );
+
 
                 echoToParentPart( lang( "opok" ), to( Index ), 1 );
                 return;
             }
 
+            // 主题安装
+            if (strUtil.HasText( info.InstallerType )) {
 
+                // 主题ID
+                String themeId = ctx.Post( "themeId" );
+
+                Type installerType = ObjectContext.GetType( info.InstallerType );
+
+                IAppInstaller customInstaller = ObjectContext.Create( installerType ) as IAppInstaller;
+                IMemberApp capp = customInstaller.Install( ctx, ctx.owner.obj, name, accs, themeId, "" );
+                intiAppPermission( capp );
+
+                echoToParentPart( lang( "opok" ), to( Index ), 1 );
+                return;
+
+            }
+
+            // 默认安装
             IMember owner = ctx.owner.obj;
             User creator = (User)ctx.viewer.obj;
 
@@ -178,8 +236,7 @@ namespace wojilu.Web.Controller.Common.Admin {
 
 
                 echoToParentPart( lang( "opok" ), to( Index ), 1 );
-            }
-            else {
+            } else {
                 errors.Add( lang( "exop" ) );
 
                 run( NewApp, info.Id );
@@ -191,7 +248,7 @@ namespace wojilu.Web.Controller.Common.Admin {
             AppAdminRole.InitSiteAdmin( app.Id );
         }
 
-        public void Select() {
+        public virtual void Select() {
 
 
             bindHomePage();
@@ -201,21 +258,20 @@ namespace wojilu.Web.Controller.Common.Admin {
         }
 
         [HttpPut, DbTransaction]
-        public void Start( int id ) {
+        public virtual void Start( long id ) {
             IMemberApp app = getApp( id );
             String appUrl = UrlConverter.clearUrl( app, ctx );
 
             userAppService.Start( app, appUrl );
             log( SiteLogString.StartApp(), app );
 
-            //echoRedirect( lang( "opok" ), Index );
             echoRedirectPart( lang( "opok" ), to( Index ), 0 );
         }
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( AppBaseController ) );
 
         [HttpPut, DbTransaction]
-        public void Stop( int id ) {
+        public virtual void Stop( long id ) {
             IMemberApp app = getApp( id );
             String appUrl = UrlConverter.clearUrl( app, ctx );
 
@@ -230,7 +286,7 @@ namespace wojilu.Web.Controller.Common.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             IMemberApp app = getApp( id );
             String appUrl = UrlConverter.clearUrl( app, ctx );
@@ -246,7 +302,7 @@ namespace wojilu.Web.Controller.Common.Admin {
 
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             IMemberApp app = getApp( id );
             String appUrl = UrlConverter.clearUrl( app, ctx );
@@ -260,7 +316,7 @@ namespace wojilu.Web.Controller.Common.Admin {
 
         //-------------------------------------------------------------------------------------------
 
-        private IMemberApp getApp( int id ) {
+        private IMemberApp getApp( long id ) {
             IMemberApp app = userAppService.FindById( id, ctx.owner.Id );
             if (app == null) {
                 throw new Exception( lang( "exAppNotFound" ) );
@@ -268,7 +324,7 @@ namespace wojilu.Web.Controller.Common.Admin {
             return app;
         }
 
-        private AppInstaller getAppInfo( int appInfoId ) {
+        private AppInstaller getAppInfo( long appInfoId ) {
             AppInstaller appinfo = appinfoService.GetById( appInfoId );
             if (appinfo == null) {
                 throw new Exception( lang( "exAppNotFound" ) );

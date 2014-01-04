@@ -23,14 +23,16 @@ namespace wojilu.Apps.Content.Domain {
         [Column( Length = 20 )]
         public String CreatorUrl { get; set; }
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         [Column( Length = 50 )]
         public String OwnerUrl { get; set; }
 
-        public int AppId { get; set; }
-        public int CategoryId { get; set; } // wojilu.Apps.Content.Enum.PostCategory
+        public long AppId { get; set; }
+        public long CategoryId { get; set; } // wojilu.Apps.Content.Enum.PostCategory
         public int OrderId { get; set; }
+
+        // 缓存第一个section信息
         [Column( Name = "SectionId" )]
         public ContentSection PageSection { get; set; }
 
@@ -46,13 +48,12 @@ namespace wojilu.Apps.Content.Domain {
         private int _height;
 
         public int Width {
-            //get { if (_width <= 0) return 300; return _width; }
             get { return _width; }
             set { _width = value; }
 
         }
+
         public int Height {
-            //get { if (_height <= 0) return 255; return _height; }
             get { return _height; }
             set { _height = value; }
         }
@@ -85,6 +86,9 @@ namespace wojilu.Apps.Content.Domain {
         public String MetaDescription { get; set; }
         public String RedirectUrl { get; set; }
 
+        /// <summary>
+        /// 普通Normal = 0; 精选Picked = 1; 头条Focus = 2;
+        /// </summary>
         public int PickStatus { get; set; }
 
 
@@ -108,7 +112,84 @@ namespace wojilu.Apps.Content.Domain {
         public int DiggUp { get; set; }
         public int DiggDown { get; set; }
 
+        //-----------------------------用于界面绑定显示----------------------------------------------------------------------------
+
+        [NotSave]
+        public String TitleShow {
+            get {
+                if (strUtil.HasText( this.TitleHome )) return this.TitleHome;
+                return this.Title;
+            }
+        }
+
+        [NotSave]
+        public String SummaryShow {
+            get {
+                if (strUtil.HasText( this.Summary )) return this.Summary;
+                return strUtil.ParseHtml( this.Content, 220 );
+            }
+        }
+
+        [NotSave]
+        public String PicS {
+            get { return this.GetImgThumb(); }
+        }
+
+        [NotSave]
+        public String PicSHtml {
+            get {
+                if (this.HasImg() == false) return "";
+                return string.Format( "<img src=\"{0}\" />", this.GetImgThumb() );
+            }
+        }
+
+        [NotSave]
+        public String PicM {
+            get { return this.GetImgMedium(); }
+        }
+
+        [NotSave]
+        public String HitsShow {
+            get {
+                if (this.Hits <= 0) return "";
+                return string.Format( "点击:{0}", this.Hits );
+            }
+        }
+
+        [NotSave]
+        public String RepliesShow {
+            get {
+                if (this.Replies <= 0) return "";
+                return string.Format( "评论:{0}", this.Replies );
+            }
+        }
+
+        [NotSave]
+        public String TagShow {
+            get {
+                if (this.Tag.List.Count == 0) return "";
+                return string.Format( "<span class=\"tag-label\">标签:</span> {0}", this.Tag.HtmlString );
+            }
+        }
+
+        [NotSave]
+        public String AuthorShow {
+            get {
+                if (strUtil.IsNullOrEmpty( this.Author )) return "";
+                return string.Format( "<span class=\"author-label\">作者:</span> {0}", this.Author );
+            }
+        }
+
         //---------------------------------------------------------------------------------------------------------
+
+
+        [NotSave]
+        public long SectionId {
+            get {
+                if (this.PageSection == null) return 0;
+                return this.PageSection.Id;
+            }
+        }
 
         [NotSave]
         public String SectionName {
@@ -148,35 +229,27 @@ namespace wojilu.Apps.Content.Domain {
         }
 
         public String GetImgThumb() {
-
-            if (strUtil.IsNullOrEmpty( this.ImgLink )) return null;
-            if (this.ImgLink.ToLower().StartsWith( "http://" )) return this.ImgLink;
             return sys.Path.GetPhotoThumb( this.ImgLink );
         }
 
         public String GetImgMedium() {
-            if (strUtil.IsNullOrEmpty( this.ImgLink )) return null;
-            if (this.ImgLink.ToLower().StartsWith( "http://" )) return this.ImgLink;
             return sys.Path.GetPhotoThumb( this.ImgLink, ThumbnailType.Medium );
         }
 
-        public String GetImgUrl() {
-            if (strUtil.IsNullOrEmpty( this.ImgLink )) return null;
-            if (this.ImgLink.ToLower().StartsWith( "http://" )) return this.ImgLink;
+        public String GetImgOriginal() {
             return sys.Path.GetPhotoOriginal( this.ImgLink );
         }
 
         public String GetTitle() {
             if (strUtil.HasText( this.Title )) return this.Title;
-            if (this.PageSection == null) return alang.get( typeof( ContentApp ), "noTitle" );
-
-            return this.PageSection.Title + " " + this.Created.ToShortDateString();
+            return "Post-"+ this.Id + "-"+this.Created.ToShortDateString();
         }
 
         public String GetSummary( int length ) {
             if (strUtil.HasText( this.Summary )) return strUtil.CutString( this.Summary, length );
             return strUtil.ParseHtml( this.Content, length );
         }
+
 
         public bool HasImg() {
             return strUtil.HasText( this.ImgLink );
@@ -203,7 +276,9 @@ namespace wojilu.Apps.Content.Domain {
             }
         }
 
-
+        public Type GetAppType() {
+            return typeof( ContentApp );
+        }
 
     }
 

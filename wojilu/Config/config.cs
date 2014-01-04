@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,26 +22,17 @@ using System;
 namespace wojilu {
 
     /// <summary>
-    /// Õ¯’æµƒ≈‰÷√–≈œ¢
+    /// ÁΩëÁ´ôÁöÑÈÖçÁΩÆ‰ø°ÊÅØ
     /// </summary>
     public class config {
 
-
         private SiteSetting _siteSetting;
-        private GroupSetting _groupSetting;
 
         /// <summary>
-        /// Õ¯’æµƒ≈‰÷√–≈œ¢
+        /// ÁΩëÁ´ôÁöÑÈÖçÁΩÆ‰ø°ÊÅØ
         /// </summary>
         public SiteSetting Site {
             get { return _siteSetting; }
-        }
-
-        /// <summary>
-        /// »∫◊Èµƒ≈‰÷√–≈œ¢
-        /// </summary>
-        public GroupSetting Group {
-            get { return _groupSetting; }
         }
 
         //------------------------------------------------------------
@@ -61,19 +52,13 @@ namespace wojilu {
             }
         }
 
-        private void Reload() {
-            loadAll();
-        }
-
 
         private void loadAll() {
             initSiteSettings();
-            initGroupSettings();
         }
 
-
-        private void initGroupSettings() {
-            _groupSetting = new GroupSetting();
+        public static void Reset() {
+            _instance = null;
         }
 
         // ------------------------- site settings -------------------------
@@ -89,19 +74,25 @@ namespace wojilu {
             _siteSetting.SiteName = getVal( dic, "SiteName" );
             _siteSetting.SiteUrl = getVal( dic, "SiteUrl" );
             _siteSetting.SiteLogo = getVal( dic, "SiteLogo" );
+            _siteSetting.BeiAn = getVal( dic, "BeiAn" );
 
             _siteSetting.Webmaster = getVal( dic, "Webmaster" );
             _siteSetting.Email = getVal( dic, "Email" );
             _siteSetting.Copyright = getVal( dic, "Copyright" );
+
             _siteSetting.Keywords = getVal( dic, "Keywords" );
             _siteSetting.Description = getVal( dic, "Description" );
+
+            _siteSetting.UserPageKeywords = getVal( dic, "UserPageKeywords" );
+            _siteSetting.UserPageDescription = getVal( dic, "UserPageDescription" );
+
+
             _siteSetting.PageDefaultTitle = getVal( dic, "PageDefaultTitle" );
             _siteSetting.IsClose = cvt.ToBool( getVal( dic, "IsClose" ) );
             _siteSetting.CloseReason = getVal( dic, "CloseReason" );
             _siteSetting.IsInstall = cvt.ToBool( getVal( dic, "IsInstall" ) );
 
             _siteSetting.RegisterType = cvt.ToInt( getVal( dic, "RegisterType" ) );
-            _siteSetting.LoginType = cvt.ToInt( getVal( dic, "LoginType" ) );
             _siteSetting.TopNavDisplay = cvt.ToInt( getVal( dic, "TopNavDisplay" ) );
 
             _siteSetting.NeedLogin = cvt.ToBool( getVal( dic, "NeedLogin" ) );
@@ -122,13 +113,8 @@ namespace wojilu {
             _siteSetting.ValidationLength = cvt.ToInt( getVal( dic, "ValidationLength" ) );
             _siteSetting.ValidationChineseLength = cvt.ToInt( getVal( dic, "ValidationChineseLength" ) );
 
-
             _siteSetting.StatsEnabled = cvt.ToBool( getVal( dic, "StatsEnabled" ) );
             _siteSetting.StatsJs = getVal( dic, "StatsJs" );
-
-            _siteSetting.MicroblogContentMax = cvt.ToInt( getVal( dic, "MicroblogContentMax" ) );
-            _siteSetting.MicroblogPageSize = cvt.ToInt( getVal( dic, "MicroblogPageSize" ) );
-
 
             _siteSetting.SkinId = cvt.ToInt( getVal( dic, "SkinId" ) );
             _siteSetting.Md5Is16 = cvt.ToBool( getVal( dic, "Md5Is16" ) );
@@ -145,29 +131,22 @@ namespace wojilu {
             _siteSetting.ReservedUserUrl = _siteSetting.getArrayValue( dic, "ReservedUserUrl" );
             _siteSetting.ReservedKey = _siteSetting.getArrayValue( dic, "ReservedKey" );
 
-            _siteSetting.PhotoThumbHeight = cvt.ToInt( getVal( dic, "PhotoThumbHeight" ) );
-            _siteSetting.PhotoThumbWidth = cvt.ToInt( getVal( dic, "PhotoThumbWidth" ) );
-            _siteSetting.PhotoThumbHeightMedium = cvt.ToInt( getVal( dic, "PhotoThumbHeightMedium" ) );
-            _siteSetting.PhotoThumbWidthMedium = cvt.ToInt( getVal( dic, "PhotoThumbWidthMedium" ) );
-            _siteSetting.PhotoThumbHeightBig = cvt.ToInt( getVal( dic, "PhotoThumbHeightBig" ) );
-            _siteSetting.PhotoThumbWidthBig = cvt.ToInt( getVal( dic, "PhotoThumbWidthBig" ) );
-
-            _siteSetting.AvatarThumbHeight = cvt.ToInt( getVal( dic, "AvatarThumbHeight" ) );
-            _siteSetting.AvatarThumbWidth = cvt.ToInt( getVal( dic, "AvatarThumbWidth" ) );
-            _siteSetting.AvatarThumbHeightMedium = cvt.ToInt( getVal( dic, "AvatarThumbHeightMedium" ) );
-            _siteSetting.AvatarThumbWidthMedium = cvt.ToInt( getVal( dic, "AvatarThumbWidthMedium" ) );
-            _siteSetting.AvatarThumbHeightBig = cvt.ToInt( getVal( dic, "AvatarThumbHeightBig" ) );
-            _siteSetting.AvatarThumbWidthBig = cvt.ToInt( getVal( dic, "AvatarThumbWidthBig" ) );
+            _siteSetting.PhotoThumb = getVal( dic, "PhotoThumb" );
+            _siteSetting.AvatarThumb = getVal( dic, "AvatarThumb" );
 
             _siteSetting.UploadFileTypes = _siteSetting.getArrayValue( dic, "UploadFileTypes" );
             _siteSetting.UploadPicTypes = _siteSetting.getArrayValue( dic, "UploadPicTypes" );
 
+            _siteSetting.UploadAvatarMaxKB = cvt.ToInt( getVal( dic, "UploadAvatarMaxKB" ) );
             _siteSetting.UploadPicMaxMB = cvt.ToInt( getVal( dic, "UploadPicMaxMB" ) );
             _siteSetting.UploadFileMaxMB = cvt.ToInt( getVal( dic, "UploadFileMaxMB" ) );
 
+            _siteSetting.PublishTimeAfterReg = cvt.ToInt( getVal( dic, "PublishTimeAfterReg" ) );
 
-            _siteSetting.IsSaveAvatarMedium = cvt.ToBool( getVal( dic, "IsSaveAvatarMedium" ) );
-            _siteSetting.IsSaveAvatarBig = cvt.ToBool( getVal( dic, "IsSaveAvatarBig" ) );
+            _siteSetting.UserSignatureMin = cvt.ToInt( getVal( dic, "UserSignatureMin" ) );
+            _siteSetting.UserSignatureMax = cvt.ToInt( getVal( dic, "UserSignatureMax" ) );
+            _siteSetting.UserDescriptionMin = cvt.ToInt( getVal( dic, "UserDescriptionMin" ) );
+            _siteSetting.UserDescriptionMax = cvt.ToInt( getVal( dic, "UserDescriptionMax" ) );
 
             _siteSetting.BadWords = _siteSetting.getArrayValue( dic, "BadWords" );
             _siteSetting.BadWordsReplacement = getVal( dic, "BadWordsReplacement" );

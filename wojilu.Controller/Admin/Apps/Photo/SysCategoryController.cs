@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -25,8 +25,8 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
     [App( typeof( PhotoApp ) )]
     public class SysCategoryController : ControllerBase {
 
-        public IPhotoSysCategoryService categoryService { get; set; }
-        public IAdminLogService<SiteLog> logService { get; set; }
+        public virtual IPhotoSysCategoryService categoryService { get; set; }
+        public virtual IAdminLogService<SiteLog> logService { get; set; }
 
         public SysCategoryController() {
             categoryService = new PhotoSysCategoryService();
@@ -38,14 +38,14 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
             logService.Add( (User)ctx.viewer.obj, msg, dataInfo, typeof( PhotoSysCategory ).FullName, ctx.Ip );
         }
 
-        public void List() {
+        public virtual void List() {
             target( Add );
             List<PhotoSysCategory> categories = categoryService.GetAll();
             bindList( "list", "category", categories, bindLink );
             set( "sortAction", to( SaveSort ) );
         }
 
-        private void bindLink( IBlock tpl, int id ) {
+        private void bindLink( IBlock tpl, long id ) {
             tpl.Set( "category.LinkEdit", to( Edit, id ) );
             tpl.Set( "category.LinkDelete", to( Delete, id ) );
         }
@@ -55,7 +55,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
         [HttpPost, DbTransaction]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             PhotoSysCategory target = categoryService.GetById( id );
@@ -77,12 +77,12 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
 
         }
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             PhotoSysCategory c = validate( null );
             if (ctx.HasErrors) {
@@ -96,7 +96,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
             echoToParentPart( lang("opok") );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( Update, id );
 
@@ -110,7 +110,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             PhotoSysCategory c = categoryService.GetById( id );
             if (c == null) {
@@ -131,7 +131,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             PhotoSysCategory c = categoryService.GetById( id );
             if (c == null) {

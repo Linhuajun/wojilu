@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -14,22 +14,24 @@ using wojilu.Apps.Content.Service;
 using wojilu.Common.AppBase.Interface;
 using wojilu.Common.AppBase;
 using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Utils;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
     [App( typeof( ContentApp ) )]
-    public partial class VideoController : ControllerBase, IPageSection {
+    public partial class VideoController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public VideoController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -46,61 +48,70 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( Edit, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
-            List<ContentPost> posts = postService.GetBySection( ctx.app.Id, sectionId );
+        public virtual String GetSectionIcon( long sectionId ) {
+            return BinderUtils.iconVideo;
+        }
+
+        public virtual void AdminSectionShow( long sectionId ) {
+            List<ContentPost> posts = GetSectionPosts( sectionId );
             bindSectionShow( sectionId, posts );
         }
 
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
+            return postService.GetBySection( sectionId, s.ListCount );
+        }
 
-        public void AdminList( int sectionId ) {
+        public virtual void AdminList( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            DataPage<ContentPost> posts = postService.GetBySectionAndCategory( section.Id, ctx.GetInt( "categoryId" ) );
+            DataPage<ContentPost> posts = postService.GetPageBySectionAndCategory( section.Id, ctx.GetLong( "categoryId" ) );
             bindAdminList( sectionId, section, posts );
         }
 
 
-        public void Add( int sectionId ) {
+        public virtual void Add( long sectionId ) {
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
-            target( to( Create, sectionId ) + "?categoryId=" + ctx.GetInt( "categoryId" ) );
+            target( to( Create, sectionId ) + "?categoryId=" + ctx.GetLong( "categoryId" ) );
             bindAddInfo( section );
 
-            set( "videoServiceUrl", to( new Common.Service.VideoController().PlayUrl ) );
+            set( "videoServiceUrl", to( new wojilu.Web.Controller.Open.VideoController().PlayUrl ) );
         }
 
 
         [HttpPost, DbTransaction]
-        public void Create( int sectionId ) {
+        public virtual void Create( long sectionId ) {
             ContentPost post = ContentValidator.SetValueBySection( sectionService.GetById( sectionId, ctx.app.Id ), ctx );
             ContentValidator.ValidateVideo( post, ctx );
             if (ctx.HasErrors) {
                 run( Add, sectionId );
             }
             else {
-                
-                postService.Insert( post, null );
-                
+
+                postService.Insert( post, ctx.Post( "TagList" ) );
+
                 echoToParentPart( lang( "opok" ) );
-                HtmlHelper.SetCurrentPost( ctx, post );
+                HtmlHelper.SetPostToContext( ctx, post );
 
             }
         }
 
-        public void Edit( int postId ) {
+        public virtual void Edit( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echoToParentPart( lang( "exDataNotFound" ) );
                 return;
             }
 
-            target( to( Update, postId ) + "?categoryId=" + ctx.GetInt( "categoryId" ) );
+            target( to( Update, postId ) + "?categoryId=" + ctx.GetLong( "categoryId" ) );
             bindEditInfo( postId, post );
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int postId ) {
+        public virtual void Update( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echo( lang( "exDataNotFound" ) );
@@ -113,15 +124,15 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
                 run( Edit, postId );
             }
             else {
-                postService.Update( post, null );
+                postService.Update( post, ctx.Post( "TagList" ) );
 
                 echoToParentPart( lang( "opok" ) );
-                HtmlHelper.SetCurrentPost( ctx, post );
+                HtmlHelper.SetPostToContext( ctx, post );
             }
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int postId ) {
+        public virtual void Delete( long postId ) {
             ContentPost post = postService.GetById( postId, ctx.owner.Id );
             if (post == null) {
                 echo( lang( "exDataNotFound" ) );
@@ -130,7 +141,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
             postService.Delete( post );
             echoRedirect( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
+            HtmlHelper.SetPostToContext( ctx, post );
         }
 
     }

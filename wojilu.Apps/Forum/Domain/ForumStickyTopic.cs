@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using wojilu.Serialization;
-using wojilu.Common.AppBase.Interface;
+
 using wojilu.Common.AppBase;
 
 namespace wojilu.Apps.Forum.Domain {
@@ -14,7 +12,7 @@ namespace wojilu.Apps.Forum.Domain {
     [Serializable]
     public class StickyTopic : IComparable, ISort {
 
-        public int Id { get; set; }
+        public long Id { get; set; }
         public String Title { get; set; }
         public int OrderId { get; set; }
 
@@ -44,7 +42,7 @@ namespace wojilu.Apps.Forum.Domain {
             List<StickyTopic> stickyList = GetTopics( json );
             List<StickyTopic> results = mergeData( stickyList, newTopics );
 
-            return SimpleJsonString.ConvertList( results );
+            return Json.ToStringList( results );
         }
 
         private static List<StickyTopic> mergeData( List<StickyTopic> stickyList, List<ForumTopic> newTopics ) {
@@ -77,13 +75,71 @@ namespace wojilu.Apps.Forum.Domain {
 
         //---------------------------------------- 减少置顶的帖子 ---------------------------------------------------------
 
+        public static void DeleteTopic(long appId, string ids) {
+
+
+            ForumApp app = ForumApp.findById( appId );
+            if (app == null) return;
+            List<StickyTopic> stickyList = GetTopics( app.StickyTopic );
+            List<StickyTopic> list = new List<StickyTopic>();
+            Boolean shouldDelete = false;
+
+            long[] arrIds = cvt.ToLongArray( ids );
+
+            foreach (StickyTopic x in stickyList) {
+                if (containsTopicId( arrIds, x.Id )) {
+                    shouldDelete = true;
+                    continue;
+                }
+                list.Add( x );
+            }
+
+            if (shouldDelete) {
+                String newJson = Json.ToStringList( list );
+                app.StickyTopic = newJson;
+                app.update();
+            }
+        }
+
+        private static bool containsTopicId(long[] arrIds, long topicId) {
+
+            foreach (long id in arrIds) {
+                if (id == topicId) return true;
+            }
+
+            return false;
+        }
+
+        public static void DeleteTopic( ForumTopic topic ) {
+
+            ForumApp app = ForumApp.findById( topic.AppId );
+            if (app == null) return;
+
+            List<StickyTopic> stickyList = GetTopics( app.StickyTopic );
+            List<StickyTopic> list = new List<StickyTopic>();
+            Boolean shouldDelete = false;
+            foreach (StickyTopic x in stickyList) {
+                if (x.Id == topic.Id) {
+                    shouldDelete = true;
+                    continue;
+                }
+                list.Add( x );
+            }
+
+            if (shouldDelete) {
+                String newJson = Json.ToStringList( list );
+                app.StickyTopic = newJson;
+                app.update();
+            }
+        }
+
 
         public static String SubtractData( String json, List<ForumTopic> newStickTopics ) {
 
             List<StickyTopic> stickyList = GetTopics( json );
             List<StickyTopic> results = subtractData( stickyList, newStickTopics );
 
-            return SimpleJsonString.ConvertList( results );
+            return Json.ToStringList( results );
         }
 
         private static List<StickyTopic> subtractData( List<StickyTopic> stickyList, List<ForumTopic> newStickTopics ) {
@@ -121,7 +177,7 @@ namespace wojilu.Apps.Forum.Domain {
         }
         //-------------------------------------------------------------------------------------------------
 
-        private static ForumTopic getTopicBySticky( StickyTopic st, int ownerId, String ownerType, String ownerUrl ) {
+        private static ForumTopic getTopicBySticky(StickyTopic st, long ownerId, string ownerType, string ownerUrl) {
 
             ForumTopic topic = new ForumTopic();
             topic.Id = st.Id;
@@ -168,7 +224,7 @@ namespace wojilu.Apps.Forum.Domain {
 
         private static List<StickyTopic> GetTopics( String json ) {
 
-            List<StickyTopic> results = JSON.ToList<StickyTopic>( json );
+            List<StickyTopic> results = Json.DeserializeList<StickyTopic>( json );
             results.Sort();
 
             return results;
@@ -179,25 +235,25 @@ namespace wojilu.Apps.Forum.Domain {
         //-------------------------------------------------------------------------------------------------
 
 
-        public static String MoveUp( String json, int topicId ) {
+        public static string MoveUp(string json, long topicId) {
 
             List<StickyTopic> topics = GetTopics( json );
             StickyTopic t = getById( topics, topicId );
             SortUtil<StickyTopic> s = new SortUtil<StickyTopic>( t, topics );
             s.MoveUp();
-            return SimpleJsonString.ConvertList( s.GetOrderedList() );
+            return Json.ToStringList( s.GetOrderedList() );
 
         }
 
-        public static String MoveDown( String json, int topicId ) {
+        public static string MoveDown(string json, long topicId) {
             List<StickyTopic> topics = GetTopics( json );
             StickyTopic t = getById( topics, topicId );
             SortUtil<StickyTopic> s = new SortUtil<StickyTopic>( t, topics );
             s.MoveDown();
-            return SimpleJsonString.ConvertList( s.GetOrderedList() );
+            return Json.ToStringList( s.GetOrderedList() );
         }
 
-        private static StickyTopic getById( List<StickyTopic> topics, int topicId ) {
+        private static StickyTopic getById(List<StickyTopic> topics, long topicId) {
             foreach (StickyTopic t in topics) {
                 if (t.Id == topicId) return t;
             }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -22,16 +22,19 @@ using wojilu.Members.Sites.Domain;
 using wojilu.Web.Mvc.Attr;
 using System.Collections.Generic;
 using wojilu.Common;
+using wojilu.Common.Microblogs.Service;
+using wojilu.Common.Microblogs.Interface;
 
 namespace wojilu.Web.Controller.Layouts {
 
     public partial class SpaceLayoutController : ControllerBase {
 
-        public SkinService skinService { get; set; }
-        public IMemberAppService userAppService { get; set; }
-        public IVisitorService visitorService { get; set; }
-        public IMenuService menuService { get; set; }
-        public ISiteSkinService siteSkinService { get; set; }
+        public virtual SkinService skinService { get; set; }
+        public virtual IMemberAppService userAppService { get; set; }
+        public virtual IVisitorService visitorService { get; set; }
+        public virtual IMenuService menuService { get; set; }
+        public virtual ISiteSkinService siteSkinService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
 
         public SpaceLayoutController() {
             skinService = new SkinService();
@@ -39,6 +42,7 @@ namespace wojilu.Web.Controller.Layouts {
             visitorService = new VisitorService();
             menuService = new UserMenuService();
             siteSkinService = new SiteSkinService();
+            microblogService = new MicroblogService();
         }
 
         public override void Layout() {
@@ -47,9 +51,11 @@ namespace wojilu.Web.Controller.Layouts {
 
             Page.Keywords = ctx.owner.obj.Name;
             User user = ctx.owner.obj as User;
-            Page.Description = ctx.owner.obj.Name + "�Ŀռ� " + user.Title;
+            Page.Description = ctx.owner.obj.Name + "的空间 " + user.Title;
 
             bindCommon();
+
+            loadSiteHeader();
 
             loadHeader();
 
@@ -59,15 +65,20 @@ namespace wojilu.Web.Controller.Layouts {
             set( "sitelink", ctx.url.SiteAndAppPath );
 
             skinService.SetSkin( new SpaceSkin() );
-            String skinContent = skinService.GetUserSkin( ctx.owner.obj, ctx.GetInt( "skinId" ), MvcConfig.Instance.CssVersion );
+            String skinContent = skinService.GetUserSkin( ctx.owner.obj, ctx.GetLong( "skinId" ), MvcConfig.Instance.CssVersion );
             set( "skinContent", skinContent );
 
             set( "customSkinLink", to( new Users.Admin.SkinController().CustomBg ) );
         }
 
+        private void loadSiteHeader() {
+            load( "siteTopNav", new TopNavController().IndexNew );
+            load( "siteHeader", new TopNavController().Header );
+        }
+
         private void bindSpaceName() {
             User user = ctx.owner.obj as User;
-            String spaceName = strUtil.IsNullOrEmpty( user.Title ) ? user.Name + " �Ŀռ�" : user.Title;
+            String spaceName = strUtil.IsNullOrEmpty( user.Title ) ? user.Name + " 的空间" : user.Title;
 
             set( "spaceName", spaceName );
         }
@@ -81,7 +92,7 @@ namespace wojilu.Web.Controller.Layouts {
         }
 
         [NonVisit]
-        public void Header() {
+        public virtual void Header() {
 
             bindSpaceName();
             set( "spaceUrl", getSpaceUrl() );
@@ -89,10 +100,12 @@ namespace wojilu.Web.Controller.Layouts {
             bindNavList( list );
         }
 
-        public void AdminLayout() {
+        public virtual void AdminLayout() {
 
             set( "lostPage", Link.To( Site.Instance, new MainController().lost ) );
             bindCommon();
+
+            loadSiteHeader();
 
             object isLoadAdminSidebar = ctx.GetItem( "_loadAdminSidebar" );
             if (isLoadAdminSidebar != null && (Boolean)isLoadAdminSidebar == false)
@@ -102,18 +115,23 @@ namespace wojilu.Web.Controller.Layouts {
         }
 
         [NonVisit]
-        public void AdminSidebar() {
+        public virtual void AdminSidebar() {
 
             User owner = ctx.owner.obj as User;
 
             set( "owner.Name", owner.Name );
-            set( "owner.Pic", owner.PicSmall );
+            set( "owner.Pic", owner.PicM );
 
             set( "owner.EditProfile", Link.To( owner, new UserProfileController().Profile ) );
             set( "owner.EditContact", Link.To( owner, new UserProfileController().Contact ) );
             set( "owner.EditInterest", Link.To( owner, new UserProfileController().Interest ) );
             set( "owner.EditPic", Link.To( owner, new UserProfileController().Face ) );
             set( "owner.EditPwd", Link.To( owner, new UserProfileController().Pwd ) );
+
+            int microblogCount = microblogService.CountByUser( owner.Id );
+            set( "user.MicroblogCount", microblogCount );
+
+            bindStats( owner );
 
 
             IList userAppList = userAppService.GetByMember( ctx.owner.Id );
@@ -158,6 +176,16 @@ namespace wojilu.Web.Controller.Layouts {
             }
 
 
+        }
+
+        private void bindStats( User user ) {
+            set( "user.FollowingCount", (user.FriendCount + user.FollowingCount) );
+            set( "user.FollowersCount", (user.FollowersCount + user.FriendCount) );
+
+            set( "user.FollowingLink", t2( new Users.FriendController().FollowingList ) );
+            set( "user.FollowerLink", t2( new Users.FriendController().FollowerList ) );
+
+            set( "user.HomeLink", t2( new Users.Admin.HomeController().Index, user.Id ) );
         }
 
         private void visitSpace() {

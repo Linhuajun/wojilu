@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -17,15 +17,7 @@ namespace wojilu.Web.Controller.Content.Binder {
 
     public class UserFacesBinderController : ControllerBase, ISectionBinder {
 
-        public IContentCustomTemplateService ctService { get; set; }
-
-        public UserFacesBinderController() {
-            ctService = new ContentCustomTemplateService();
-        }
-
-        public void Bind( ContentSection section, IList serviceData ) {
-
-            TemplateUtil.loadTemplate( this, section, ctService );
+        public virtual void Bind( ContentSection section, IList serviceData ) {
 
             IBlock block = base.getBlock( "list" );
 

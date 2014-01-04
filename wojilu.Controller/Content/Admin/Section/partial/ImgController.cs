@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -19,9 +19,9 @@ using wojilu.Common.AppBase;
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
-    public partial class ImgController : ControllerBase, IPageSection {
+    public partial class ImgController : ControllerBase, IPageAdminSection {
 
-        private void bindSectionShow( int sectionId, List<ContentPost> posts ) {
+        private void bindSectionShow( long sectionId, List<ContentPost> posts ) {
             set( "addUrl", to( AddListInfo, sectionId ) );
             set( "listUrl", to( AdminList, sectionId ) );
             IBlock block = getBlock( "list" );
@@ -49,7 +49,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             block.Set( "post.EditUrl", lnkEdit );
         }
 
-        private void bindAdminList( int sectionId, ContentSection section, DataPage<ContentPost> posts ) {
+        private void bindAdminList( long sectionId, ContentSection section, DataPage<ContentPost> posts ) {
             set( "moduleName", section.Title );
             set( "addUrl", to( AddListInfo, sectionId ) );
             IBlock block = getBlock( "list" );
@@ -67,22 +67,16 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
         }
 
 
-        private void bindAddList( int postId, ContentPost post, List<ContentImg> imgList ) {
-            set( "section.Name", post.PageSection.Title );
+        private void bindAddList( long postId, ContentPost post, List<ContentImg> imgList ) {
+            set( "section.Name", post.SectionName );
             set( "post.EditListInfo", to( EditListInfo, postId ) );
             IBlock block = getBlock( "list" );
             foreach (ContentImg img in imgList) {
-                block.Set( "img.Url", img.GetImgUrl() );
-                block.Set( "img.Thumb", img.GetThumb() );
+                block.Set( "img.Url", img.GetImgOriginal() );
+                block.Set( "img.Thumb", img.GetThumbS() );
                 block.Set( "img.Description", strUtil.CutString( img.Description, 8 ) );
-                block.Set( "img.DeleteUrl", to( DeleteImg, img.Id ) );
-                String setLogoCmd = string.Empty;
-                if (img.ImgUrl.Equals( post.ImgLink )) {
-                    setLogoCmd = "<span style='font-weight:bold;color:red;'>" + alang( "currentCover" ) + "</span>";
-                }
-                else {
-                    setLogoCmd = string.Format( "<a href='{0}' class=\"putCmd cmd\">" + alang( "setCover" ) + "</a>", to( SetLogo, img.Id ) );
-                }
+                block.Set( "img.DeleteUrl", to( DeleteImg, post.Id ) + "?imgId=" + img.Id );
+                String setLogoCmd = getSetLogoCmd( post, img );
                 block.Set( "img.SetLogo", setLogoCmd );
                 block.Next();
             }
@@ -95,10 +89,24 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             }
         }
 
-        private void bindListEdit( int postId, ContentPost post ) {
-            set( "section.Name", post.PageSection.Title );
+        private String getSetLogoCmd( ContentPost post, ContentImg img ) {
+
+            if (img.ImgUrl.Equals( post.ImgLink )) {
+                return "<span style='font-weight:bold;color:red;'>" + alang( "currentCover" ) + "</span>";
+            }
+
+            return string.Format( "<a href='{0}' class=\"putCmd cmd\">" + alang( "setCover" ) + "</a>", to( SetLogo, post.Id ) + "?imgId=" + img.Id );
+
+        }
+
+        private void bindListEdit( long postId, ContentPost post ) {
+
+            set( "section.Name", post.SectionName );
             set( "post.Title", post.Title );
             set( "post.TitleHome", post.TitleHome );
+
+            set( "post.MetaKeywords", post.MetaKeywords );
+            set( "post.MetaDescription", post.MetaDescription );
 
             set( "post.Content", post.Content );
             set( "post.OrderId", post.OrderId );
@@ -106,7 +114,7 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
             set( "post.IsCloseComment", Html.CheckBox( "IsCloseComment", lang( "closeComment" ), "1", cvt.ToBool( post.CommentCondition ) ) );
 
-            editor( "Content", post.Content, "190px" );
+            set( "Content", post.Content );
 
 
         }

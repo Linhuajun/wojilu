@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -129,29 +129,36 @@ namespace wojilu.Web {
             }
         }
 
-        public int UserId() {
+        public long UserId() {
             return UserId( FormsAuthentication.FormsCookieName );
         }
 
-        public int UserId( String cookieName ) {
+        public long UserId(string cookieName) {
             FormsAuthenticationTicket ticket = getTicket( cookieName );
             if (ticket == null) return -1;
-            return cvt.ToInt( ticket.UserData );
+            return cvt.ToLong( ticket.UserData );
         }
 
-        public void UserLogin( int userId, String userName, LoginTime expiration ) {
+        public void UserLogin(long userId, string userName, DateTime expiration) {
+            UserLogin( FormsAuthentication.FormsCookieName, userId, userName, expiration );
+        }
+        public void UserLogin(long userId, string userName, LoginTime expiration) {
             UserLogin( FormsAuthentication.FormsCookieName, userId, userName, expiration );
         }
 
-        public void UserLogin( String cookieName, int userId, String userName, LoginTime expiration ) {
+        public void UserLogin(string cookieName, long userId, string userName, LoginTime expiration) {
+            UserLogin( cookieName, userId, userName, getExpiration( expiration ) );
+        }
 
-            Boolean isPersistent = (expiration == LoginTime.Never ? false : true);
+        public void UserLogin( String cookieName, long userId, String userName, DateTime expiration ) {
+
+            Boolean isPersistent = (expiration.Subtract( DateTime.Now ).Days >= 1) ? true : false;
 
             FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(
                 2,
                 userName,
                 DateTime.Now,
-                getExpiration( expiration ),
+                expiration,
                 isPersistent,
                 userId.ToString(),
                 FormsAuthentication.FormsCookiePath
@@ -378,7 +385,35 @@ namespace wojilu.Web {
         }
 
         public String GetAuthJson() {
-            return "{ \"" + this.CookieAuthName() + "\":\"" + this.CookieAuthValue() + "\", \"" + SystemInfo.clientSessionID + "\":\"" + this.SessionId + "\" }";
+            return GetAuthJson( new String[] { } );
+        }
+
+        public String GetAuthJson( String arrCookieName ) {
+            return GetAuthJson( new String[] { arrCookieName } );
+        }
+
+        /// <summary>
+        /// 获取安全验证的cookie字符串(json格式)
+        /// </summary>
+        /// <param name="arrCookieName">默认cookie名称之外的其他cookie名称，在ctx.web.UserLogin() 第一个参数中指定</param>
+        /// <returns></returns>
+        public String GetAuthJson( String[] arrCookieName ) {
+
+            String str = "{ \"" + this.CookieAuthName() + "\":\"" + this.CookieAuthValue() + "\", \"" + SystemInfo.clientSessionID + "\":\"" + this.SessionId + "\" ";
+
+            if (arrCookieName == null || arrCookieName.Length == 0) {
+                return str + "}";
+            }
+            else {
+                str += ", ";
+            }
+
+            foreach (String cookieName in arrCookieName) {
+                if (strUtil.IsNullOrEmpty( cookieName )) continue;
+                str += "\"" + cookieName + "\":\"" + this.CookieAuthValue( cookieName ) + "\", ";
+            }
+
+            return str.Trim().TrimEnd( ',' ) + "}";
         }
 
 

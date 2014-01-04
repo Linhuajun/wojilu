@@ -12,12 +12,12 @@ namespace wojilu.Members.Sites.Interface {
 
     public interface ISiteSkinService {
 
-        SiteSkin GetById( int id );
+        SiteSkin GetById(long id);
 
         List<SiteSkin> GetSysAll();
 
         String GetSkin();
-        String GetSkin( int querySkinId, String cssVersion );
+        string GetSkin(long querySkinId, string cssVersion);
 
 
 

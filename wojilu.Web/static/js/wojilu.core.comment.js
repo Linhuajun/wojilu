@@ -17,6 +17,8 @@
                 $('.btnComment', clonedForm).after('<input name="parentId" type="hidden" value="' + $(this).attr('data-ParentId') + '" />');
                 bindSubmitEvent(objX);
             }
+			
+			resizeParent();
             return false;
 
         });
@@ -60,6 +62,8 @@
             txtBody.focus().val(atAuthorInfo);
 
             bindSubmitEvent(objX);
+			
+			resizeParent();
 
             return false;
         });
@@ -111,7 +115,7 @@
             var replyWrap = $('#replyMoreWrap' + parentId);
             replyWrap.append('<div style="padding:10px 50px;" class="loadingInfoWrap">' + loadingInfo + '</div>');
 
-            $.post(moreLink, { 'parentId': parentId, 'startId': startId }, function (data) {
+            $.get(moreLink, { 'parentId': parentId, 'startId': startId }, function (data) {
 
                 var newStartId = appendMore(replyWrap, data, parentId);
                 var restCount = moreCount - data.length;
@@ -141,7 +145,7 @@
         for (var i = 0; i < data.length; i++) {
 
             moreItems += '    <table class="commentItem"><tr>' +
-                '<td class="cmUserFace">' + data[i].UserFace + '</td>' +
+                '<td class="cmUserFace avs">' + data[i].UserFace + '</td>' +
                 '<td class="cmItemMain">' +
                 '    <div><span class="strong">' + data[i].UserName + '</span></div>' +
                 '   <div>' + data[i].Content + '</div>' +
@@ -162,7 +166,7 @@
     function appendComment (cmContent, parentId, objX) {
 
         var item = '    <table class="commentItem"><tr>' +
-            '<td class="cmUserFace">' + objX.userFace + '</td>' +
+            '<td class="cmUserFace avs">' + objX.userFace + '</td>' +
             '<td class="cmItemMain">' +
             '    <div><span class="strong">' + objX.userName + '</span></div>' +
             '   <div>' + cmContent + '</div>' +
@@ -190,6 +194,14 @@
         $('.loadingInfo').html('');
         btnSubmit.attr('disabled', false);
     };
+	
+    function resizeParent() {
+        var width = $(document).width();
+        var height = parseInt( $(document).height() );
+		var parentIframeId = wojilu.tool.getCurrentFrmId();
+        window.parent.wojilu.tool.resizeFrame( parentIframeId, height );
+    };
+
 
     // 提交评论到服务器
     var postComment = function (btnSubmit, objX) {
@@ -225,7 +237,10 @@
             dataTitle: objX.thisDataTitle,
             dataType: objX.thisDataType,
             dataUserId: objX.thisDataUserId,
-            dataId: objX.thisDataId
+            dataId: objX.thisDataId,
+            appId: objX.thisAppId,
+			ownerId: objX.thisOwnerId,
+			feedId: objX.thisFeedId
         };
 
         loadBegin(ctxForm);
@@ -235,6 +250,8 @@
             if ('ok' == data) {
                 appendComment(cmContent, parentId, objX);
                 txtCommentBody.val('');
+                addReplyCount(objX);
+				resizeParent();
             }
             else {
                 alert(data.Msg);
@@ -256,9 +273,19 @@
     }
 
     // 绑定所有评论数量(在当前页和父页面)
-    function bindReplyCount( replies ) {
+    function bindReplyCount( replies, objX ) {
         $('#replies').text( replies );
-        $('#contentReplies', window.parent.document ).text( replies );
+		if( objX.thisRenumId ) {
+			$('#'+objX.thisRenumId, window.parent.document ).text( replies );
+		}
+		else {
+			$('#contentReplies', window.parent.document ).text( replies );
+		}
+    }
+
+    function addReplyCount(objX) {
+        var replies = parseInt( $('#replies').text() ); 
+        bindReplyCount( replies + 1,objX );
     }
 
     function bindUserInfo( objX ) {
@@ -272,7 +299,7 @@
     function bindCommentEvent( objX ) {
 
         bindUserInfo( objX );
-        bindReplyCount( objX.replies );
+        bindReplyCount( objX.replies, objX );
 
         bindReplyEvent( objX );
         bindSubReplyEvent( objX );

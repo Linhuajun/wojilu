@@ -1,4 +1,4 @@
-using System;
+锘縰sing System;
 using System.Collections;
 using System.IO;
 using System.Web;
@@ -29,7 +29,7 @@ namespace wojilu.Test.Orm.Utils {
             int count = MappingClass.Instance.ClassList.Count;
 
             resetConnection();
-            Console.WriteLine( "初始化成功！" );
+            Console.WriteLine( "鍒濆鍖栨垚鍔燂紒" );
             Console.WriteLine();
             SpeedUtil.Stop();
 
@@ -54,8 +54,8 @@ namespace wojilu.Test.Orm.Utils {
 
         public static void ClearTables() {
 
-            foreach (DictionaryEntry entry in MappingClass.Instance.ClassList) {
-                EntityInfo ei = entry.Value as EntityInfo;
+            foreach (KeyValuePair<String, EntityInfo> kv in MappingClass.Instance.ClassList) {
+                EntityInfo ei = kv.Value;
                 string deleteTable = string.Format( "drop table {0}", ei.TableName );
 
                 wojilu.Data.EasyDB.Execute( deleteTable, wojilu.Data.DbContext.getConnection( ei ) );

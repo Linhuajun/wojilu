@@ -1,4 +1,8 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using wojilu.Web;
@@ -14,11 +18,11 @@ namespace wojilu.Members.Groups {
 
     public class GroupInitHelper : IInitHelper {
 
-        public Type GetMemberType() {
+        public virtual Type GetMemberType() {
             return typeof( Group );
         }
 
-        public IMember getOwnerByUrl( MvcContext ctx ) {
+        public virtual IMember getOwnerByUrl( MvcContext ctx ) {
 
             Group group = new GroupService().GetByUrl( ctx.route.owner );
             if (group == null) {
@@ -27,16 +31,17 @@ namespace wojilu.Members.Groups {
             return group;
         }
 
-        public Boolean IsAppRunning( MvcContext ctx ) {
+        public virtual Boolean IsAppRunning( MvcContext ctx ) {
             GroupAppService userAppService = new GroupAppService();
             IMemberApp app = userAppService.GetByApp( (IApp)ctx.app.obj );
-            if (app == null || app.IsStop == 1)
-                throw ctx.ex( HttpStatus.NotFound_404, lang.get( "exAppNotFound" ) );
+            if (app == null || app.IsStop == 1) {
+                return false;
+            }
 
-            return app.IsStop == 0;
+            return true;
         }
 
-        public List<IMenu> GetMenus( IMember owner ) {
+        public virtual List<IMenu> GetMenus( IMember owner ) {
             GroupMenuService menuService = new GroupMenuService();
             return menuService.GetList( owner );
         }

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ using wojilu.Members;
 namespace wojilu.Web.Mvc {
 
     /// <summary>
-    /// ³ÉÔ±Â·¾¶´¦Àí¹¤¾ß
+    /// æˆå‘˜è·¯å¾„å¤„ç†å·¥å…·
     /// </summary>
     public class MemberPath {
 
@@ -65,7 +65,7 @@ namespace wojilu.Web.Mvc {
 
         //------------------------------------------------------------------------------------------------
 
-        internal static OwnerInfo getOwnerInfo( String[] arrPathRow ) {
+        public static OwnerInfo getOwnerInfo( String[] arrPathRow ) {
 
             if (arrPathRow.Length < 2) return null;
 

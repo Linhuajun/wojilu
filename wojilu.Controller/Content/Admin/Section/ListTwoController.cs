@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -18,17 +18,17 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
     [App( typeof( ContentApp ) )]
-    public partial class ListTwoController : ControllerBase, IPageSection {
+    public partial class ListTwoController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public ListTwoController() {
             postService = new ContentPostService();
             sectionService = new ContentSectionService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -44,12 +44,22 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( new Common.PostController().Edit, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
-            List<ContentPost> posts = this.postService.GetBySection( ctx.app.Id, sectionId );
+        public virtual String GetSectionIcon( long sectionId ) {
+            return "";
+        }
+
+        public virtual void AdminSectionShow( long sectionId ) {
+            List<ContentPost> posts = GetSectionPosts( sectionId );
             bindSectionShow( sectionId, posts );
+        }
+
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
+            return postService.GetBySection( sectionId, s.ListCount );
         }
 
     }

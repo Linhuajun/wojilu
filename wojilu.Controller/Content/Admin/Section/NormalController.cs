@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -19,17 +19,17 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
 
 
     [App( typeof( ContentApp ) )]
-    public partial class NormalController : ControllerBase, IPageSection {
+    public partial class NormalController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public IContentImgService imgService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentImgService imgService { get; set; }
 
         public NormalController() {
             postService = new ContentPostService();
             imgService = new ContentImgService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
@@ -45,18 +45,35 @@ namespace wojilu.Web.Controller.Content.Admin.Section {
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( new Common.PostController().Edit, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
+        public virtual String GetSectionIcon( long sectionId ) {
+            return "";
+        }
+
+        public virtual void AdminSectionShow( long sectionId ) {
 
             int postcat = PostCategory.Post;
             int imgcat = PostCategory.Img;
-            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat, ctx.app.Id );
+            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat );
             ContentPost img = imgService.GetTopImg( sectionId, imgcat, ctx.app.Id );
 
             bindSectionShow( sectionId, postcat, imgcat, posts, img );
+        }
 
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+
+            int postcat = PostCategory.Post;
+            int imgcat = PostCategory.Img;
+            List<ContentPost> posts = postService.GetTopBySectionAndCategory( sectionId, postcat );
+            ContentPost img = imgService.GetTopImg( sectionId, imgcat, ctx.app.Id );
+
+            List<ContentPost> list = new List<ContentPost>();
+            list.AddRange( posts );
+            list.Add( img );
+            return list;
         }
 
     }

@@ -4,13 +4,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 using wojilu.Web.Mvc;
-using wojilu.Serialization;
+
+using wojilu.Common;
 using wojilu.Common.Msg.Service;
 using wojilu.Common.Msg.Enum;
-using wojilu.Common;
+
 
 namespace wojilu.Apps.Photo.Domain {
 
@@ -62,13 +62,13 @@ namespace wojilu.Apps.Photo.Domain {
             dic["userLink"] = Link.ToMember( post.Creator );
             dic["imgName"] = post.Title;
 
-            _shareData = JSON.DicToString( dic );
+            _shareData = Json.ToString( dic );
 
             return _shareData;
         }
 
         public void addNotification( String creator, String creatorLink ) {
-            int receiverId = this.post.OwnerId;
+            long receiverId = this.post.OwnerId;
             String msg = "<a href=\"" + creatorLink + "\">" + creator + "</a> " + alang.get( typeof(PhotoApp), "shareYourPhoto" ) + " <a href=\"" + alink.ToAppData( post ) + "\">" + post.Title + "</a>";
 
             new NotificationService().send( receiverId, post.OwnerType, msg, NotificationType.Share );

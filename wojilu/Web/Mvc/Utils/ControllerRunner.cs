@@ -19,33 +19,57 @@ namespace wojilu.Web.Mvc.Utils {
         /// <param name="ctx"></param>
         /// <param name="action"></param>
         /// <returns></returns>
-        public static String Run( MvcContext ctx, aAction action ) {
+        public static String Run( ControllerBase thisController, aAction action ) {
 
             ControllerBase targetController = action.Target as ControllerBase;
-            ControllerFactory.InjectController( targetController, ctx );
-            //ctx.utils.setController( targetController ); // 此处不能改成ctx，在loadHtml中，如果改变ctx，会造成Layout出错
 
-            targetController.view( action.Method.Name );
-            action();
-            return targetController.utils.getActionResult();
+            // 如果是当前controller，则直接调用；因为必须允许内部成员变量共享
+            if (Object.ReferenceEquals( thisController, targetController )) {
+                Template originalView = thisController.utils.getCurrentView();
+                thisController.view( action.Method );
+                action();
+                String result = thisController.utils.getActionResult();
+                thisController.utils.setCurrentView( originalView );
+
+                return result;
+            }
+            else {
+                ControllerFactory.InjectController( targetController, thisController.ctx );
+                targetController.view( action.Method.Name );
+                action();
+                return targetController.utils.getActionResult();
+            }
         }
 
         /// <summary>
         /// 运行某 action
         /// </summary>
-        /// <param name="ctx"></param>
+        /// <param name="thisController"></param>
         /// <param name="action"></param>
         /// <param name="id"></param>
+        /// <param name="ctx"></param>
         /// <returns></returns>
-        public static String Run( MvcContext ctx, aActionWithId action, int id ) {
+        public static string Run(ControllerBase thisController, aActionWithId action, long id) {
 
             ControllerBase targetController = action.Target as ControllerBase;
-            ControllerFactory.InjectController( targetController, ctx );
-            //ctx.utils.setController( targetController );
 
-            targetController.view( action.Method.Name );
-            action( id );
-            return targetController.utils.getActionResult();
+            // 如果是当前controller，则直接调用；因为必须允许内部成员变量共享
+            if (Object.ReferenceEquals( thisController, targetController )) {
+                Template originalView = thisController.utils.getCurrentView();
+                thisController.view( action.Method.Name );
+                action( id );
+                String result = thisController.utils.getActionResult();
+                thisController.utils.setCurrentView( originalView );
+
+                return result;
+            }
+            else {
+
+                ControllerFactory.InjectController( targetController, thisController.ctx );
+                targetController.view( action.Method.Name );
+                action( id );
+                return targetController.utils.getActionResult();
+            }
         }
 
         /// <summary>
@@ -62,15 +86,43 @@ namespace wojilu.Web.Mvc.Utils {
         /// <returns></returns>
         public static String Run( MvcContext ctx, String controllerFullName, String actionName ) {
 
+            if (controllerFullName == null) throw new NullReferenceException();
+
             ControllerBase targetController = ControllerFactory.FindController( controllerFullName, ctx );
             if (targetController == null) throw new Exception( "controller not found" );
-            //ctx.utils.setController( targetController );
 
             targetController.view( actionName );
             targetController.utils.runAction( actionName );
 
             return targetController.utils.getActionResult();
         }
+
+        /// <summary>
+        /// 运行某action
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="controllerName"></param>
+        /// <param name="actionName"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public static String Run( MvcContext ctx, String controllerName, String actionName, params object[] args ) {
+
+            if (controllerName == null) throw new NullReferenceException();
+
+            ControllerBase controller = ControllerFactory.FindController( controllerName, ctx );
+            if (controller == null) throw new Exception( "controller not found" );
+
+            controller.view( actionName );
+
+            MethodInfo method = getMethod( controller, actionName );
+            if (method == null) {
+                throw new Exception( "action " + wojilu.lang.get( "exNotFound" ) );
+            }
+            method.Invoke( controller, args );
+
+            return controller.utils.getActionResult();
+        }
+
 
         /// <summary>
         /// 运行某个controller的action方法，ctx已经注入controller
@@ -108,37 +160,13 @@ namespace wojilu.Web.Mvc.Utils {
 
 
         /// <summary>
-        /// 运行某 action
-        /// </summary>
-        /// <param name="actionName"></param>
-        public static String Run( MvcContext ctx, String controllerName, String actionName, params object[] args ) {
-
-            if (controllerName == null) throw new NullReferenceException();
-
-            ControllerBase controller = ControllerFactory.FindController( controllerName, ctx );
-            if (controller == null) throw new Exception( "controller not found" );
-
-            controller.view( actionName );
-            //ctx.utils.setController( controller );
-
-            MethodInfo method = getMethod( controller, actionName );
-            if (method == null) {
-                throw new Exception( "action " + wojilu.lang.get( "exNotFound" ) );
-            }
-
-            method.Invoke( controller, args );
-
-            return controller.utils.getActionResult();
-        }
-
-        /// <summary>
         /// 根据名称获取某 action 的方法信息
         /// </summary>
         /// <param name="actionName"></param>
         /// <returns></returns>
         public static MethodInfo getMethod( ControllerBase controller, String actionName ) {
 
-            return controller.GetType().GetMethod( actionName );
+            return ActionRunner.getActionMethod( controller, actionName );
         }
 
         /// <summary>
@@ -150,9 +178,7 @@ namespace wojilu.Web.Mvc.Utils {
             return method.GetParameters();
         }
 
-        //---------------------------------------------------------------------------------------------------------------------
-
-
+        //--------------------------------------------------------------------------------
 
         /// <summary>
         /// 运行某 controller 的 Layout 方法，controller 已经注入 ctx 中
@@ -185,7 +211,9 @@ namespace wojilu.Web.Mvc.Utils {
                 controller.utils.switchViewToLayout();
             }
 
-            controller.actionContent( "" ); // 清理当前内容，否则下面的utils.getActionResult()得不到正确结果
+            // 清理当前内容，否则下面的utils.getActionResult()得不到正确结果
+            // 因为当前 controller 被其他 action 使用过，所以在运行 Layout() 之前，必须重新 Init 初始化
+            controller.utils.initActionResult();
             controller.Layout();
 
             return controller.utils.getActionResult();
@@ -200,7 +228,6 @@ namespace wojilu.Web.Mvc.Utils {
 
             return layoutController.utils.getActionResult();
         }
-
 
     }
 

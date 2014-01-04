@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,14 +26,14 @@ using wojilu.ORM.Operation;
 namespace wojilu.ORM {
 
     /// <summary>
-    /// Êı¾İ·ÃÎÊ¹¤¾ß
+    /// æ•°æ®è®¿é—®å·¥å…·
     /// </summary>
     internal class ObjectDB {
 
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( ObjectDB ) );
 
-        public static IEntity FindById( int id, ObjectInfo state ) {
+        public static IEntity FindById( long id, ObjectInfo state ) {
             return FindByIdOperation.FindById( id, state );
         }
 
@@ -77,7 +77,7 @@ namespace wojilu.ORM {
             return DeleteOperation.Delete( obj );
         }
 
-        public static int Delete( Type t, int id ) {
+        public static int Delete( Type t, long id ) {
             return DeleteOperation.Delete( t, id );
         }
 

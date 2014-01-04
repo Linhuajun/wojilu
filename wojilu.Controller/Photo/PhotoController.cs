@@ -19,30 +19,30 @@ namespace wojilu.Web.Controller.Photo {
     [App( typeof( PhotoApp ) )]
     public class PhotoController : ControllerBase {
 
-        public IPhotoPostService postService { get; set; }
-        public IPhotoAlbumService albumService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IPhotoAlbumService albumService { get; set; }
 
         public PhotoController() {
             postService = new PhotoPostService();
             albumService = new PhotoAlbumService();
         }
 
-        public void Index() {
-            WebUtils.pageTitle( this, ctx.app.Name );
+        public virtual void Index() {
+            ctx.Page.Title = ctx.app.Name;
             List<PhotoAlbum> albumList = albumService.GetListByApp( ctx.app.Id );
             bindAlbumList( albumList );
         }
 
 
-        public void Album( int id ) {
+        public virtual void Album( long id ) {
             bindPhotoPosts( id );
         }
 
-        public void ViewBig( int id ) {
+        public virtual void ViewBig( long id ) {
             bindPhotoPosts( id );
         }
 
-        public void Slider( int id ) {
+        public virtual void Slider( long id ) {
 
             HideLayout( typeof( wojilu.Web.Controller.LayoutController ) );
             HideLayout( typeof( wojilu.Web.Controller.Photo.LayoutController ) );
@@ -79,11 +79,17 @@ namespace wojilu.Web.Controller.Photo {
             }
         }
 
-        private void bindPhotoPosts( int id ) {
+        private void bindPhotoPosts( long id ) {
             PhotoAlbum album = albumService.GetByIdWithDefault( id, ctx.owner.Id );
-            WebUtils.pageTitle( this, album.Name );
+
+            String albumName = "";
+            if (album != null) {
+                albumName = album.Name;
+            }
+
+            ctx.Page.Title = albumName;
             set( "appLink", to( Index ) );
-            set( "album.Name", album.Name );
+            set( "album.Name", albumName );
 
             DataPage<PhotoPost> postPage = postService.GetPostPageByAlbum( ctx.owner.Id, ctx.app.Id, id, 12 );
             List<PostVo> volist = PostVo.Fill( postPage.Results );

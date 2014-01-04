@@ -18,19 +18,21 @@ using System.Collections.Generic;
 using System.Text;
 using wojilu.Members.Interface;
 using wojilu.Common;
+using wojilu.Web.Mvc.Attr;
 
 namespace wojilu.Web.Mvc {
 
     /// <summary>
     /// 通用链接生成工具
     /// </summary>
+    [MvcLink]
     public class Link {
 
         public static String To( aAction action ) {
             return To( null, action, -1 );
         }
 
-        public static String To( aActionWithId action, int id ) {
+        public static String To( aActionWithId action, long id ) {
             return To( null, action, id, -1 );
         }
 
@@ -38,17 +40,21 @@ namespace wojilu.Web.Mvc {
             return To( null, controller, action, -1 );
         }
 
-        public static String To( String controller, String action, int id ) {
+        public static String To( String controller, String action, long id ) {
             return To( null, controller, action, id );
         }
 
         //-------------------------------------------------------------
 
-        public static String To( IMember member, String controller, String action, int id ) {
+        public static String To( IMember member, String controller, String action, long id ) {
             return To( member, controller, action, id, -1 );
         }
 
-        public static String To( IMember member, String controller, String action, int id, int appId ) {
+        public static String To( IMember member, String controller, String action, long id, long appId ) {
+
+            String x = LinkMap.To( member, controller, action, id, appId );
+            if (x != null) return x;  
+
             String ownerPath = LinkHelper.GetMemberPathPrefix( member );
             return LinkHelper.AppendApp( appId, controller, action, id, ownerPath );
         }
@@ -57,21 +63,33 @@ namespace wojilu.Web.Mvc {
             return To( member, LinkHelper.GetController( action.Target.GetType() ), action.Method.Name, -1, -1 );
         }
 
-        public static String To( IMember member, aAction action, int appId ) {
+        public static String To( IMember member, aAction action, long appId ) {
             return To( member, LinkHelper.GetController( action.Target.GetType() ), action.Method.Name, -1, appId );
         }
 
-        public static String To( IMember member, aActionWithId action, int id ) {
+        public static String To( IMember member, aActionWithId action, long id ) {
+
+            String x = LinkMap.To( member, action, id, 0 );
+            if (x != null) return x;    
+
             String ownerPath = LinkHelper.GetMemberPathPrefix( member );
             return LinkHelper.AppendApp( -1, LinkHelper.GetController( action.Target.GetType() ), action.Method.Name, id, ownerPath );
         }
 
-        public static String To( IMember member, aActionWithId action, int id, int appId ) {
+        public static String To( IMember member, aActionWithId action, long id, long appId ) {
+
+            String x = LinkMap.To( member, action, id, appId );
+            if (x != null) return x;          
+
             String ownerPath = LinkHelper.GetMemberPathPrefix( member );
             return LinkHelper.AppendApp( appId, LinkHelper.GetController( action.Target.GetType() ), action.Method.Name, id, ownerPath );
         }
 
-        public static String To( String memberType, String memberUrl, aActionWithId action, int id, int appId ) {
+        public static String To( String memberType, String memberUrl, aActionWithId action, long id, long appId ) {
+
+            String x = LinkMap.To( memberType, memberUrl, action, id, appId );
+            if (x != null) return x;  
+
             String ownerPath = LinkHelper.GetMemberPathPrefix( memberType, memberUrl );
             return LinkHelper.AppendApp( appId, LinkHelper.GetController( action.Target.GetType() ), action.Method.Name, id, ownerPath );
         }
@@ -107,7 +125,7 @@ namespace wojilu.Web.Mvc {
                 if (memberType.Equals( ConstString.SiteTypeFullName )) return LinkHelper.GetRootPath();
                 if (memberType.Equals( ConstString.UserTypeFullName )) return ToUser( memberUrl );
                 String ownerPath = MemberPath.GetPath( strUtil.GetTypeName( memberType ) );
-                return strUtil.Append( strUtil.Join( strUtil.Join( LinkHelper.AppPath, ownerPath ), memberUrl ), MvcConfig.Instance.UrlExt );
+                return strUtil.Append( LinkHelper.Join( LinkHelper.Join( LinkHelper.AppPath, ownerPath ), memberUrl ), MvcConfig.Instance.UrlExt );
             }
         }
 
@@ -118,10 +136,10 @@ namespace wojilu.Web.Mvc {
         /// <returns></returns>
         public static String ToUser( String friendUrl ) {
             if (LinkHelper.IsMemberSubdomain( ConstString.UserTypeFullName )) {
-                return "http://" + friendUrl + "." + SystemInfo.HostNoSubdomain;
+                return sys.Url.SchemeStr + friendUrl + "." + SystemInfo.HostNoSubdomain;
             }
             else {
-                return strUtil.Append( strUtil.Join( LinkHelper.AppPath, friendUrl ), MvcConfig.Instance.UrlExt );
+                return strUtil.Append( LinkHelper.Join( LinkHelper.AppPath, friendUrl ), MvcConfig.Instance.UrlExt );
             }
         }
 

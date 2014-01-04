@@ -35,11 +35,20 @@ _ReSharper*/
 
 #static html files
 wojilu.Web/html/
+wojilu.Web/cms*/
+wojilu.Web/*/default.html
+wojilu.Web/default.html
+wojilu.Web/*/index.htm
+wojilu.Web/index.htm
+
 #wojilu temp files
 _wtemp/
 
 wojilu.OpenSample/framework/log/
+
 wojilu.cms.web/framework/log/
+wojilu.cms.web/static/upload/image/
+wojilu.cms.web/static/upload/wimg/
 
 #wojilu.Web/static/upload/
 wojilu.Web/static/upload/face/
@@ -54,6 +63,7 @@ wojilu.Web/framework/cache/
 wojilu.Web/framework/index/
 wojilu.Web/framework/config/
 wojilu.Web/framework/data/
+wojilu.Web/framework/data_backup*/
 
 !wojilu.Web/static/upload/face/guest.jpg
 !wojilu.Web/static/upload/face/guest_m.jpg
@@ -61,6 +71,8 @@ wojilu.Web/framework/data/
 !wojilu.Web/static/upload/face/guest_s.jpg
 !wojilu.Web/static/upload/grouplogo/group.jpg
 !wojilu.Web/static/upload/grouplogo/group_s.jpg
+
+wojilu.Web/_autocode/
 
 
 

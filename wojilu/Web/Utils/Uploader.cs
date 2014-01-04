@@ -33,11 +33,6 @@ namespace wojilu.Web.Utils {
         private static readonly ILog logger = LogManager.GetLogger( typeof( Uploader ) );
 
         /// <summary>
-        /// 默认生成缩略图的类型
-        /// </summary>
-        public static ThumbnailType[] ThumbTypes = new ThumbnailType[] { ThumbnailType.Small, ThumbnailType.Medium };
-
-        /// <summary>
         /// 判断上传文件是否是图片
         /// </summary>
         /// <param name="postedFile"></param>
@@ -72,22 +67,12 @@ namespace wojilu.Web.Utils {
         }
 
         /// <summary>
-        /// 保存群组 logo
-        /// </summary>
-        /// <param name="postedFile"></param>
-        /// <param name="groupUrlName"></param>
-        /// <returns></returns>
-        public static Result SaveGroupLogo( HttpFile postedFile, String groupUrlName ) {
-            return SaveImg( sys.Path.DiskGroupLogo, postedFile, groupUrlName, config.Instance.Group.LogoWidth, config.Instance.Group.LogoHeight );
-        }
-
-        /// <summary>
         /// 保存网站 logo
         /// </summary>
         /// <param name="postedFile"></param>
         /// <returns></returns>
         public static Result SaveSiteLogo( HttpFile postedFile ) {
-            return SaveImg( sys.Path.DiskPhoto, postedFile, "logo", config.Instance.Site.LogoWidth, config.Instance.Site.LogoHeight );
+            return SaveImg( sys.Path.DiskPhoto, postedFile, "logo", config.Instance.Site.LogoWidth, config.Instance.Site.LogoHeight, SaveThumbnailMode.Cut );
         }
 
         /// <summary>
@@ -147,7 +132,7 @@ namespace wojilu.Web.Utils {
         /// <returns></returns>
         public static Result SaveImg( HttpFile postedFile ) {
 
-            return SaveImg( postedFile, ThumbTypes );
+            return SaveImg( postedFile, ThumbConfig.GetPhotoConfig() );
         }
 
         /// <summary>
@@ -156,11 +141,11 @@ namespace wojilu.Web.Utils {
         /// <param name="postedFile"></param>
         /// <param name="arrThumbType"></param>
         /// <returns></returns>
-        public static Result SaveImg( HttpFile postedFile, ThumbnailType[] arrThumbType ) {
+        public static Result SaveImg( HttpFile postedFile, Dictionary<String, ThumbInfo> arrThumbType ) {
 
             Result result = new Result();
 
-            checkUploadPic( postedFile, result );
+            CheckUploadPic( postedFile, result );
             if (result.HasErrors) {
                 logger.Info( result.ErrorsText );
                 return result;
@@ -173,9 +158,15 @@ namespace wojilu.Web.Utils {
             try {
                 postedFile.SaveAs( filename );
 
-                foreach (ThumbnailType ttype in arrThumbType) {
-                    saveThumbSmall( filename, ttype );
+                foreach (KeyValuePair<String, ThumbInfo> kv in arrThumbType) {
+                    Boolean isValid = SaveThumbSingle( filename, kv.Key, kv.Value );
+                    if (!isValid) {
+                        file.Delete( filename );
+                        result.Add( "format error: " + postedFile.FileName );
+                        return result;
+                    }
                 }
+
 
             }
             catch (Exception exception) {
@@ -187,27 +178,35 @@ namespace wojilu.Web.Utils {
             return result;
         }
 
-        private static void saveThumbSmall( String filename, ThumbnailType ttype ) {
+        public static Boolean SaveThumbSingle( String filename, String suffix, ThumbInfo x ) {
+            try {
 
-            int x = 0;
-            int y = 0;
-            SaveThumbnailMode sm = SaveThumbnailMode.Auto;
+                using (Image img = Image.FromFile( filename )) {
 
-            if (ttype == ThumbnailType.Small) {
-                x = config.Instance.Site.PhotoThumbWidth;
-                y = config.Instance.Site.PhotoThumbHeight;
-                sm = SaveThumbnailMode.Cut;
+                    String destPath = Img.GetThumbPath( filename, suffix );
+                    if (file.Exists( destPath )) file.Delete( destPath );
+
+                    if (img.Size.Width <= x.Width && img.Size.Height <= x.Height) {
+                        File.Copy( filename, destPath );
+                    }
+                    else if (img.RawFormat.Equals( System.Drawing.Imaging.ImageFormat.Gif ) && ImageAnimator.CanAnimate( img )) {
+                        File.Copy( filename, destPath );
+                    }
+                    else {
+                        Img.SaveThumbnail( filename, destPath, x.Width, x.Height, x.Mode );
+                    }
+                }
+
+                return true;
             }
-            else if (ttype == ThumbnailType.Medium) {
-                x = config.Instance.Site.PhotoThumbWidthMedium;
-                y = config.Instance.Site.PhotoThumbHeightMedium;
+            catch (OutOfMemoryException ex) {
+                logger.Error( "file format error: " + filename );
+                return false;
             }
-            else if (ttype == ThumbnailType.Big) {
-                x = config.Instance.Site.PhotoThumbWidthBig;
-                y = config.Instance.Site.PhotoThumbHeightBig;
-            }
+        }
 
 
+        private static void saveThumbImagePrivate( String filename, ThumbnailType ttype, int x, int y, SaveThumbnailMode sm ) {
             using (Image img = Image.FromFile( filename )) {
                 if (img.Size.Width <= x && img.Size.Height <= y) {
                     File.Copy( filename, Img.GetThumbPath( filename, ttype ) );
@@ -219,16 +218,8 @@ namespace wojilu.Web.Utils {
         }
 
 
-        private static Boolean shouldMakeThumb( String ofile ) {
-            using (Image img = Image.FromFile( ofile )) {
-                if (img.Size.Width <= 500 && img.Size.Height <= 500) return false;
-            }
-            return true;
-        }
-
-
         /// <summary>
-        /// 上传图片(自定义保存路径)
+        /// 上传图片(自定义保存路径)，同时生成最小的缩略图
         /// </summary>
         /// <param name="uploadPath">保存路径(相对路径)</param>
         /// <param name="postedFile">HttpFile</param>
@@ -236,20 +227,47 @@ namespace wojilu.Web.Utils {
         /// <param name="width">宽度</param>
         /// <param name="height">高度</param>
         /// <returns></returns>
-        public static Result SaveImg( String uploadPath, HttpFile postedFile, String picName, int width, int height ) {
+        public static Result SaveImg( String uploadPath, HttpFile postedFile, String picName, int width, int height, SaveThumbnailMode mode ) {
             logger.Info( "uploadPath : " + uploadPath );
             logger.Info( "picName : " + picName );
             Result result = new Result();
 
-            checkUploadPic( postedFile, result );
+            CheckUploadPic( postedFile, result );
             if (result.HasErrors) return result;
 
             String str = PathHelper.Map( uploadPath );
             String str2 = picName + "." + Img.GetImageExt( postedFile.ContentType );
             String filename = Path.Combine( str, str2 );
             try {
+
+                String oldFile = null;
+                if (file.Exists( filename )) {
+                    oldFile = filename + "." + Guid.NewGuid() + Path.GetExtension( filename );
+                    file.Move( filename, oldFile );
+                }
+
                 postedFile.SaveAs( filename );
-                Img.SaveThumbnail( filename, Img.GetThumbPath( filename ), width, height, SaveThumbnailMode.Cut );
+
+                try {
+                    saveThumbImagePrivate( filename, ThumbnailType.Small, width, height, mode );
+
+                    if (strUtil.HasText( oldFile )) {
+                        file.Delete( oldFile );
+                    }
+                }
+                catch (OutOfMemoryException ex) {
+
+                    file.Delete( filename );
+                    if (strUtil.HasText( oldFile )) {
+                        file.Move( oldFile, filename );
+                    }
+
+                    String msg = "file format error: " + picName;
+                    logger.Error( msg );
+                    result.Add( msg );
+                    return result;
+                }
+
             }
             catch (Exception exception) {
                 logger.Error( lang.get( "exPhotoUploadError" ) + ":" + exception.Message );
@@ -259,6 +277,8 @@ namespace wojilu.Web.Utils {
             result.Info = Path.GetFileName( Img.GetThumbPath( filename ) );
             return result;
         }
+
+
 
 
         private static void checkUploadFile( HttpFile postedFile, Result errors ) {
@@ -281,7 +301,7 @@ namespace wojilu.Web.Utils {
             }
 
             // 检查文件格式
-            if (Uploader.isAllowedFile( postedFile ) == false) {
+            if (Uploader.IsAllowedFile( postedFile ) == false) {
                 errors.Add( lang.get( "exUploadType" ) + ":" + postedFile.FileName + "(" + postedFile.ContentType + ")" );
             }
 
@@ -292,7 +312,7 @@ namespace wojilu.Web.Utils {
         /// </summary>
         /// <param name="postedFile"></param>
         /// <param name="errors"></param>
-        public static void checkUploadPic( HttpFile postedFile, Result errors ) {
+        public static void CheckUploadPic( HttpFile postedFile, Result errors ) {
 
             if (postedFile == null) {
                 errors.Add( lang.get( "exPlsUpload" ) );
@@ -311,23 +331,47 @@ namespace wojilu.Web.Utils {
                 return;
             }
 
-            // TODO: (flash upload) application/octet-stream 
-            //if (postedFile.ContentType.ToLower().IndexOf( "image" ) < 0) {
-            //    errors.Add( lang.get( "exPhotoFormatTip" ) );
-            //    return;
-            //}
-
             // 检查文件格式
-            if (Uploader.isAllowedPic( postedFile ) == false) {
+            if (Uploader.IsAllowedPic( postedFile ) == false) {
                 errors.Add( lang.get( "exUploadType" ) + ":" + postedFile.FileName + "(" + postedFile.ContentType + ")" );
             }
         }
 
-        private static Boolean isAllowedFile( HttpFile pfile ) {
+        /// <summary>
+        /// 是否允许的格式
+        /// </summary>
+        /// <param name="pfile"></param>
+        /// <returns></returns>
+        private static Boolean IsAllowedFile( HttpFile pfile ) {
 
             String[] types = { "zip", "7z", "rar" };
             String[] cfgTypes = config.Instance.Site.UploadFileTypes;
             if (cfgTypes != null && cfgTypes.Length > 0) types = cfgTypes;
+
+            if (containsChar( cfgTypes, "*" )) return true;
+
+            foreach (String ext in types) {
+                if (strUtil.IsNullOrEmpty( ext )) continue;
+                String extWithDot = ext.StartsWith( "." ) ? ext : "." + ext;
+                if (extWithDot.Equals( ".*" )) return true;
+                if (strUtil.EqualsIgnoreCase( Path.GetExtension( pfile.FileName ), extWithDot )) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 是否允许的格式
+        /// </summary>
+        /// <param name="pfile"></param>
+        /// <returns></returns>
+        public static Boolean IsAllowedPic( HttpFile pfile ) {
+
+            String[] types = { "jpg", "gif", "bmp", "png", "jpeg" };
+            String[] cfgTypes = config.Instance.Site.UploadPicTypes;
+            if (cfgTypes != null && cfgTypes.Length > 0) types = cfgTypes;
+
+            if (containsChar( cfgTypes, "*" )) return true;
 
             foreach (String ext in types) {
                 if (strUtil.IsNullOrEmpty( ext )) continue;
@@ -338,16 +382,10 @@ namespace wojilu.Web.Utils {
             return false;
         }
 
-        private static Boolean isAllowedPic( HttpFile pfile ) {
+        private static bool containsChar( string[] cfgTypes, string charSingle ) {
 
-            String[] types = { "jpg", "gif", "bmp", "png", "jpeg" };
-            String[] cfgTypes = config.Instance.Site.UploadPicTypes;
-            if (cfgTypes != null && cfgTypes.Length > 0) types = cfgTypes;
-
-            foreach (String ext in types) {
-                if (strUtil.IsNullOrEmpty( ext )) continue;
-                String extWithDot = ext.StartsWith( "." ) ? ext : "." + ext;
-                if (strUtil.EqualsIgnoreCase( Path.GetExtension( pfile.FileName ), extWithDot )) return true;
+            foreach (String ext in cfgTypes) {
+                if (ext == charSingle) return true;
             }
 
             return false;

@@ -6,17 +6,18 @@ using System;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
-using wojilu.Members.Groups.Domain;
-using wojilu.Members.Users.Domain;
-using wojilu.Members.Users.Service;
-using wojilu.Common.Msg.Service;
-using wojilu.Common.Feeds.Service;
-using wojilu.Common.Feeds.Domain;
+
 using wojilu.Common.Msg.Interface;
-using wojilu.Members.Users.Interface;
-using wojilu.Common.Feeds.Interface;
+using wojilu.Common.Msg.Service;
+
+using wojilu.Members.Groups.Domain;
 using wojilu.Members.Groups.Interface;
-using wojilu.Serialization;
+using wojilu.Members.Users.Domain;
+using wojilu.Members.Users.Interface;
+using wojilu.Members.Users.Service;
+using wojilu.Common.Microblogs.Service;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Microblogs;
 
 namespace wojilu.Members.Groups.Service {
 
@@ -24,19 +25,15 @@ namespace wojilu.Members.Groups.Service {
 
         public virtual IMessageService msgService { get; set; }
         public virtual IUserService userService { get; set; }
-        public virtual IFeedService feedService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
 
         public MemberGroupService() {
             msgService = new MessageService();
             userService = new UserService();
-            feedService = new FeedService();
+            microblogService = new MicroblogService();
         }
 
-        public virtual Result JoinGroup( User user, Group group ) {
-            return JoinGroup( user, group, "" );
-        }
-
-        public virtual Result JoinGroup( User user, Group group, String joinReason ) {
+        public virtual Result JoinGroup( User user, Group group, String joinReason, String ip ) {
 
             GroupUser gu = db.find<GroupUser>( "Member.Id=" + user.Id + " and Group.Id=" + group.Id ).first();
 
@@ -46,6 +43,7 @@ namespace wojilu.Members.Groups.Service {
                 gu.Member = user;
                 gu.Group = group;
                 gu.Msg = joinReason;
+                gu.Ip = ip;
 
                 gu.Status = GroupRole.GetInitRoleByGroup( group );
 
@@ -78,7 +76,7 @@ namespace wojilu.Members.Groups.Service {
         }
 
         // 直接加为群组成功，不用审核
-        public virtual Result JoinGroupDone( User user, Group group, String joinReason ) {
+        public virtual Result JoinGroupDone( User user, Group group, String joinReason, String ip ) {
 
             GroupUser gu = db.find<GroupUser>( "Member.Id=" + user.Id + " and Group.Id=" + group.Id ).first();
 
@@ -90,6 +88,8 @@ namespace wojilu.Members.Groups.Service {
                 gu.Member = user;
                 gu.Group = group;
                 gu.Msg = joinReason;
+                gu.Ip = ip;
+
                 result = db.insert( gu );
             }
             else {
@@ -106,7 +106,7 @@ namespace wojilu.Members.Groups.Service {
 
         private void afterJoinDone( User user, Group group, String joinReason, GroupUser gu ) {
             recountMembers( group ); // 重新统计成员数量
-            addFeedInfo( gu ); // 将信息加入用户的新鲜事
+            addFeedInfo( gu, gu.Ip ); // 将信息加入用户的新鲜事
             sendOfficerMsg( gu, user, joinReason ); // 告知群组管理员
         }
 
@@ -120,7 +120,7 @@ namespace wojilu.Members.Groups.Service {
                 body += "<br/>加入信息：" + joinReason;
             }
 
-            List<User> officerList = GetOfficer( group.Id );
+            List<User> officerList = GetOfficer( @group.Id );
             foreach (User officer in officerList) {
                 msgService.SiteSend( msg, body, officer );
             }
@@ -137,7 +137,7 @@ namespace wojilu.Members.Groups.Service {
                 body += "<br/>申请留言：" + joinReason;
             }
 
-            List<User> officerList = GetOfficer( group.Id );
+            List<User> officerList = GetOfficer( @group.Id );
 
             foreach (User officer in officerList) {
                 msgService.SiteSend( msg, body, officer );
@@ -151,24 +151,42 @@ namespace wojilu.Members.Groups.Service {
             return strUtil.Join( groupUrlWithoutExt, "/Groups/Admin/Main/Members" + MvcConfig.Instance.UrlExt );
         }
 
-        private void addFeedInfo( GroupUser relation ) {
-            Feed feed = new Feed();
-            feed.Creator = relation.Member;
-            feed.DataType = typeof( Group ).FullName;
+        private void addFeedInfo( GroupUser relation, String ip ) {
 
-            feed.TitleTemplate = "{*actor*} " + lang.get( "joinedGroup" ) + " {*group*}";
-            feed.TitleData = getTitleData( relation.Group );
-            feedService.publishUserAction( feed );
+            User user = relation.Member;
+            Group g = relation.Group;
+
+            String msg = GetFeedMsgByJoin( g );
+
+            microblogService.AddSimple( relation.Member, msg, typeof( Group ).FullName, relation.Group.Id, ip );
+        }
+
+        public virtual String GetFeedMsgByJoin( Group g ) {
+            return GetFeedMsg( g, "加入了小组" );
+        }
+
+        public virtual String GetFeedMsgByCreate( Group g ) {
+            return GetFeedMsg( g, "创建了小组" );
+        }
+
+        public virtual String GetFeedMsg( Group g, String actionName ) {
+
+            String summary = "<span class=\"feed-item-label\">小组简介</span>：" + g.Description;
+
+            String pic = g.HasLogo() ? g.LogoSmall : null;
+            String msg = MbTemplate.GetFeed( actionName, g.Name, Link.ToMember( g ), summary, pic );
+
+            return string.Format( "<div class=\"feed-item-group\">{0}</div>", msg );
         }
 
         private String getTitleData( Group g ) {
             String lnk = string.Format( "<a href=\"{0}\">{1}</a>", Link.ToMember( g ), g.Name );
             Dictionary<string, object> dic = new Dictionary<string, object>();
             dic.Add( "group", lnk );
-            return JSON.DicToString( dic );
+            return Json.ToString( dic );
         }
 
-        public virtual void JoinCreateGroup( User user, Group group ) {
+        public virtual void JoinCreateGroup( User user, Group group, String ip ) {
 
             int users = db.find<GroupUser>( "Member.Id=" + user.Id + " and Group.Id=" + group.Id + " and IsFounder=1" ).count();
             if (users > 0) return;
@@ -179,9 +197,20 @@ namespace wojilu.Members.Groups.Service {
             gu.Group = group;
             gu.IsFounder = 1;
             gu.Status = GroupRole.Administrator.Id;
+            gu.Ip = ip;
+
             db.insert( gu );
 
             recountMembers( group );
+
+            addFeedInfoByCreate( user, group, ip );
+        }
+
+        private void addFeedInfoByCreate( User user, Group g, String ip ) {
+
+            String msg = GetFeedMsgByCreate( g );
+
+            microblogService.AddSimple( user, msg, typeof( Group ).FullName, g.Id, ip );
         }
 
         public virtual void ApproveUser( Group group, String userIds ) {
@@ -189,7 +218,7 @@ namespace wojilu.Members.Groups.Service {
             int[] ids = cvt.ToIntArray( userIds );
             foreach (int userId in ids) {
 
-                GroupUser gu = db.find<GroupUser>( getCondition( group.Id, userId ) ).first();
+                GroupUser gu = db.find<GroupUser>( getCondition( @group.Id, userId ) ).first();
                 if (gu == null) continue;
 
                 // 过滤掉已有成员
@@ -206,7 +235,7 @@ namespace wojilu.Members.Groups.Service {
                 User receiver = userService.GetById( userId );
                 msgService.SiteSend( msg, body, receiver );
 
-                addFeedInfo( gu );
+                addFeedInfo( gu, gu.Ip );
             }
 
             recountMembers( group );
@@ -219,7 +248,7 @@ namespace wojilu.Members.Groups.Service {
             int[] ids = cvt.ToIntArray( userIds );
             foreach (int userId in ids) {
 
-                GroupUser gu = db.find<GroupUser>( getCondition( group.Id, userId ) ).first();
+                GroupUser gu = db.find<GroupUser>( getCondition( @group.Id, userId ) ).first();
                 if (gu == null) continue;
 
                 if (gu.Status == GroupRole.Administrator.Id) continue;
@@ -244,7 +273,7 @@ namespace wojilu.Members.Groups.Service {
             int[] ids = cvt.ToIntArray( userIds );
             foreach (int userId in ids) {
 
-                GroupUser gu = db.find<GroupUser>( getCondition( group.Id, userId ) ).first();
+                GroupUser gu = db.find<GroupUser>( getCondition( @group.Id, userId ) ).first();
                 if (gu == null) continue;
 
                 if (gu.Status != GroupRole.Administrator.Id) continue;
@@ -270,7 +299,7 @@ namespace wojilu.Members.Groups.Service {
             int[] ids = cvt.ToIntArray( userIds );
             foreach (int userId in ids) {
 
-                GroupUser gu = db.find<GroupUser>( getCondition( group.Id, userId ) ).first();
+                GroupUser gu = db.find<GroupUser>( getCondition( @group.Id, userId ) ).first();
                 if (gu == null || gu.Status == GroupRole.Administrator.Id) continue;
 
                 db.delete( gu );
@@ -287,7 +316,7 @@ namespace wojilu.Members.Groups.Service {
             }
 
             if (relation.Status == GroupRole.Administrator.Id) {
-                List<User> officers = GetOfficer( group.Id );
+                List<User> officers = GetOfficer( @group.Id );
                 if (officers.Count == 1) {
                     return new Result( lang.get( "exQuitGroup" ) );
                 }
@@ -308,7 +337,7 @@ namespace wojilu.Members.Groups.Service {
                 body += "<br/>退出原因：" + quitReason;
             }
 
-            List<User> officerList = GetOfficer( group.Id );
+            List<User> officerList = GetOfficer( @group.Id );
             foreach (User officer in officerList) {
                 msgService.SiteSend( msg, body, officer );
             }
@@ -317,7 +346,7 @@ namespace wojilu.Members.Groups.Service {
 
         //----------------------------------------------------------------------------------------------------------------------
 
-        public virtual List<User> GetNewMember( int groupId, int count ) {
+        public virtual List<User> GetNewMember(long groupId, int count) {
             List<GroupUser> list = db.find<GroupUser>( getMembersCondition( groupId ) ).list( count );
             List<User> results = new List<User>();
             foreach (GroupUser mgr in list) {
@@ -326,7 +355,7 @@ namespace wojilu.Members.Groups.Service {
             return results;
         }
 
-        public virtual List<User> GetOfficer( int groupId ) {
+        public virtual List<User> GetOfficer(long groupId) {
             List<GroupUser> mgrList = db.find<GroupUser>( "Group.Id=" + groupId + " and Status=" + GroupRole.Administrator.Id ).list();
             List<User> results = new List<User>();
             foreach (GroupUser mgr in mgrList) results.Add( mgr.Member );
@@ -346,7 +375,7 @@ namespace wojilu.Members.Groups.Service {
             return populate( list );
         }
 
-        public virtual String GetJoinedGroupIds( int userId ) {
+        public virtual string GetJoinedGroupIds(long userId) {
 
             List<GroupUser> lists = GroupUser.find( myGroupCondition( userId ) + " order by LastUpdateTime desc" ).list();
             String ids = "";
@@ -357,7 +386,7 @@ namespace wojilu.Members.Groups.Service {
             return ids.TrimEnd( ',' );
         }
 
-        public virtual List<Group> GetJoinedGroup( int userId, int count ) {
+        public virtual List<Group> GetJoinedGroup(long userId, int count) {
 
             if (count <= 0) count = 10;
 
@@ -365,15 +394,12 @@ namespace wojilu.Members.Groups.Service {
             return populate( list );
         }
 
-        public virtual DataPage<Group> GetGroupByUser( int userId ) {
+        public virtual DataPage<Group> GetGroupByUser(long userId) {
 
             DataPage<GroupUser> lists = db.findPage<GroupUser>( myGroupCondition( userId ) + " order by LastUpdateTime desc" );
             List<Group> groups = populate( lists.Results );
 
-            DataPage<Group> results = new DataPage<Group>();
-            results.CopyStats( lists );
-            results.Results = groups;
-            return results;
+            return lists.Convert<Group>( groups );
         }
 
         private List<Group> populate( List<GroupUser> lists ) {
@@ -385,7 +411,7 @@ namespace wojilu.Members.Groups.Service {
             return results;
         }
 
-        public virtual List<Group> GetGroupByFriends( int userId, int count ) {
+        public virtual List<Group> GetGroupByFriends(long userId, int count) {
 
             FriendService fs = new FriendService();
             String fIds = fs.FindFriendsIds( userId );
@@ -422,63 +448,63 @@ namespace wojilu.Members.Groups.Service {
             return false;
         }
 
-        public virtual DataPage<GroupUser> GetMembersAll( int gid ) {
+        public virtual DataPage<GroupUser> GetMembersAll(long gid) {
             return db.findPage<GroupUser>( "Group.Id=" + gid );
         }
 
-        public virtual DataPage<GroupUser> GetMembersAll( int gid, int roleId ) {
+        public virtual DataPage<GroupUser> GetMembersAll(long gid, long roleId) {
             return db.findPage<GroupUser>( "Group.Id=" + gid + " and Status=" + roleId );
         }
 
-        public virtual DataPage<GroupUser> GetMembersApproved( int gid ) {
+        public virtual DataPage<GroupUser> GetMembersApproved(long gid) {
             return db.findPage<GroupUser>( getMembersCondition( gid ) );
         }
 
         //--------------------------------------------------------------------------------
 
-        public virtual Boolean IsGroupFounder( int userId, int groupId ) {
+        public virtual bool IsGroupFounder(long userId, long groupId) {
             GroupUser relation = db.find<GroupUser>( getCondition( groupId, userId ) ).first();
             return relation != null && relation.IsFounder == 1;
         }
 
-        public virtual Boolean IsGroupMember( int userId, int groupId ) {
+        public virtual bool IsGroupMember(long userId, long groupId) {
             GroupUser relation = db.find<GroupUser>( getCondition( groupId, userId ) ).first();
             return relation != null && (relation.Status == GroupRole.Administrator.Id || relation.Status == GroupRole.Member.Id);
         }
 
-        public virtual Boolean IsGroupApproving( int userId, int groupId ) {
+        public virtual bool IsGroupApproving(long userId, long groupId) {
             GroupUser relation = db.find<GroupUser>( getCondition( groupId, userId ) ).first();
             return relation != null && relation.Status == GroupRole.Approving.Id;
         }
 
-        public virtual GroupRole GetUserRole( User user, int groupId ) {
+        public virtual GroupRole GetUserRole(User user, long groupId) {
             GroupUser relation = db.find<GroupUser>( getCondition( groupId, user.Id ) ).first();
             if (relation == null) return null;
             return GroupRole.GetById( relation.Status );
         }
 
-        public virtual int MemberStatus( User user, int groupId ) {
+        public virtual long MemberStatus( User user, long groupId ) {
             GroupUser relation = db.find<GroupUser>( getCondition( groupId, user.Id ) ).first();
             if (relation == null) return -1;
             return relation.Status;
         }
 
-        public virtual Boolean IsGroupOfficer( int userId, int groupId ) {
+        public virtual bool IsGroupOfficer(long userId, long groupId) {
             GroupUser relation = db.find<GroupUser>( getCondition( groupId, userId ) ).first();
             return relation != null && relation.Status == GroupRole.Administrator.Id;
         }
 
         //--------------------------------------------------------------------------------
 
-        private String getCondition( int groupId, int userId ) {
+        private string getCondition(long groupId, long userId) {
             return "Group.Id=" + groupId + " and Member.Id=" + userId;
         }
 
-        private String getMembersCondition( int groupId ) {
+        private string getMembersCondition(long groupId) {
             return "Group.Id=" + groupId + " and (Status=" + GroupRole.Member.Id + " or Status=" + GroupRole.Administrator.Id + ")";
         }
 
-        private String myGroupCondition( int userId ) {
+        private string myGroupCondition(long userId) {
             return "Member.Id=" + userId + " and (Status=" + GroupRole.Member.Id + " or Status=" + GroupRole.Administrator.Id + ")";
         }
 

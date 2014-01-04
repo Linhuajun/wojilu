@@ -34,12 +34,13 @@ namespace wojilu.Web.Controller.Blog.Caching {
             wojilu.Web.Controller.Admin.Apps.Blog.MainController m = new wojilu.Web.Controller.Admin.Apps.Blog.MainController();
             observe( m.Admin );
             observe( m.Delete );
-            observe( m.UnDelete );
 
+            wojilu.Web.Controller.Admin.Apps.Blog.TrashController trash = new wojilu.Web.Controller.Admin.Apps.Blog.TrashController();
+            observe( trash.UnDelete );
 
         }
 
-        public override void UpdateCache( MvcContext ctx ) {
+        public override void AfterAction( MvcContext ctx ) {
             CacheManager.GetApplicationCache().Remove( getCacheKey() );
         }
 

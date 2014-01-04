@@ -6,18 +6,21 @@ using System;
 using System.Collections.Generic;
 
 using wojilu.Web;
-using wojilu.Data;
-using wojilu.Serialization;
+
 using wojilu.DI;
-using wojilu.Members.Users.Service;
-using wojilu.Members.Users.Domain;
+using wojilu.Data;
+
+using wojilu.ORM;
+using wojilu.ORM.Caching;
+
 using wojilu.Common.Feeds.Domain;
 using wojilu.Common.Feeds.Interface;
-using wojilu.Members.Users.Interface;
 using wojilu.Common.Msg.Interface;
 using wojilu.Common.Msg.Service;
-using wojilu.ORM.Caching;
-using wojilu.ORM;
+
+using wojilu.Members.Users.Service;
+using wojilu.Members.Users.Domain;
+using wojilu.Members.Users.Interface;
 
 namespace wojilu.Common.Feeds.Service {
 
@@ -34,11 +37,11 @@ namespace wojilu.Common.Feeds.Service {
         }
 
 
-        public Feed GetById( int feedId ) {
+        public virtual Feed GetById(long feedId) {
             return Feed.findById( feedId );
         }
 
-        public IEntity GetData( int id ) {
+        public virtual IEntity GetData(long id) {
 
             Feed feed = GetById( id );
             IEntity result = ndb.findById( ObjectContext.Instance.TypeList[feed.DataType], feed.DataId );
@@ -46,28 +49,21 @@ namespace wojilu.Common.Feeds.Service {
             return result;
         }
 
-        //public Feed GetByIdWithComments( int id ) {
-        //    Feed feed = GetById( id );
-        //    List<FeedComment> comments = FeedComment.find( "RootId="+id + " order by Id" ).list();
-        //    feed.setComments( comments );
-        //    return feed;
-        //}
-
         //----------------------------------------------- 开放方法 --------------------------------------------------------------------
 
         public virtual TemplateBundle registerTemplateBundle( List<OneLineStoryTemplate> oneLineStoryTemplates, List<ShortStoryTemplate> shortStoryTemplates, List<ActionLink> actionLinks ) {
 
             TemplateBundle t = new TemplateBundle();
-            t.OneLineStoryTemplatesStr = SimpleJsonString.ConvertList( oneLineStoryTemplates );
-            t.ShortStoryTemplatesStr = SimpleJsonString.ConvertList( shortStoryTemplates );
-            t.ActionLinksStr = SimpleJsonString.ConvertList( actionLinks );
+            t.OneLineStoryTemplatesStr = Json.ToStringList( oneLineStoryTemplates );
+            t.ShortStoryTemplatesStr = Json.ToStringList( shortStoryTemplates );
+            t.ActionLinksStr = Json.ToStringList( actionLinks );
             db.insert( t );
 
             return t;
         }
 
 
-        public virtual TemplateBundle getRegisteredTemplateBundleByID( int id ) {
+        public virtual TemplateBundle getRegisteredTemplateBundleByID(long id) {
             return db.findById<TemplateBundle>( id );
         }
 
@@ -103,7 +99,7 @@ namespace wojilu.Common.Feeds.Service {
             feed.BodyGeneral = data.BodyGeneral;
         }
 
-        public virtual void publishUserAction( User creator, String dataType, int templateBundleId, String templateData, String bodyGeneral ) {
+        public virtual void publishUserAction(User creator, string dataType, long templateBundleId, string templateData, string bodyGeneral, string ip) {
 
             // 模板数据是 json 字符串类型；也就是 key-value 对
             // 除了自定义的键外，比如 {*gift*}, {*mood*}, {*score*}
@@ -172,20 +168,20 @@ namespace wojilu.Common.Feeds.Service {
 
         //----------------------------------------------- 内部方法 --------------------------------------------------------------------
 
-        public virtual List<Feed> GetUserFeeds( int count, int userId ) {
+        public virtual List<Feed> GetUserFeeds(int count, long userId) {
             if (count <= 0) count = 10;
             List<Feed> list = db.find<Feed>( "Creator.Id=" + userId + " " ).list( count );
             //mergeCommentsPrivate( list );
             return list;
         }
 
-        public virtual DataPage<Feed> GetByUser( int userId, String dataType ) {
+        public virtual DataPage<Feed> GetByUser(long userId, string dataType) {
             return GetByUser( userId, dataType, 20 );
         }
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( FeedService ) );
 
-        public virtual DataPage<Feed> GetByUser( int userId, String dataType, int pageSize ) {
+        public virtual DataPage<Feed> GetByUser(long userId, string dataType, int pageSize) {
 
             String ids = getFriendAndFollowingIds( userId );
 
@@ -239,7 +235,7 @@ namespace wojilu.Common.Feeds.Service {
         //--------------------------------------
 
 
-        private String getFriendAndFollowingIds( int userId ) {
+        private string getFriendAndFollowingIds(long userId) {
             String friendIds = friendService.FindFriendsIds( userId );
             String followingIds = followerService.GetFollowingIds( userId );
 
@@ -249,7 +245,7 @@ namespace wojilu.Common.Feeds.Service {
             return ids;
         }
 
-        public virtual Boolean IsUserIdValid( int userId, int ownerId ) {
+        public virtual bool IsUserIdValid(long userId, long ownerId) {
             if (userId == ownerId) return true;
             String ids = getFriendAndFollowingIds( ownerId );
             if (strUtil.IsNullOrEmpty( ids )) return false;
@@ -260,11 +256,11 @@ namespace wojilu.Common.Feeds.Service {
             return false;
         }
 
-        public virtual DataPage<Feed> GetUserSelf( int userId, String dataType ) {
+        public virtual DataPage<Feed> GetUserSelf(long userId, string dataType) {
             return GetUserSelf( userId, dataType, 20 );
         }
 
-        public virtual DataPage<Feed> GetUserSelf( int userId, String dataType, int pageSize ) {
+        public virtual DataPage<Feed> GetUserSelf(long userId, string dataType, int pageSize) {
             DataPage<Feed> list;
             if (strUtil.IsNullOrEmpty( dataType )) 
                 list = db.findPage<Feed>( "CreatorId=" + userId, pageSize );
@@ -278,7 +274,7 @@ namespace wojilu.Common.Feeds.Service {
 
             templateData = templateData.Trim().Replace( "\r", "" ).Replace( "\n", "" );
 
-            Dictionary<string, object> data = JSON.ToDictionary( templateData );
+            JsonObject data = Json.ParseJson( templateData );
 
             String result = template;
             String creatorKey = "{*actor*}";
@@ -295,6 +291,12 @@ namespace wojilu.Common.Feeds.Service {
 
         public virtual int GetTemplateBundleCount() {
             return db.count<TemplateBundle>();
+        }
+
+        public virtual void DeleteOne(long feedId) {
+            Feed feed = Feed.findById( feedId );
+            if (feed == null) return;
+            feed.delete();
         }
 
         // 每日清除过期feed
@@ -339,7 +341,7 @@ namespace wojilu.Common.Feeds.Service {
                 return db.findPage<Feed>( "", pageSize );
         }
 
-        public virtual DataPage<Feed> GetAll( int userId, String dataType, int pageSize ) {
+        public virtual DataPage<Feed> GetAll(long userId, string dataType, int pageSize) {
             if (strUtil.HasText( dataType ))
                 return db.findPage<Feed>( "CreatorId=" + userId + " and  DataType='" + dataType + "'", pageSize );
             else
@@ -348,7 +350,7 @@ namespace wojilu.Common.Feeds.Service {
 
 
 
-        public void SetCommentCount( IEntity target ) {
+        public virtual void SetCommentCount( IEntity target ) {
             Feed feed = Feed.find( "DataType=:dtype and DataId=:did" )
                .set( "dtype", target.GetType().FullName )
                .set( "did", target.Id )

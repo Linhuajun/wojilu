@@ -1,98 +1,87 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
-
 using System;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
 
-using wojilu.Common.AppBase.Interface;
+using wojilu.Common.AppBase;
+
 using wojilu.Apps.Content.Domain;
 using wojilu.Apps.Content.Interface;
 using wojilu.Apps.Content.Service;
-using wojilu.Web.Controller.Poll.Utils;
-using wojilu.Common.AppBase;
-using wojilu.Web.Controller.Content.Caching;
+using wojilu.Web.Controller.Content.Admin.Common;
+using wojilu.Web.Controller.Content.Utils;
+
 
 namespace wojilu.Web.Controller.Content.Admin.Section {
 
     [App( typeof( ContentApp ) )]
-    public partial class PollController : ControllerBase, IPageSection {
+    public partial class PollController : ControllerBase, IPageAdminSection {
 
-        public IContentPostService postService { get; set; }
-        public ContentPollService pollService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual ContentPollService pollService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
 
         public PollController() {
             postService = new ContentPostService();
             pollService = new ContentPollService();
+            sectionService = new ContentSectionService();
         }
 
-        public List<IPageSettingLink> GetSettingLink( int sectionId ) {
+        public virtual List<IPageSettingLink> GetSettingLink( long sectionId ) {
 
             List<IPageSettingLink> links = new List<IPageSettingLink>();
 
             PageSettingLink lnk = new PageSettingLink();
             lnk.Name = lang( "editSetting" );
-            lnk.Url = to( new SectionSettingController().Edit, sectionId );
+            lnk.Url = to( new SectionSettingController().EditCount, sectionId );
             links.Add( lnk );
 
             return links;
         }
 
-        public void SectionShow( int sectionId ) {
+        public virtual String GetEditLink( long postId ) {
+            return to( new Common.PollController().Edit, postId );
         }
 
-        public void AdminSectionShow( int sectionId ) {
-
-            ContentPoll c = pollService.GetRecentPoll( ctx.app.Id, sectionId );
-            bindPollSection( sectionId, c );
+        public virtual String GetSectionIcon( long sectionId ) {
+            return BinderUtils.iconPoll;
         }
 
-        public void List( int sectionId ) {
+        public virtual void AdminSectionShow( long sectionId ) {
 
-            DataPage<ContentPost> list = postService.GetPageBySection( sectionId );
-            bindPostList( list );
-        }
+            set( "section.Id", sectionId );
+            set( "addLink", to( new Admin.Common.PollController().Add, sectionId ) );
+            set( "listLink", to( new Admin.Common.PollController().AdminList, sectionId ) );
 
+            ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
+            List<ContentPost> posts = postService.GetBySection( sectionId, section.ListCount );
+            List<ContentPoll> polls = pollService.GetByTopicList( posts );
 
-        public void Add( int sectionId ) {
-            target( Create, sectionId );
-            set( "optionCount", 5 );
-            editor( "Question", "", "80px" );
-        }
+            IBlock block = getBlock( "list" );
 
-        [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
-            ContentPost post = postService.GetById( id, ctx.owner.Id );
-            if (post != null) {
-                postService.Delete( post );
+            foreach (ContentPost x in posts) {
+
+                ContentPoll p = pollService.GetByTopicId( polls, x.Id );
+
+                String editLink = string.Format( "<a href=\"{0}\" class=\"frmBox\"><img src=\"{1}edit.gif\" />{2}</a>",
+                    to( new Admin.Common.PollController().Edit, x.Id ),
+                    sys.Path.Img,
+                    lang( "edit" ) );
+                block.Set( "editLink", editLink );
+                ctx.SetItem( "poll", p );
+                block.Set( "pollHtml", loadHtml( new wojilu.Web.Controller.Content.Common.PollController().Detail ) );
+                block.Next();
             }
 
-            echoRedirect( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
         }
 
-        [HttpPost, DbTransaction]
-        public void Create( int sectionId ) {
-
-            ContentPoll poll = new PollValidator<ContentPoll>().Validate( ctx );
-            if (errors.HasErrors) {
-                run( Add, sectionId );
-                return;
-            }
-
-            Result result = pollService.CreatePoll( sectionId, poll );
-            if (result.HasErrors) {
-                echo( result.ErrorsHtml );
-                return;
-            }
-
-            ContentPost post = postService.GetById( poll.TopicId, ctx.owner.Id );
-
-            echoToParentPart( lang( "opok" ) );
-            HtmlHelper.SetCurrentPost( ctx, post );
+        public virtual List<ContentPost> GetSectionPosts( long sectionId ) {
+            ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
+            return postService.GetBySection( sectionId, section.ListCount );
         }
 
     }

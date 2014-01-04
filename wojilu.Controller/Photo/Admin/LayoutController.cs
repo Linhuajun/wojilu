@@ -20,14 +20,14 @@ namespace wojilu.Web.Controller.Photo.Admin {
 
     public class LayoutController : ControllerBase {
 
-        //public IUserAppService userAppService { get; set; }
-        //public IUserAppService siteAppService { get; set; }
-        //public IUserAppService memberAppService { get; set; }
+        //public virtual IUserAppService userAppService { get; set; }
+        //public virtual IUserAppService siteAppService { get; set; }
+        //public virtual IUserAppService memberAppService { get; set; }
 
         public LayoutController() {
         }
 
-        public IMemberAppService getUserAppService() {
+        public virtual IMemberAppService getUserAppService() {
             //if (ctx.owner.obj is Site) {
             //    return this.siteAppService;
             //}
@@ -42,7 +42,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
         public override void Layout() {
 
             set( "app.Name", getUserAppService().GetByApp( (IApp)ctx.app.obj ).Name );
-            set( "friendsPhotoLink", to( new PhotoController().Index, -1 ) );
+            set( "friendsPhotoLink", to( new PhotoController().Friends, -1 ) );
             set( "myLink", to( new MyController().My ) );
             set( "categoryAdmin", to( new AlbumController().List ) );
             set( "categoryAdd", to( new AlbumController().Add ) );

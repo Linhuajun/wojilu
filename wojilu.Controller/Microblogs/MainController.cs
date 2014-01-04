@@ -11,12 +11,13 @@ using wojilu.Common.Microblogs.Domain;
 using wojilu.Members.Users.Domain;
 using wojilu.Web.Mvc.Attr;
 using wojilu.Common.Tags;
+using wojilu.Common.Microblogs;
 
 namespace wojilu.Web.Controller.Microblogs {
 
     public class MainController : ControllerBase {
 
-        public ISiteSkinService siteSkinService { get; set; }
+        public virtual ISiteSkinService siteSkinService { get; set; }
 
         public MainController() {
 
@@ -25,6 +26,12 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
         public override void Layout() {
+
+            set( "mbAdminLink", to( new wojilu.Web.Controller.Admin.Mb.MicroblogController().List ) );
+            set( "mbSettingsLink", to( new wojilu.Web.Controller.Admin.Mb.MicroblogController().Settings ) );
+
+            set( "commentLink", to( new wojilu.Web.Controller.Admin.Mb.MbCommentController().Index ) );
+            set( "trashLink", to( new wojilu.Web.Controller.Admin.Mb.TrashController().Index ) );
 
             set( "siteName", config.Instance.Site.SiteName );
 
@@ -51,24 +58,25 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
         private void bindLoginForm() {
-
-
             set( "ActionLink", to( new wojilu.Web.Controller.MainController().CheckLogin ) );
             set( "resetPwdLink", to( new Common.ResetPwdController().StepOne ) );
-            //String returnUrl = strUtil.HasText( ctx.web.PathReferrer ) ? ctx.web.PathReferrer : to( Index );
             set( "returnUrl", to( Index ) );
-
         }
 
         private void bindLoginUser() {
-
-
             set( "mvcUrlExt", MvcConfig.Instance.UrlExt );
-
-
         }
 
-        public void Index() {
+        public virtual void Index() {
+
+            if (ctx.viewer.IsLogin) {
+                redirectDirect( Link.To( ctx.viewer.obj, new Microblogs.My.MicroblogController().Home ) );
+                return;
+            }
+
+            ctx.Page.Title = MicroblogAppSetting.Instance.MetaTitle;
+            ctx.Page.Keywords = MicroblogAppSetting.Instance.MetaKeywords;
+            ctx.Page.Description = MicroblogAppSetting.Instance.MetaDescription;
 
             List<Microblog> list = Microblog.find( "order by Id desc" ).list( 20 );
             ctx.SetItem( "_microblogList", list );
@@ -83,7 +91,7 @@ namespace wojilu.Web.Controller.Microblogs {
         }
 
         [NonVisit]
-        public void List() {
+        public virtual void List() {
 
             List<Microblog> list = ctx.GetItem( "_microblogList" ) as List<Microblog>;
 
@@ -96,18 +104,34 @@ namespace wojilu.Web.Controller.Microblogs {
                 block.Set( "m.Content", m.Content );
                 block.Set( "m.Created", m.Created );
 
-                IBlock picBlock = block.GetBlock( "pic" );
-                if (strUtil.HasText( m.Pic )) {
-                    picBlock.Set( "blog.PicSmall", m.PicSmall );
-                    picBlock.Set( "blog.PicMedium", m.PicMedium );
-                    picBlock.Set( "blog.PicOriginal", m.PicOriginal );
-                    picBlock.Next();
-                }
-
+                bindPicInfo( block, m );
+                bindVideoInfo( block, m );
 
                 block.Next();
             }
+        }
 
+        private static void bindPicInfo( IBlock block, Microblog m ) {
+            IBlock picBlock = block.GetBlock( "pic" );
+            if (strUtil.HasText( m.Pic )) {
+                picBlock.Set( "blog.PicSmall", m.PicSx );
+                picBlock.Set( "blog.PicMedium", m.PicMedium );
+                picBlock.Set( "blog.PicOriginal", m.PicOriginal );
+                picBlock.Next();
+            }
+        }
+
+        private void bindVideoInfo( IBlock block, Microblog blog ) {
+            IBlock vBlock = block.GetBlock( "video" );
+            if (strUtil.HasText( blog.FlashUrl )) {
+
+                String vpic = strUtil.HasText( blog.PicUrl ) ? blog.PicUrl : strUtil.Join( sys.Path.Img, "/big/novideopic.png" );
+
+                vBlock.Set( "blog.FlashPic", vpic );
+                vBlock.Set( "blog.ShowLink", MbLink.ToShowFeed( blog.User, blog.Id ) );
+                    
+                vBlock.Next();
+            }
 
         }
 

@@ -28,11 +28,11 @@ namespace wojilu.Members.Groups.Service {
             mgrService = new MemberGroupService();
         }
 
-        public virtual Result Create( User creator, String name, String url, String description, int categoryId, int accessStats, MvcContext ctx ) {
+        public virtual Result Create(User creator, string name, string url, string description, long categoryId, int accessStats, MvcContext ctx) {
             Group g = populateGroup( creator, name, url, description, categoryId, accessStats );
             Result result = insertGroup( g );
             if (result.IsValid) {
-                mgrService.JoinCreateGroup( creator, g );
+                mgrService.JoinCreateGroup( creator, g, ctx.Ip );
             }
             return result;
         }
@@ -40,7 +40,7 @@ namespace wojilu.Members.Groups.Service {
         private Result insertGroup( Group g ) {
             Result result = this.isValid( g );
             if (result.IsValid) {
-                g.TemplateId = config.Instance.Group.TemplateId;
+                g.TemplateId = GroupSetting.Instance.TemplateId;
                 result = db.insert( g );
                 result.Info = g;
             }
@@ -55,7 +55,7 @@ namespace wojilu.Members.Groups.Service {
             return db.find<Group>( "Url=:furl" ).set( "furl", friendUrl ).first();
         }
 
-        public Boolean IsNameReservedOrExist( String inputName ) {
+        public virtual Boolean IsNameReservedOrExist( String inputName ) {
 
             if (strUtil.IsNullOrEmpty( inputName )) return true;
 
@@ -68,7 +68,7 @@ namespace wojilu.Members.Groups.Service {
             return false;
         }
 
-        public Boolean IsUrlReservedOrExist( String url ) {
+        public virtual Boolean IsUrlReservedOrExist( String url ) {
 
             if (strUtil.IsNullOrEmpty( url )) return true;
 
@@ -88,7 +88,7 @@ namespace wojilu.Members.Groups.Service {
             return result;
         }
 
-        private static Group populateGroup( User creator, String name, String url, String description, int categoryId, int accessStats ) {
+        private static Group populateGroup(User creator, string name, string url, string description, long categoryId, int accessStats) {
             Group group = new Group();
             group.Creator = creator;
             group.Name = name;
@@ -108,7 +108,7 @@ namespace wojilu.Members.Groups.Service {
             db.update( group, "Logo" );
         }
 
-        public virtual Group GetById( int id ) {
+        public virtual Group GetById(long id) {
             return db.findById<Group>( id );
         }
 
@@ -177,7 +177,7 @@ namespace wojilu.Members.Groups.Service {
             db.update( g, "IsSystemHide" );
         }
 
-        public virtual void Delete( int id ) {
+        public virtual void Delete(long id) {
             Group g = GetById( id );
             if (g != null) db.delete( g );
         }
@@ -189,7 +189,7 @@ namespace wojilu.Members.Groups.Service {
         }
 
 
-        public virtual DataPage<Group> GetByCategory( int categoryId ) {
+        public virtual DataPage<Group> GetByCategory(long categoryId) {
             if (categoryId <= 0) return db.findPage<Group>( getCondition() );
             return db.findPage<Group>( "CategoryId=" + categoryId + " and " + getCondition() );
         }

@@ -10,17 +10,18 @@ using wojilu.Apps.Content.Enum;
 using wojilu.Common.Msg.Service;
 using wojilu.Common.Msg.Interface;
 using wojilu.Members.Users.Domain;
+using wojilu.Web.Controller.Content.Htmls;
 
 namespace wojilu.Web.Controller.Content.Submit {
 
     [App( typeof( ContentApp ) )]
     public class AdminController : ControllerBase {
 
-        public IContentSectionService sectionService { get; set; }
-        public IContentPostService postService { get; set; }
-        public ContentTempPostService tempPostService { get; set; }
-        public INotificationService ntService { get; set; }
-        public IMessageService msgService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual ContentTempPostService tempPostService { get; set; }
+        public virtual INotificationService ntService { get; set; }
+        public virtual IMessageService msgService { get; set; }
 
         public AdminController() {
             sectionService = new ContentSectionService();
@@ -34,7 +35,7 @@ namespace wojilu.Web.Controller.Content.Submit {
             if (hasAdminPermission() == false) echo( "对不起，你没有管理权限" );
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             set( "OperationUrl", to( SaveAdmin ) );
             set( "submintLink", to( new PostController().Index ) );
@@ -57,7 +58,7 @@ namespace wojilu.Web.Controller.Content.Submit {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveAdmin() {
+        public virtual void SaveAdmin() {
 
             String ids = ctx.PostIdList( "choice" );
 
@@ -75,7 +76,7 @@ namespace wojilu.Web.Controller.Content.Submit {
                 nopassPosts( ids );
             }
 
-            actionContent( "ok" );
+            content( "ok" );
 
         }
 
@@ -84,34 +85,37 @@ namespace wojilu.Web.Controller.Content.Submit {
 
             int[] arrId = cvt.ToIntArray( ids );
             if (arrId.Length == 0) return;
+
+            List<ContentPost> xList = new List<ContentPost>();
             foreach (int id in arrId) {
 
                 ContentTempPost p = tempPostService.GetById( id );
                 if (p == null) continue;
 
-                passSinglePost( p );
-
+                ContentPost x = passSinglePost( p );
+                xList.Add( x );
             }
 
+            HtmlHelper.SetPostListToContext( ctx, xList );
         }
 
         private void nopassPosts( string ids ) {
             tempPostService.NoPass( ids );
         }
 
-        public void Pass( int id ) {
+        public virtual void Pass( long id ) {
             target( SavePass, id );
             ContentTempPost p = tempPostService.GetById( id );
             bind( "post", p );
         }
 
-        public void NoPass( int id ) {
+        public virtual void NoPass( long id ) {
             target( SaveNoPass, id );
             ContentTempPost p = tempPostService.GetById( id );
             bind( "post", p );
         }
 
-        public void SavePass( int id ) {
+        public virtual void SavePass( long id ) {
 
             String msg = ctx.Post( "msg" );
             ContentTempPost p = tempPostService.GetById( id );
@@ -123,24 +127,14 @@ namespace wojilu.Web.Controller.Content.Submit {
             ContentPost post = passSinglePost( p );
             String lnk = alink.ToAppData( post );
 
-            string title = string.Format( "你投递的 “{0}” 通过审核", p.Title );
-            msg = string.Format( "谢谢您的投递，你的 “<a href=\"{0}\">{1}</a>” 已通过审核。", lnk, p.Title ) + "<br/>审核说明：" + msg;
-            sendMsg( title, msg, p.Creator );
+            HtmlHelper.SetPostToContext( ctx, post );
 
             echoToParentPart( lang( "opok" ) );
         }
 
-        private void sendNotification( ContentPost post ) {
-            String msg = string.Format( "您的投递 <a href=\"{0}\">{1}</a> 已经通过审核", alink.ToAppData( post ), post.Title );
-            ntService.send( post.Creator.Id, msg );
-        }
 
-        private void sendMsg( string title, string msg, User user ) {
-            msgService.SiteSend( title, msg, user );
-        }
-
-        public void SaveNoPass( int id ) {
-            String msg = ctx.Post( "msg" );
+        public virtual void SaveNoPass( long id ) {
+            String desc = ctx.Post( "msg" );
             ContentTempPost p = tempPostService.GetById( id );
             if (p == null) {
                 echoError( lang( "exDataNotFound" ) );
@@ -148,19 +142,15 @@ namespace wojilu.Web.Controller.Content.Submit {
             }
             tempPostService.NoPass( p );
 
-            string title = string.Format( "您投递的 “{0}” 没有通过审核", p.Title );
-            msg = string.Format( "对不起，您投递的 “{0}” 没有通过审核", p.Title ) + "<br/>审核说明：" + msg;
-            sendMsg( title, msg, p.Creator );
+            sendNoPassMsg( desc, p );
 
             echoToParentPart( lang( "opok" ) );
         }
-
 
         private bool hasAdminPermission() {
             if (ctx.viewer.IsAdministrator()) return true;
             return false;
         }
-
 
         private ContentPost passSinglePost( ContentTempPost p ) {
             ContentPost post = tempPostService.GetBySubmitPost( p, ctx.owner.obj );
@@ -168,8 +158,19 @@ namespace wojilu.Web.Controller.Content.Submit {
 
             tempPostService.Delete( p );
 
-            sendNotification( post );
+            sendPassNotification( post );
             return post;
+        }
+
+        private void sendPassNotification( ContentPost post ) {
+            String msg = string.Format( "您的投递 <a href=\"{0}\">{1}</a> 已经通过审核", alink.ToAppData( post ), post.Title );
+            ntService.send( post.Creator.Id, msg );
+        }
+
+        private void sendNoPassMsg( String desc, ContentTempPost p ) {
+            string title = string.Format( "您投递的 “{0}” 没有通过审核", p.Title );
+            String msg = string.Format( "对不起，您投递的 “{0}” 没有通过审核", p.Title ) + "<br/>审核说明：" + desc;
+            msgService.SiteSend( title, msg, p.Creator );
         }
 
     }

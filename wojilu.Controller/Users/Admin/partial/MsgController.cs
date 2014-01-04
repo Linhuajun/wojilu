@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -22,11 +22,11 @@ namespace wojilu.Web.Controller.Users.Admin {
         private void bindLayout() {
             set( "notificationUrl", to( new NotificationController().List ) );
 
-            // ÊÇ·ñÓĞÔÄ¶ÁÍøÕ¾Í¨ÖªµÄÈ¨ÏŞ£¿
+            // æ˜¯å¦æœ‰é˜…è¯»ç½‘ç«™é€šçŸ¥çš„æƒé™ï¼Ÿ
             String lnkSiteNf = "";
             if (ctx.viewer.obj.RoleId == SiteRole.Administrator.Id) {
                 String siteNfUrl = t2( new SiteNfController().List );
-                lnkSiteNf = string.Format( "<li id=\"tabSite\"><a href=\"{0}\">ÍøÕ¾Í¨Öª</a><span></span></li>", siteNfUrl );
+                lnkSiteNf = string.Format( "<li id=\"tabSite\"><a href=\"{0}\">ç½‘ç«™é€šçŸ¥</a><span></span></li>", siteNfUrl );
             }
 
             set( "lnkSiteNotification", lnkSiteNf );
@@ -38,6 +38,9 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "msg.UrlTrash", to( Deleted ) );
 
             User user = ctx.owner.obj as User;
+
+            set( "mCount", getCountString( user.MsgNewCount ) );
+            set( "nCount", getCountString( user.NewNotificationCount ) );
 
             MessageStats stats = msgService.GetStats( user );
             set( "msg.NewCount", getCountString( stats.New ) );
@@ -51,8 +54,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             IBlock block = getBlock( "list" );
             foreach (Message msg in results.Results) {
 
-                String attachments = msg.MessageData.AttachmentCount > 0 ? string.Format( "<img src=\"{0}attachment.gif\" />", sys.Path.Img ) : "";
-                block.Set( "m.Attachments", attachments );
+                block.Set( "m.Attachments", getAttachmentIcon( msg.MessageData ) );
 
                 block.Set( "m.Title", strUtil.CutString( msg.Title, 40 ) );
                 block.Set( "m.StatusString", getStatusString( msg ) );
@@ -66,13 +68,17 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "page", results.PageBar );
         }
 
+        private String getAttachmentIcon( MessageData x ) {
+            return x.AttachmentCount > 0 ? string.Format( "<img src=\"{0}attachment.gif\" />", sys.Path.Img ) : "";
+        }
+
         private string getIsNew( Message msg ) {
 
             return msg.IsRead == 1 ? "false" : "true";
 
         }
 
-        public String getStatusString( Message msg ) {
+        public virtual String getStatusString( Message msg ) {
 
             if (msg.IsReply == 1) return string.Format( "<span class='hasReply'>{0}</span>", lang( "replyed" ) );
             if (msg.IsRead == 1) return lang( "readed" );
@@ -81,14 +87,14 @@ namespace wojilu.Web.Controller.Users.Admin {
 
 
         private void bindUploadInfo() {
-            //¸½¼ş
-            set( "uploadLink", to( new UserUploadController().SaveMsgAttachment ) ); // ½ÓÊÜÉÏ´«µÄÍøÖ·
+            //é™„ä»¶
+            set( "uploadLink", to( new UserUploadController().SaveMsgAttachment ) ); // æ¥å—ä¸Šä¼ çš„ç½‘å€
             set( "authJson", AdminSecurityUtils.GetAuthCookieJson( ctx ) );
             set( "jsPath", sys.Path.DiskJs );
         }
 
 
-        private String getCountString( int count ) {
+        private String getCountString( long count ) {
             if (count == 0) {
                 return "";
             }
@@ -104,7 +110,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
 
-        private void bindMsgDetail( int id, MessageData msgData, IMember dataSender ) {
+        private void bindMsgDetail( long id, MessageData msgData, IMember dataSender ) {
 
             String senderUrl = "";
             String replyButton = "";
@@ -133,16 +139,16 @@ namespace wojilu.Web.Controller.Users.Admin {
             return strUtil.Join( ctx.url.SiteAndAppPath, url );
         }
 
-        private object getNextUrl( int id ) {
+        private object getNextUrl( long id ) {
             Message nextMsg = msgService.GetNextMsg( ctx.owner.Id, id );
-            if (nextMsg == null) return "ÏÂÒ»·â(ÎŞ)";
-            return string.Format( "<a href=\"{0}\">ÏÂÒ»·â &raquo;</a>", to( Read, nextMsg.Id ) );
+            if (nextMsg == null) return "ä¸‹ä¸€å°(æ— )";
+            return string.Format( "<a href=\"{0}\">ä¸‹ä¸€å° &raquo;</a>", to( Read, nextMsg.Id ) );
         }
 
-        private object getPrevUrl( int id ) {
+        private object getPrevUrl( long id ) {
             Message prevMsg = msgService.GetPrevMsg( ctx.owner.Id, id );
-            if (prevMsg == null) return "ÉÏÒ»·â(ÎŞ)";
-            return string.Format( "<a href=\"{0}\" class=\"right10\">&laquo; ÉÏÒ»·â</a>", to( Read, prevMsg.Id ) );
+            if (prevMsg == null) return "ä¸Šä¸€å°(æ— )";
+            return string.Format( "<a href=\"{0}\" class=\"right10\">&laquo; ä¸Šä¸€å°</a>", to( Read, prevMsg.Id ) );
         }
 
         private void bindAttachmentPanel( MessageData msgData ) {
@@ -172,6 +178,9 @@ namespace wojilu.Web.Controller.Users.Admin {
         private void bindSentList( DataPage<MessageData> list ) {
             IBlock block = getBlock( "list" );
             foreach (MessageData data in list.Results) {
+
+                block.Set( "m.Attachments", getAttachmentIcon( data ) );
+
                 block.Set( "m.Title", strUtil.CutString( data.Title, 40 ) );
                 block.Set( "m.ToName", data.ToName );
                 block.Set( "m.ReadUrl", to( SentMsg, data.Id ) );

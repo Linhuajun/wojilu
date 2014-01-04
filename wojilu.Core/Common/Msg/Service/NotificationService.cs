@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -18,7 +18,7 @@ namespace wojilu.Common.Msg.Service {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( NotificationService ) );
 
-        public virtual void sendFriendRequest( int senderId, int receiverId, String msg ) {
+        public virtual void sendFriendRequest(long senderId, long receiverId, string msg) {
             send( senderId, receiverId, typeof( User ).FullName, msg, NotificationType.Friend );
         }
 
@@ -30,36 +30,36 @@ namespace wojilu.Common.Msg.Service {
         //}
 
         /// <summary>
-        /// ÏòÓÃ»§(User)·¢ËÍÍ¨Öª
+        /// å‘ç”¨æˆ·(User)å‘é€é€šçŸ¥
         /// </summary>
-        /// <param name="receiverId">½ÓÊÕUserµÄId</param>
-        /// <param name="msg">Í¨ÖªÄÚÈİ</param>
-        public virtual void send( int receiverId, String msg ) {
+        /// <param name="receiverId">æ¥æ”¶Userçš„Id</param>
+        /// <param name="msg">é€šçŸ¥å†…å®¹</param>
+        public virtual void send(long receiverId, string msg) {
             send( 0, receiverId, typeof( User ).FullName, msg, NotificationType.Normal );
         }
 
         /// <summary>
-        /// ÏòÓÃ»§(User)·¢ËÍÍ¨Öª
+        /// å‘ç”¨æˆ·(User)å‘é€é€šçŸ¥
         /// </summary>
-        /// <param name="receiverId">½ÓÊÕUserµÄId</param>
-        /// <param name="msg">Í¨ÖªÄÚÈİ</param>
-        /// <param name="type">NotificationTypeµÄÃ¶¾ÙÖµ</param>
-        public virtual void send( int receiverId, String msg, int type ) {
+        /// <param name="receiverId">æ¥æ”¶Userçš„Id</param>
+        /// <param name="msg">é€šçŸ¥å†…å®¹</param>
+        /// <param name="type">NotificationTypeçš„æšä¸¾å€¼</param>
+        public virtual void send(long receiverId, string msg, int type) {
             send( 0, receiverId, typeof( User ).FullName, msg, type );
         }
 
         /// <summary>
-        /// ÏòÄ³ÖÖIMember¶ÔÏó·¢ËÍÍ¨Öª
+        /// å‘æŸç§IMemberå¯¹è±¡å‘é€é€šçŸ¥
         /// </summary>
-        /// <param name="receiverId">½ÓÊÕÓÃ»§µÄId</param>
-        /// <param name="receiverType">½ÓÊÕÕßµÄÀàĞÍType.FullName£¬±ÈÈçSite£¬UserµÈ</param>
-        /// <param name="msg">Í¨ÖªÄÚÈİ</param>
-        /// <param name="type">NotificationTypeµÄÃ¶¾ÙÖµ</param>
-        public virtual void send( int receiverId, String receiverType, String msg, int type ) {
+        /// <param name="receiverId">æ¥æ”¶ç”¨æˆ·çš„Id</param>
+        /// <param name="receiverType">æ¥æ”¶è€…çš„ç±»å‹Type.FullNameï¼Œæ¯”å¦‚Siteï¼ŒUserç­‰</param>
+        /// <param name="msg">é€šçŸ¥å†…å®¹</param>
+        /// <param name="type">NotificationTypeçš„æšä¸¾å€¼</param>
+        public virtual void send(long receiverId, string receiverType, string msg, int type) {
             send( 0, receiverId, receiverType, msg, type );
         }
 
-        private void send( int senderId, int receiverId, String receiverType, String msg, int type ) {
+        private void send(long senderId, long receiverId, string receiverType, string msg, int type) {
 
             User receiver = null;
             if (receiverType == typeof( User ).FullName) {
@@ -85,7 +85,7 @@ namespace wojilu.Common.Msg.Service {
             }
         }
 
-        // User µÄ×îĞÂÍ¨ÖªÊıÊÇ»º´æµÄ
+        // User çš„æœ€æ–°é€šçŸ¥æ•°æ˜¯ç¼“å­˜çš„
         private void addNotificationCount( User receiver ) {
 
             if (receiver == null) return;
@@ -95,7 +95,7 @@ namespace wojilu.Common.Msg.Service {
         }
 
 
-        public void cancelFriendRequest( int senderId, int receiverId ) {
+        public virtual void cancelFriendRequest(long senderId, long receiverId) {
             Notification f = db.find<Notification>( "Creator.Id=" + senderId + " and ReceiverId=" + receiverId ).first();
             if (f == null) return;
 
@@ -110,26 +110,26 @@ namespace wojilu.Common.Msg.Service {
 
         //----------------------------------------------------------------------------------------------------------------
 
-        public virtual Notification GetById( int id ) {
+        public virtual Notification GetById(long id) {
             return db.findById<Notification>( id );
         }
 
-        public virtual List<Notification> GetUnread( int receiverId, String receiverType, int count ) {
+        public virtual List<Notification> GetUnread(long receiverId, string receiverType, int count) {
             return db.find<Notification>( "ReceiverId=" + receiverId + " and ReceiverType='" + receiverType + "' and IsRead=0" )
                 .list( count );
         }
 
-        public virtual DataPage<Notification> GetPage( int receiverId, String receiverType ) {
+        public virtual DataPage<Notification> GetPage(long receiverId, string receiverType) {
             return db.findPage<Notification>( "ReceiverId=" + receiverId + " and ReceiverType='" + receiverType + "'" );
         }
 
-        public virtual int GetUnReadCount( int receiverId, String receiverType ) {
+        public virtual int GetUnReadCount(long receiverId, string receiverType) {
             return db.count<Notification>( "ReceiverId=" + receiverId + " and ReceiverType='" + receiverType + "' and IsRead=0" );
         }
 
         //----------------------------------------------------------------------------------------------------------------
 
-        public virtual void Read( int notificationId ) {
+        public virtual void Read(long notificationId) {
             Notification nf = GetById( notificationId );
 
             if (nf == null) throw new Exception( lang.get( "exDataNotFound" ) );
@@ -156,7 +156,7 @@ namespace wojilu.Common.Msg.Service {
             throw new NotImplementedException();
         }
 
-        public virtual void ReadAll( int receiverId, String receiverType ) {
+        public virtual void ReadAll(long receiverId, string receiverType) {
             db.updateBatch<Notification>( "set IsRead=1", "ReceiverId=" + receiverId + " and ReceiverType='" + receiverType + "' and IsRead=0" );
 
             if (receiverType != typeof( User ).FullName) return;

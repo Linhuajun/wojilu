@@ -16,13 +16,13 @@ using wojilu.Apps.Photo.Service;
 
 using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Domain;
-using wojilu.Common.Feeds.Service;
-using wojilu.Common.Feeds.Domain;
 using wojilu.Common.Tags;
-using wojilu.Common.Feeds.Interface;
 using wojilu.Members.Users.Interface;
 using wojilu.Apps.Photo.Interface;
 using wojilu.Web.Controller.Admin;
+using wojilu.Common.Microblogs.Service;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Microblogs;
 
 namespace wojilu.Web.Controller.Photo.Admin {
 
@@ -32,31 +32,32 @@ namespace wojilu.Web.Controller.Photo.Admin {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( PhotoController ) );
 
-        public IFeedService feedService { get; set; }
-        public IFriendService friendService { get; set; }
+        public virtual IFriendService friendService { get; set; }
 
-        public IPhotoPostService postService { get; set; }
-        public IPhotoAlbumService albumService { get; set; }
-        public IPhotoSysCategoryService categoryService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IPhotoAlbumService albumService { get; set; }
+        public virtual IPhotoSysCategoryService categoryService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
 
         public PostController() {
 
             base.HideLayout( typeof( Photo.LayoutController ) );
 
-            feedService = new FeedService();
             friendService = new FriendService();
 
             postService = new PhotoPostService();
             albumService = new PhotoAlbumService();
 
             categoryService = new PhotoSysCategoryService();
+            microblogService = new MicroblogService();
         }
 
-        public void Add() {
+        public virtual void Add() {
 
             set( "authJson", AdminSecurityUtils.GetAuthCookieJson( ctx ) );
             String uploadUrl = strUtil.Join( ctx.url.SiteUrl, to( SaveUpload ) );
             set( "uploadLink", uploadUrl );
+            set( "feedLink", to( AddFeed ) );
 
 
             IList albumList = albumService.GetListByApp( ctx.app.Id );
@@ -79,16 +80,16 @@ namespace wojilu.Web.Controller.Photo.Admin {
             set( "jsPath", sys.Path.DiskJs );
         }
 
-        public void NewPost( int albumId ) {
+        public virtual void NewPost( long albumId ) {
 
             if (albumId <= 0) {
-                albumId = ctx.PostInt( "PhotoAlbumId" );
+                albumId = ctx.PostLong( "PhotoAlbumId" );
             }
 
             PhotoAlbum album = albumService.GetById( albumId, ctx.owner.Id );
-            if (album == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
+            if (album == null) { echo( lang( "exDataNotFound" ) + ": albumId=" + albumId ); return; }
 
-            int systemCategoryId = ctx.PostInt( "SystemCategoryId" );
+            long systemCategoryId = ctx.PostLong( "SystemCategoryId" );
             if (systemCategoryId <= 0) {
                 errors.Add( alang( "exSysCategoryRequire" ) );
                 run( Add );
@@ -110,10 +111,10 @@ namespace wojilu.Web.Controller.Photo.Admin {
         }
 
         // flash上传(逐个保存)
-        public void SaveUpload() {
+        public virtual void SaveUpload() {
 
-            int albumId = ctx.PostInt( "PhotoAlbumId" );
-            int systemCategoryId = ctx.PostInt( "SystemCategoryId" );
+            long albumId = ctx.PostLong( "PhotoAlbumId" );
+            long systemCategoryId = ctx.PostLong( "SystemCategoryId" );
 
             if (ctx.HasUploadFiles == false) {
                 echoText( lang( "exPlsUpload" ) );
@@ -127,7 +128,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             Result result = Uploader.SaveImg( file );
             if (result.HasErrors) {
                 errors.Join( result );
-                echoText( result.ErrorsText );
+                echoError( result );
             }
             else {
                 PhotoPost post = newPost( Path.GetFileNameWithoutExtension( file.FileName ), result.Info.ToString(), albumId, systemCategoryId );
@@ -139,23 +140,32 @@ namespace wojilu.Web.Controller.Photo.Admin {
                 user.Pins = PhotoPost.count( "OwnerId=" + user.Id );
                 user.update( "Pins" );
 
-                // feed
-                String photoHtml = string.Format( "<a href='{0}'><img src='{1}'/></a> ", alink.ToAppData( post ), post.ImgThumbUrl );
+                Dictionary<String, long> dic = new Dictionary<String, long>();
+                dic.Add( "Id", post.Id );
 
-                String templateData = string.Format( "photoCount: {0}, photos: \"{1}\" ", 1, photoHtml );
-                templateData = "{" + templateData + "}";
-                TemplateBundle tplBundle = TemplateBundle.GetPhotoTemplateBundle();
-                feedService.publishUserAction( (User)ctx.viewer.obj, typeof( PhotoPost ).FullName, tplBundle.Id, templateData, "" );
-                echoAjaxOk();
+                echoJsonMsg( "ok", true, dic );
             }
+        }
+
+        [HttpPost, DbTransaction]
+        public virtual void AddFeed() {
+            String ids = ctx.PostIdList( "ids" );
+            long albumId = ctx.PostLong( "albumId" );
+
+            if (strUtil.IsNullOrEmpty( ids )) return;
+
+            List<PhotoPost> posts = PhotoPost.find( "Id in (" + ids + ")" ).list();
+            addFeedInfo( posts, albumId );
+
+            echoAjaxOk();
         }
 
         // 普通上传(批量)
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
-            int albumId = ctx.PostInt( "PhotoAlbumId" );
-            int systemCategoryId = ctx.PostInt( "SystemCategoryId" );
+            long albumId = ctx.PostLong( "PhotoAlbumId" );
+            long systemCategoryId = ctx.PostLong( "SystemCategoryId" );
 
             if (albumId <= 0) {
                 errors.Add( alang( "exAlbumSelect" ) );
@@ -185,8 +195,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
                 // 发生任何错误，则返回
                 Result result = Uploader.SaveImg( file );
                 if (result.HasErrors) {
-                    errors.Join( result );
-                    run( NewPost, albumId );
+                    echo( result.ErrorsHtml );
                     return;
                 }
 
@@ -209,21 +218,17 @@ namespace wojilu.Web.Controller.Photo.Admin {
             user.update( "Pins" );
 
             // feed消息
-            int photoCount = imgs.Count;
-            String photoHtml = "";
-            foreach (PhotoPost post in imgs) {
-                photoHtml += string.Format( "<a href='{0}'><img src='{1}'/></a> ", alink.ToAppData( post ), post.ImgThumbUrl );
-            }
-
-            String templateData = string.Format( "photoCount: {0}, photos: \"{1}\" ", photoCount, photoHtml );
-            templateData = "{" + templateData + "}";
-            TemplateBundle tplBundle = TemplateBundle.GetPhotoTemplateBundle();
-            feedService.publishUserAction( (User)ctx.viewer.obj, typeof( PhotoPost ).FullName, tplBundle.Id, templateData, "" );
+            addFeedInfo( imgs, albumId );
 
             echoRedirectPart( lang( "opok" ), to( new MyController().My ), 1 );
         }
 
-        private PhotoPost newPost( String photoName, String imgPath, int albumId, int systemCategoryId ) {
+        private void addFeedInfo( List<PhotoPost> imgs, long albumId ) {
+            String msg = postService.GetFeedMsg( imgs );
+            microblogService.AddSimple( imgs[0].Creator, msg, typeof( PhotoPost ).FullName, imgs[0].Id, ctx.Ip );
+        }
+
+        private PhotoPost newPost( String photoName, String imgPath, long albumId, long systemCategoryId ) {
 
             PhotoAlbum album = new PhotoAlbum();
             album.Id = albumId;
@@ -247,7 +252,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             return photo;
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             PhotoPost post = postService.GetById( id, ctx.owner.Id );
             if (post == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
@@ -279,15 +284,15 @@ namespace wojilu.Web.Controller.Photo.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             PhotoPost post = postService.GetById( id, ctx.owner.Id );
             if (post == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
 
             PhotoAlbum album = new PhotoAlbum();
-            album.Id = ctx.PostInt( "PhotoAlbumId" );
+            album.Id = ctx.PostLong( "PhotoAlbumId" );
 
-            post.SysCategoryId = ctx.PostInt( "SystemCategoryId" );
+            post.SysCategoryId = ctx.PostLong( "SystemCategoryId" );
             post.Title = ctx.Post( "Title" );
             post.PhotoAlbum = album;
             post.Description = ctx.Post( "Description" );

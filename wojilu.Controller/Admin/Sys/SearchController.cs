@@ -10,8 +10,8 @@ namespace wojilu.Web.Controller.Admin.Sys {
 
     public class SearchController : ControllerBase {
 
-        public void Index() {
-            actionContent( "" );
+        public virtual void Index() {
+            content( "" );
         }
 
     }

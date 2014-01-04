@@ -6,7 +6,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{458C03F6-60CF-4935-B40F-18CC9D091AC5}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>wojilu.Test</RootNamespace>
     <AssemblyName>wojilu.Test</AssemblyName>
@@ -32,9 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mysql.data">
-      <HintPath>..\Lib\mysql.data.dll</HintPath>
-    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\Lib\nunit.framework.dll</HintPath>
     </Reference>
@@ -44,9 +41,37 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
+    <Reference Include="MySql.Data">
+      <HintPath>..\Lib\mysql.data.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Aop\AopTest.cs" />
+    <Compile Include="Aop\IMyAopService.cs" />
+    <Compile Include="Aop\MultiInvocationObserver.cs" />
+    <Compile Include="Aop\MyAopService.cs" />
+    <Compile Include="Aop\MyBeforeService.cs" />
+    <Compile Include="Aop\MyMethodObserver1.cs" />
+    <Compile Include="Aop\MyMethodObserver2.cs" />
+    <Compile Include="Aop\MyMethodObserver3.cs" />
+    <Compile Include="Aop\MyNormalService.cs" />
+    <Compile Include="Aop\NewAopService.cs" />
+    <Compile Include="Aop\ObservedObject.cs" />
+    <Compile Include="Aop\TComplexObject.cs" />
+    <Compile Include="Data\MemoryDBGeneric.cs" />
+    <Compile Include="Data\MemoryDBTest.cs" />
+    <Compile Include="Jsons\JsonDeserializeTyped.cs" />
+    <Compile Include="Common\rftTest.cs" />
+    <Compile Include="Data\CacheObjectTest.cs" />
+    <Compile Include="Data\Entities.cs" />
     <Compile Include="main.cs" />
+    <Compile Include="Net\HttpClientTest.cs" />
+    <Compile Include="OpenAuth\ConnectConfigTest.cs" />
+    <Compile Include="OpenAuth\QQTest.cs" />
+    <Compile Include="OpenAuth\QQWeiboTest.cs" />
+    <Compile Include="OpenAuth\WeiboTest.cs" />
+    <Compile Include="Orm\ConcurrentTest.cs" />
+    <Compile Include="Platform\ConfigTest.cs" />
     <Compile Include="Platform\MailTest.cs" />
     <Compile Include="Orm\CRUD.IdTest.cs">
       <SubType>Code</SubType>
@@ -54,12 +79,17 @@
     <Compile Include="Platform\MoveRowTest.cs" />
     <Compile Include="Common\cvtTest.cs" />
     <Compile Include="Common\ImgPathTest.cs" />
-    <Compile Include="Common\Jsons\Entities.cs" />
-    <Compile Include="Common\Jsons\JsonTest.cs" />
-    <Compile Include="Common\Jsons\ObjectToJsonString.cs" />
+    <Compile Include="Jsons\Entities.cs" />
+    <Compile Include="Jsons\JsonDeserializeTest.cs" />
+    <Compile Include="Jsons\JsonSerializeTest.cs" />
     <Compile Include="Common\PageTest.cs" />
     <Compile Include="Common\PathUtilTest.cs" />
+    <Compile Include="Platform\PhotoTest.cs" />
     <Compile Include="Platform\TagTest.cs" />
+    <Compile Include="Web\Mvc\LinkTest.cs" />
+    <Compile Include="Web\Mvc\RouteTestNew.cs" />
+    <Compile Include="Web\Templates\TemplateNew.cs" />
+    <Compile Include="Web\Templates\TemplatePathTest.cs" />
     <Compile Include="Web\Utils\PlatformTemplateTest.cs" />
     <Compile Include="Platform\RankTest.cs" />
     <Compile Include="Common\HashTest.cs" />

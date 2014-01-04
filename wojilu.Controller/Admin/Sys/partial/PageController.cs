@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -18,11 +18,11 @@ namespace wojilu.Web.Controller.Admin.Sys {
     public partial class PageController : ControllerBase {
 
 
-        private String plink( int id ) {
+        private String plink( long id ) {
             return strUtil.Join( ctx.url.SiteUrl, to( new wojilu.Web.Controller.Common.PageController().Show, id ) );
         }
 
-        private void bindCategoryLink( IBlock tpl, int id ) {
+        private void bindCategoryLink( IBlock tpl, long id ) {
             tpl.Set( "data.LinkByCategory", to( List, id ) );
         }
 
@@ -46,6 +46,8 @@ namespace wojilu.Web.Controller.Admin.Sys {
                 block.Set( "data.Hits", data.Hits );
                 block.Set( "data.ReplyCount", data.Replies );
                 block.Set( "data.IsAllowReplyStr", data.IsAllowReplyStr );
+                block.Set( "data.IsCollapseStr", data.IsCollapseStr );
+
 
                 block.Set( "data.ViewUrl", to( ViewUrl, data.Id ) );
 
@@ -66,19 +68,21 @@ namespace wojilu.Web.Controller.Admin.Sys {
             set( "p.Logo", data.Logo );
             String drop = tree.DropList( "ParentId", data.ParentId, data.Id, "---" );
             set( "dropParent", drop );
-            set( "IsAllowReply", data.IsAllowReply == 1 ? "checked=\"checked\"" : "" );
-            editor( "Content", data.Content, "300px" );
+            set( "Content", data.Content );
+
+            String chk = "checked=\"checked\"";
+            set( "IsAllowReply", data.IsAllowReply == 1 ? chk : "" );
+            set( "chkIsCollapse", data.IsCollapse == 1 ? chk : "" );
+            set( "chkIsTextNode", data.IsTextNode == 1 ? chk : "" );
         }
 
         //--------------------------------------------------------------------------
 
-        private void golist( int categoryId ) {
+        private void golist( long categoryId ) {
             echoRedirect( lang( "opok" ), to( List, categoryId ) );
         }
 
         private Page validate( Page data ) {
-
-
 
             data.Title = ctx.Post( "Title" );
             data.Logo = ctx.Post( "Logo" );
@@ -87,10 +91,12 @@ namespace wojilu.Web.Controller.Admin.Sys {
 
             if (strUtil.IsNullOrEmpty( data.Title )) errors.Add( lang( "exTitle" ) );
             if (strUtil.IsNullOrEmpty( data.Content )) errors.Add( lang( "exContent" ) );
-            if (strUtil.IsNullOrEmpty( data.EditReason )) errors.Add( "ÇëÌîÐ´±à¼­Ô­Òò" );
+            if (strUtil.IsNullOrEmpty( data.EditReason )) errors.Add( "è¯·å¡«å†™ç¼–è¾‘åŽŸå› " );
 
             data.IsAllowReply = ctx.PostIsCheck( "IsAllowReply" );
-            data.OrderId = ctx.PostInt( "OrderId" );
+            data.IsCollapse = ctx.PostIsCheck( "IsCollapse" );
+            data.IsTextNode = ctx.PostIsCheck( "IsTextNode" );
+
 
             return data;
         }

@@ -13,21 +13,26 @@ using wojilu.Members.Interface;
 using wojilu.Members.Users.Interface;
 
 namespace wojilu.Common.Visitors {
+    public interface IVisitorService {
+        void setVisitor( object v );
+        IDataVisitor Visit( long visitorId, IAppData target );
+        List<IUser> GetRecent( long targetId, int count );
+    }
 
     /// <summary>
     /// 脚印功能，不同于 Users.Service 下的 VisitorService
     /// </summary>
-    public class VisitorService {
+    public class VisitorService : IVisitorService {
 
         private IDataVisitor visitor;
 
         private Type thisType() { return visitor.GetType(); }
 
-        public void setVisitor( object v ) {
+        public virtual void setVisitor( object v ) {
             this.visitor = v as IDataVisitor;
         }
 
-        public IDataVisitor Visit( int visitorId, IAppData target ) {
+        public virtual IDataVisitor Visit( long visitorId, IAppData target ) {
 
             if (target.Creator.Id == visitorId) return null;
             if (hasVisit( visitorId, target.Id )) return null;
@@ -40,11 +45,11 @@ namespace wojilu.Common.Visitors {
             return visitor;
         }
 
-        private Boolean hasVisit( int visitorId, int targetId ) {
+        private Boolean hasVisit( long visitorId, long targetId ) {
             return ndb.count( thisType(), "VisitorId=" + visitorId + " and TargetId=" + targetId ) > 0;
         }
 
-        public List<IUser> GetRecent( int targetId, int count ) {
+        public virtual List<IUser> GetRecent( long targetId, int count ) {
             IList visitorList = ndb.find( thisType(), "TargetId=" + targetId ).list( count );
             return populateUser( visitorList );
         }

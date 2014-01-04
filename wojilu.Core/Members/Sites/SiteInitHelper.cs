@@ -14,24 +14,25 @@ namespace wojilu.Members.Sites {
 
     public class SiteInitHelper : IInitHelper {
 
-        public Type GetMemberType() {
+        public virtual Type GetMemberType() {
             return typeof( Site );
         }
 
-        public IMember getOwnerByUrl( MvcContext ctx ) {
+        public virtual IMember getOwnerByUrl( MvcContext ctx ) {
             return Site.Instance;
         }
 
-        public bool IsAppRunning( MvcContext ctx ) {
+        public virtual bool IsAppRunning( MvcContext ctx ) {
             SiteAppService userAppService = new SiteAppService();
             IMemberApp app = userAppService.GetByApp( (IApp)ctx.app.obj );
-            if (app == null || app.IsStop == 1)
-                throw ctx.ex( HttpStatus.NotFound_404, lang.get( "exAppNotFound" ) );
+            if (app == null || app.IsStop == 1) {
+                return false;
+            }
 
-            return app.IsStop == 0;
+            return true;
         }
 
-        public List<IMenu> GetMenus( IMember owner ) {
+        public virtual List<IMenu> GetMenus( IMember owner ) {
             SiteMenuService menuService = new SiteMenuService();
             return menuService.GetList( owner );
         }

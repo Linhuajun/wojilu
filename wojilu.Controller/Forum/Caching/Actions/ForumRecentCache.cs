@@ -79,20 +79,20 @@ namespace wojilu.Web.Controller.Forum.Caching {
         private String getCacheKey( MvcContext ctx ) {
 
             IMember owner = ctx.owner.obj;
-            int appId = ctx.app.Id;
+            long appId = ctx.app.Id;
             return getCacheKey( owner, appId );
         }
 
-        private String getCacheKey( IMember owner, int appId ) {
+        private String getCacheKey( IMember owner, long appId ) {
             return "__action_" + owner.GetType().FullName + "_" + owner.Url.Replace( "/", "" ) + "_" + typeof( wojilu.Web.Controller.Forum.RecentController ).FullName + "_" + getActionName() + "_app" + appId;
         }
 
-        public override void UpdateCache( MvcContext ctx ) {
+        public override void AfterAction( MvcContext ctx ) {
 
             if ((ctx.owner.obj is Site) == false) return;
 
             IMember owner = ctx.owner.obj;
-            int appId = ctx.app.Id;
+            long appId = ctx.app.Id;
 
             //String viewName = this.getActionName();
             //String key = getCacheKey( ctx );

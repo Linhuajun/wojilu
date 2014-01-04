@@ -1,24 +1,26 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
-using System.Text;
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
 using wojilu.Apps.Blog.Domain;
-using wojilu.Serialization;
 
 namespace wojilu.Web.Controller.Blog.Admin {
 
     [App( typeof( BlogApp ) )]
     public class SettingController : ControllerBase {
 
-        public void Index() {
+        public virtual void Index() {
 
             target( Save );
             BlogApp app = ctx.app.obj as BlogApp;
             bindSettings( app.GetSettingsObj() );
         }
 
-        public void Save() {
+        public virtual void Save() {
 
             BlogSetting s = ctx.PostValue<BlogSetting>();
 
@@ -27,13 +29,13 @@ namespace wojilu.Web.Controller.Blog.Admin {
             s.IsShowStats = ctx.PostIsCheck( "blogSetting.IsShowStats" );
 
             BlogApp app = ctx.app.obj as BlogApp;
-            app.Settings = JsonString.ConvertObject( s );
+            app.Settings = Json.ToString( s );
             app.update();
 
             echoRedirect( lang( "opok" ) );
         }
 
-        public void bindSettings( BlogSetting s ) {
+        public virtual void bindSettings( BlogSetting s ) {
 
             Dictionary<String, String> dic = new Dictionary<string, string>();
 
@@ -52,6 +54,12 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
             set( "s.ListModeFull", s.ListMode == BlogListMode.Full ? chk : "" );
             set( "s.ListModeAbstract", s.ListMode == BlogListMode.Abstract ? chk : "" );
+
+            String[] options = new String[] {
+                "100", "200", "300", "500", "600", "800", "1000", "1200", "1500", "2000", "3000"
+            };
+            radioList( "blogSetting.ListAbstractLength", options, s.ListAbstractLength );
+
         }
 
         private String dropList( String name, int istart, int iend, int val ) {

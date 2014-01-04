@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,13 +21,19 @@ using System.Text;
 namespace wojilu.Members.Interface {
 
     /// <summary>
-    /// ע���û��Ľӿ�
+    /// 注册用户的接口
     /// </summary>
     public interface IUser : IMember {
 
+        
         String Pwd { get; set; }
-        int RoleId { get; set; }
+        long RoleId { get; set; }
         String PicSmall { get; }
+
+        String Email { get; set; }
+        int Gender { get; set; }
+
+        Boolean IsLogin { get; set; }
 
     }
 

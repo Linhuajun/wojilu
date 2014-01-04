@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -19,10 +19,10 @@ namespace wojilu.Web.Controller.Content.Admin {
     [App( typeof( ContentApp ) )]
     public partial class ContentController : ControllerBase {
 
-        public IContentSectionService sectionService { get; set; }
-        public IContentSectionTemplateService templatelService { get; set; }
-        public IContentPostService postService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentSectionTemplateService templatelService { get; set; }
+        public virtual IContentPostService postService { get; set; }
+        public virtual IContentCustomTemplateService ctService { get; set; }
 
         public ContentController() {
             sectionService = new ContentSectionService();
@@ -34,11 +34,11 @@ namespace wojilu.Web.Controller.Content.Admin {
         }
 
 
-        public void Index() {
-            set( "indexLink", to( new PostController().List ) );
+        public virtual void Index() {
+            set( "indexLink", to( new Common.PostController().List, 0 ) );
         }
 
-        public void Home() {
+        public virtual void Home() {
 
             bindCmd();
 
@@ -65,7 +65,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void SaveLayout() {
+        public virtual void SaveLayout() {
             IList sections = sectionService.GetByApp( ctx.app.Id );
             string[] strArray = ctx.Get( "layout" ).Split( new char[] { '/' } );
             int orderId = 0;
@@ -83,7 +83,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void SaveResize() {
+        public virtual void SaveResize() {
 
             String colIds = ctx.Post( "colIds" );
             String widths = ctx.Post( "widths" );
@@ -149,14 +149,14 @@ namespace wojilu.Web.Controller.Content.Admin {
             }
         }
 
-        public void SetStyle() {
+        public virtual void SetStyle() {
             ContentApp app = ctx.app.obj as ContentApp;
             set( "styleContent", app.SkinStyle );
             target( SaveStyle );
         }
 
         [HttpPost, DbTransaction]
-        public void SaveStyle() {
+        public virtual void SaveStyle() {
             ContentApp app = ctx.app.obj as ContentApp;
             app.SkinStyle = ctx.Post( "Style" );
             app.update( "SkinStyle" );
@@ -181,14 +181,14 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         //--------------------------------------------------------------------------------------------------
 
-        // ªÒ»°µ±«∞app ◊“≥µƒ ˝æ›°¢≈≈∞Ê≤ºæ÷°¢—˘ Ω£¨¥Ê¥¢Œ™∆§∑Ù
-        public void Snapshot() {
+        // Ëé∑ÂèñÂΩìÂâçappÈ¶ñÈ°µÁöÑÊï∞ÊçÆ„ÄÅÊéíÁâàÂ∏ÉÂ±Ä„ÄÅÊ†∑ÂºèÔºåÂ≠òÂÇ®‰∏∫ÁöÆËÇ§
+        public virtual void Snapshot() {
 
             ContentApp app = ctx.app.obj as ContentApp;
 
             PortalMockSkin s = new PortalMockSkin();
-            s.Style = app.Style; // —˘ Ω
-            s.Layout = app.Layout; // ≈≈∞Ê≤ºæ÷
+            s.Style = app.Style; // Ê†∑Âºè
+            s.Layout = app.Layout; // ÊéíÁâàÂ∏ÉÂ±Ä
             s.Sections = new List<PortalMockSection>();
 
             List<ContentSection> sections = sectionService.GetByApp( app.Id );
@@ -204,17 +204,17 @@ namespace wojilu.Web.Controller.Content.Admin {
                     TemplateId = section.TemplateId
                 };
 
-                ps.Posts = populatePost( postService.GetBySection( ctx.app.Id, section.Id, 20 ) );
+                ps.Posts = populatePost( postService.GetBySection( section.Id, 20 ) );
                 s.Sections.Add( ps );
             }
 
-            String json = JsonString.ConvertObject( s, true );
+            String json = Json.ToString( s, true );
             file.Write( PathHelper.Map( "/content.json" ), json );
 
 
         }
 
-        public void ShowSnapshot() {
+        public virtual void ShowSnapshot() {
             Dictionary<string, object> dic = JsonParser.Parse( file.Read( PathHelper.Map( "/content.json" ) ) ) as Dictionary<string, object>;
             String str = dic["Style"].ToString();
             str += dic["Layout"] + "<br/>";
@@ -254,9 +254,9 @@ namespace wojilu.Web.Controller.Content.Admin {
         public String SectionType { get; set; }
         public String Title { get; set; }
 
-        public int CustomTemplateId { get; set; }
-        public int ServiceId { get; set; }
-        public int TemplateId { get; set; }
+        public long CustomTemplateId { get; set; }
+        public long ServiceId { get; set; }
+        public long TemplateId { get; set; }
         public String ServiceParams { get; set; }
 
 
@@ -264,9 +264,9 @@ namespace wojilu.Web.Controller.Content.Admin {
     }
     public class PortalMockPost {
 
-        public int CategoryId { get; set; }
+        public long CategoryId { get; set; }
         public int OrderId { get; set; }
-        public int SectionId { get; set; }
+        public long SectionId { get; set; }
         public String TypeName { get; set; }
 
         public String Title { get; set; }

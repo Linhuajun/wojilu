@@ -15,9 +15,9 @@ namespace wojilu.Web.Controller.Users {
 
     public class ForumController : ControllerBase {
 
-        public IForumTopicService topicService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumBoardService boardService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
 
         public ForumController() {
             topicService = new ForumTopicService();
@@ -29,28 +29,28 @@ namespace wojilu.Web.Controller.Users {
         }
 
 
-        public void Topic() {
+        public virtual void Topic() {
 
             if (ctx.viewer.HasPrivacyPermission( ctx.owner.obj, UserPermission.ForumTopic.ToString() ) == false) {
                 echo( lang( "exVisitNoPermission" ) );
                 return;
             }
 
-            WebUtils.pageTitle( this, "论坛主题" );
+            ctx.Page.Title = "论坛主题";
 
             DataPage<ForumTopic> plist = topicService.GetByUser( ctx.owner.Id, 50 );
             bintTopics( plist.Results, plist.PageBar );
             set( "lnkPost", to( Post ) );
         }
 
-        public void Post() {
+        public virtual void Post() {
 
             if (ctx.viewer.HasPrivacyPermission( ctx.owner.obj, UserPermission.ForumTopic.ToString() ) == false) {
                 echo( lang( "exVisitNoPermission" ) );
                 return;
             }
 
-            WebUtils.pageTitle( this, "论坛帖子" );
+            ctx.Page.Title = "论坛帖子";
 
             DataPage<ForumPost> results = postService.GetByUser( ctx.owner.Id, 50 );
             bindPosts( results );

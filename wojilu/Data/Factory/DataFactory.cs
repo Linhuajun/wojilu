@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,14 +21,35 @@ using System.Data.Common;
 namespace wojilu.Data {
 
     /// <summary>
-    /// ���ݹ��������Բ��ÿ������ݿ�������ȡ Connection, Command, DataAdapter
+    /// 数据工厂，可以不用考虑数据库差异而获取 Connection, Command, DataAdapter
     /// </summary>
     public class DataFactory {
 
+        /// <summary>
+        /// 仅仅创建 connection，没有打开 open 数据库链接
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <param name="dbtype"></param>
+        /// <returns></returns>
         public static IDbConnection GetConnection( String connectionString, DatabaseType dbtype ) {
             return DbFactoryBase.Instance( dbtype ).GetConnection( connectionString );
         }
 
+        /// <summary>
+        /// 获取 command，并检查 connection ，如果尚未打开数据库链接 ，则打开 connection 
+        /// </summary>
+        /// <param name="cn"></param>
+        /// <returns></returns>
+        public static IDbCommand GetCommand( IDbConnection cn ) {
+            return DbFactoryBase.Instance( cn ).GetCommand();
+        }
+
+        /// <summary>
+        /// 获取 command，并检查 connection ，如果尚未打开数据库链接 ，则打开 connection 
+        /// </summary>
+        /// <param name="CommandText"></param>
+        /// <param name="cn"></param>
+        /// <returns></returns>
         public static IDbCommand GetCommand( String CommandText, IDbConnection cn ) {
             return DbFactoryBase.Instance( cn ).GetCommand( CommandText );
         }

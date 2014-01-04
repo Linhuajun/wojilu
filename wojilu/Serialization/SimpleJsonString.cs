@@ -9,7 +9,7 @@ using wojilu.ORM;
 namespace wojilu.Serialization {
 
     /// <summary>
-    /// 将简单的对象转换成 json 字符串，不支持子对象(即属性为对象)的序列化
+    /// 将简单的对象转换成 json 字符串
     /// </summary>
     public class SimpleJsonString {
 
@@ -65,6 +65,10 @@ namespace wojilu.Serialization {
 
             foreach (PropertyInfo info in propertyList) {
 
+                if (info.CanRead == false) {
+                    continue;
+                }
+
                 if (info.IsDefined( typeof( NotSerializeAttribute ), false )) {
                     continue;
                 }
@@ -74,7 +78,9 @@ namespace wojilu.Serialization {
                 }
 
                 Object propertyValue = ReflectionUtil.GetPropertyValue( obj, info.Name );
-                if ((info.PropertyType == typeof( int )) || (info.PropertyType == typeof( decimal ))) {
+                if (propertyValue == null) continue;
+
+                if (info.PropertyType == typeof( int ) || info.PropertyType == typeof( long ) || info.PropertyType == typeof( decimal )) {
                     builder.AppendFormat( "{0}:{1}", info.Name, propertyValue );
                 }
                 else if (info.PropertyType == typeof( Boolean )) {
@@ -83,9 +89,14 @@ namespace wojilu.Serialization {
                 else if (ReflectionUtil.IsBaseType( info.PropertyType )) {
                     builder.AppendFormat( "{0}:\"{1}\"", info.Name, EncodeQuoteAndClearLine( strUtil.ConverToNotNull( propertyValue ) ) );
                 }
+                else if (info.PropertyType.IsArray) {
+                    builder.AppendFormat( "{0}:{1}", info.Name, JsonString.ConvertArray( propertyValue ) );
+                }
+                else if (rft.IsInterface( info.PropertyType, typeof( IList ) )) {
+                    builder.AppendFormat( "{0}:{1}", info.Name, JsonString.ConvertList( (IList)propertyValue, false ) );
+                }
                 else {
-                    Object str = ReflectionUtil.GetPropertyValue( propertyValue, "Id" );
-                    builder.AppendFormat( "{0}:\"{1}\"", info.Name, EncodeQuoteAndClearLine( strUtil.ConverToNotNull( str ) ) );
+                    builder.AppendFormat( "{0}:{1}", info.Name, JsonString.ConvertObject( propertyValue ) );
                 }
                 builder.Append( ", " );
             }

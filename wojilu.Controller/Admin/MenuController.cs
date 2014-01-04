@@ -22,7 +22,7 @@ namespace wojilu.Web.Controller.Admin {
 
     public class MenuController : wojilu.Web.Controller.Common.Admin.MenuBaseController {
 
-        public IAdminLogService<SiteLog> logService { get; set; }
+        public virtual IAdminLogService<SiteLog> logService { get; set; }
 
         public MenuController() {
             menuService = new SiteMenuService();
@@ -34,7 +34,11 @@ namespace wojilu.Web.Controller.Admin {
             logService.Add( (User)ctx.viewer.obj, msg, dataInfo, menu.GetType().FullName, ctx.Ip );
         }
 
-        public override void Update( int id ) {
+        public override String GetCommonLink() {
+            return to( new Sys.DashboardController().Links );
+        }
+
+        public override void Update( long id ) {
 
             base.Update( id );
 

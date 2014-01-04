@@ -67,7 +67,7 @@ namespace wojilu.ORM {
                     IDataRecord record = rd;
                     Fill_EntityProperty_Ids( record, state.Includer.EntityPropertyList, ref hashtable );
 
-                    int id = Convert.ToInt32( record["Id"] );
+                    long id = Convert.ToInt64( record["Id"] );
                     Object cache = ObjectPool.FindOne( state.EntityInfo.Type, id );
 
                     if (cache != null) {
@@ -82,7 +82,7 @@ namespace wojilu.ORM {
                 logger.Error( "sql=>" + sql );
                 logger.Error( ex.Message );
                 logger.Error( ex.StackTrace );
-                throw ex;
+                throw new OrmException( ex.Message, ex );
             }
             finally {
                 OrmHelper.CloseDataReader( rd );
@@ -124,7 +124,7 @@ namespace wojilu.ORM {
                     arrIds = _ep_ids[info.ColumnName].ToString().Trim().TrimEnd( ',' ).Split( ',' );
 
                 foreach (String strId in arrIds) {
-                    IEntity cacheObj = ObjectPool.FindOne( info.EntityInfo.Type, cvt.ToInt( strId ) );
+                    IEntity cacheObj = ObjectPool.FindOne( info.EntityInfo.Type, cvt.ToLong( strId ) );
                     if (cacheObj != null) {
                         hashtable[getPropertyObjectKey( info.Name, cacheObj.Id )] = cacheObj;
                     }
@@ -180,7 +180,7 @@ namespace wojilu.ORM {
 
 
 
-        public static String getPropertyObjectKey( String propertyName, int objId ) {
+        public static String getPropertyObjectKey( String propertyName, long objId ) {
             return (propertyName + "_" + objId);
         }
 

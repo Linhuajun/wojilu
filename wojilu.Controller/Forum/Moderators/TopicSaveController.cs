@@ -17,11 +17,11 @@ namespace wojilu.Web.Controller.Forum.Moderators {
     [App( typeof( ForumApp ) )]
     public class TopicSaveController : ControllerBase {
 
-        public IForumTopicService topicService { get; set; }
-        public IForumBoardService boardService { get; set; }
-        public IForumCategoryService categoryService { get; set; }
-        public IForumLogService logService { get; set; }
-        public IForumService forumService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumCategoryService categoryService { get; set; }
+        public virtual IForumLogService logService { get; set; }
+        public virtual IForumService forumService { get; set; }
 
         public TopicSaveController() {
             boardService = new ForumBoardService();
@@ -45,74 +45,74 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         [HttpPost, DbTransaction]
-        public void Sticky() {
+        public virtual void Sticky() {
             topicService.MakeSticky( av() );
             echoToParent( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void StickyUndo() {
+        public virtual void StickyUndo() {
             topicService.MakeStickyUndo( av() );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void GlobalSticky() {
+        public virtual void GlobalSticky() {
             topicService.MakeGlobalSticky( av() );
             echoToParent( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void GlobalStickyUndo() {
+        public virtual void GlobalStickyUndo() {
             topicService.MakeGloablStickyUndo( av() );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void Pick() {
+        public virtual void Pick() {
             topicService.MakePick( av() );
             echoToParent( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void PickedUndo() {
+        public virtual void PickedUndo() {
             topicService.MakePickUndo( av() );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void Highlight() {
+        public virtual void Highlight() {
             topicService.MakeHighlight( strUtil.SqlClean( FormController.GetTitleStyle( ctx ), 150 ), av() );
             echoToParent( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void HighlightUndo() {
+        public virtual void HighlightUndo() {
             topicService.MakeHighlightUndo( av() );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void Lock() {
+        public virtual void Lock() {
             topicService.MakeLock( av() );
             echoToParent( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void LockUndo() {
+        public virtual void LockUndo() {
             topicService.MakeLockUndo( av() );
             echoAjaxOk();
         }
 
         [HttpPost, DbTransaction]
-        public void Delete() {
+        public virtual void Delete() {
             topicService.DeleteList( av() );
             echoToParent( lang( "opok" ) );
         }
 
         [HttpPost, DbTransaction]
-        public void Move() {
-            int targetForumId = ctx.PostInt( "targetForum" );
+        public virtual void Move() {
+            long targetForumId = ctx.PostLong( "targetForum" );
             ForumBoard targetBoard = boardService.GetById( targetForumId, ctx.owner.obj );
             ctx.SetItem( "targetForumId", targetForumId );
 
@@ -131,9 +131,9 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveStickySort() {
+        public virtual void SaveStickySort() {
 
-            int topicId = ctx.PostInt( "id" );
+            long topicId = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
             if (cmd == "up") {
                 topicService.StickyMoveUp( topicId );
@@ -151,9 +151,9 @@ namespace wojilu.Web.Controller.Forum.Moderators {
 
 
         [HttpPost, DbTransaction]
-        public void SaveGlobalStickySort() {
+        public virtual void SaveGlobalStickySort() {
 
-            int topicId = ctx.PostInt( "id" );
+            long topicId = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
             ForumApp app = ctx.app.obj as ForumApp;
 
@@ -173,9 +173,9 @@ namespace wojilu.Web.Controller.Forum.Moderators {
         }
 
         [HttpPost, DbTransaction]
-        public void Category() {
+        public virtual void Category() {
 
-            int categoryId = ctx.PostInt( "dropCategories" );
+            long categoryId = ctx.PostLong( "dropCategories" );
             ForumCategory category = categoryService.GetById( categoryId, ctx.owner.obj );
             if (category == null && categoryId > 0) {
                 echoText( "<h1>" + alang( "exCategoryNotFound" ) + "</h4>" );

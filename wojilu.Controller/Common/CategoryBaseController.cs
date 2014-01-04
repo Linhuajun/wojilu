@@ -49,7 +49,7 @@ namespace wojilu.Web.Controller.Common {
         [HttpPost, DbTransaction]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             T acategory = db.findById<T>( id );
@@ -79,7 +79,7 @@ namespace wojilu.Web.Controller.Common {
         [HttpPost, DbTransaction]
         public virtual void Create() {
 
-            int appId = ctx.app == null ? 0 : ctx.app.Id;
+            long appId = ctx.app == null ? 0 : ctx.app.Id;
 
             T category = Entity.New( typeof( T ).FullName ) as T;
             category.Name = ctx.Post( "Name" );
@@ -96,11 +96,11 @@ namespace wojilu.Web.Controller.Common {
 
             Result result = db.insert( category );
 
-            echoToParent( lang( "opok" ) );
+            echoToParentPart( lang( "opok" ) );
 
         }
 
-        public virtual void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( Update, id );
 
@@ -111,7 +111,7 @@ namespace wojilu.Web.Controller.Common {
 
 
         [HttpPost, DbTransaction]
-        public virtual void Update( int id ) {
+        public virtual void Update( long id ) {
 
             T acategory = db.findById<T>( id );
             acategory.Name = ctx.Post( "Name" );
@@ -121,12 +121,11 @@ namespace wojilu.Web.Controller.Common {
                 echoError( result );
             }
             else
-                echoToParent( lang( "opok" ) );
-                //echoToParent( lang( "okUpdate" ) );
+                echoToParentPart( lang( "opok" ) );
         }
 
         [HttpDelete, DbTransaction]
-        public virtual void Delete( int id ) {
+        public virtual void Delete( long id ) {
             T acategory = db.findById<T>( id );
             if (acategory != null) {
                 db.delete( acategory );

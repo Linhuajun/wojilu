@@ -1,23 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
+
 using wojilu.ORM;
 using wojilu.Common.AppBase.Interface;
 using wojilu.Members.Users.Domain;
 using wojilu.Common.Tags;
-using System.IO;
+using wojilu.Common.Comments;
 
 namespace wojilu.Apps.Download.Domain {
 
     [Table( "DownloadItem" )]
-    public class FileItem : ObjectBase<FileItem>, IAppData {
+    public class FileItem : ObjectBase<FileItem>, IAppData, ICommentTarget {
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         [Column( Length = 50 )]
         public String OwnerUrl { get; set; }
 
-        public int AppId { get; set; }
+        public long AppId { get; set; }
         public User Creator { get; set; }
         [Column( Length = 50 )]
         public String CreatorUrl { get; set; }
@@ -30,6 +32,7 @@ namespace wojilu.Apps.Download.Domain {
 
         //-------------------------------------------------------------------------------------------
 
+        [NotNull( "请填写标题" )]
         public String Title { get; set; }
 
         public String DemoUrl { get; set; }
@@ -49,7 +52,7 @@ namespace wojilu.Apps.Download.Domain {
         public int CategoryId { get; set; }
 
         [NotSave]
-        public int ParentCategoryId {
+        public long ParentCategoryId {
             get { return FileCategory.GetParentId( this.CategoryId ); }
         }
 
@@ -176,11 +179,11 @@ namespace wojilu.Apps.Download.Domain {
 
         //-------------------------------------------------------------------------------------------
 
-        public static DataPage<FileItem> GetPage( int appId ) {
+        public static DataPage<FileItem> GetPage( long appId ) {
             return FileItem.findPage( "AppId=" + appId );
         }
 
-        public static DataPage<FileItem> GetPage( int appId, String key ) {
+        public static DataPage<FileItem> GetPage( long appId, String key ) {
             if (strUtil.IsNullOrEmpty( key ))
                 return FileItem.findPage( "AppId=" + appId );
             else
@@ -191,7 +194,7 @@ namespace wojilu.Apps.Download.Domain {
             return strUtil.HasText( this.PreviewPic );
         }
 
-        public static DataPage<FileItem> GetPage( int appId, int categoryId ) {
+        public static DataPage<FileItem> GetPage( long appId, long categoryId ) {
 
             FileCategory c = FileCategory.GetById( categoryId );
             if (c.ParentId == 0) {
@@ -249,12 +252,17 @@ namespace wojilu.Apps.Download.Domain {
 
         }
 
-        public static List<FileItem> GetTops( int categoryId ) {
+        public static List<FileItem> GetTops( long categoryId ) {
             return FileItem.find( "CategoryId=" + categoryId + " order by Downloads desc, Hits desc, Replies desc, Id desc" ).list( 10 );
         }
 
         public static List<FileItem> GetTops() {
             return FileItem.find( "order by Downloads desc, Hits desc, Replies desc, Id desc" ).list( 10 );
+        }
+
+
+        public Type GetAppType() {
+            return typeof( DownloadApp );
         }
     }
 

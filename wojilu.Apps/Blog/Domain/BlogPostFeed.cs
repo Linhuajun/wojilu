@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
-using wojilu.Serialization;
+
+using wojilu.Common;
 using wojilu.Common.Msg.Service;
 using wojilu.Common.Msg.Enum;
-using wojilu.Common;
+
 
 namespace wojilu.Apps.Blog.Domain {
 
@@ -52,13 +53,13 @@ namespace wojilu.Apps.Blog.Domain {
             dic["userLink"] = Link.ToMember( post.Creator );
             dic["body"] = strUtil.ParseHtml( post.Content, 100 );
 
-            _shareData = JSON.DicToString( dic );
+            _shareData = Json.ToString( dic );
 
             return _shareData;
         }
 
         public void addNotification( String creator, String creatorLink ) {
-            int receiverId = this.post.OwnerId;
+            long receiverId = this.post.OwnerId;
 
             //String msg = "<a href=\"" + creatorLink + "\">" + creator + "</a> 分享了你的日志 <a href=\"" + alink.ToAppData( post ) + "\">" + post.Title + "</a>";
 

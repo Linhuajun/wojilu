@@ -18,34 +18,32 @@ namespace wojilu.Web.Controller.Admin.Members {
 
     public class SiteMsgController : ControllerBase {
 
-        public ISiteMessageService msgService { get; set; }
-        public ISiteRoleService roleService { get; set; }
+        public virtual ISiteMessageService msgService { get; set; }
+        public virtual ISiteRoleService roleService { get; set; }
 
         public SiteMsgController() {
             msgService = new SiteMessageService();
             roleService = new SiteRoleService();
         }
 
-        public void Index() {
+        public virtual void Index() {
 
-            set( "addLink", to(Add) );
+            set( "addLink", to( Add ) );
             DataPage<MessageSite> list = msgService.GetPage( 50 );
             bindList( "list", "msg", list.Results, editCmd );
             set( "page", list.PageBar );
         }
 
-        protected void editCmd( IBlock tpl, int id ) {
+        protected void editCmd( IBlock tpl, long id ) {
             tpl.Set( "msg.EditLink", to( Edit, id ) );
             tpl.Set( "msg.DeleteLink", to( Delete, id ) );
         }
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
 
             List<SiteRole> roles = getRoles();
             dropList( "siteRole", roles, "Name=Id", 0 );
-            editor( "Body", "", "350px" );
-
         }
 
         private List<SiteRole> getRoles() {
@@ -59,50 +57,49 @@ namespace wojilu.Web.Controller.Admin.Members {
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
-
+        public virtual void Create() {
 
             MessageSite msg = new MessageSite();
             msg.Title = ctx.Post( "Title" );
             msg.Body = ctx.PostHtml( "Body" );
-            msg.ReceiverRoleId = ctx.PostInt( "siteRole" );
+            msg.ReceiverRoleId = ctx.PostLong( "siteRole" );
             msg.Creator = (User)ctx.viewer.obj;
 
             Result result = msgService.Insert( msg );
             if (result.IsValid)
-                echoRedirect( lang( "opok" ), Index );
-            else 
+                echoRedirectPart( lang( "opok" ), to( Index ) );
+            else
                 echoError( result );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
             target( Update, id );
             MessageSite msg = msgService.GetById( id );
 
             set( "Title", msg.Title );
-            editor( "Body", msg.Body, "300px" );
+            set( "Body", msg.Body );
 
             List<SiteRole> roles = getRoles();
             dropList( "siteRole", roles, "Name=Id", msg.ReceiverRoleId );
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
             MessageSite msg = msgService.GetById( id );
 
             msg.Title = ctx.Post( "Title" );
             msg.Body = ctx.PostHtml( "Body" );
-            msg.ReceiverRoleId = ctx.PostInt( "siteRole" );
+            msg.ReceiverRoleId = ctx.PostLong( "siteRole" );
 
             Result result = msgService.Update( msg );
             if (result.IsValid)
-                echoRedirect( lang( "opok" ) );
+                echoRedirectPart( lang( "opok" ) );
             else
                 echoError( result );
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             MessageSite msg = msgService.GetById( id );
             msgService.Delete( msg );
             redirect( Index );

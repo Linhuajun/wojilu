@@ -10,12 +10,21 @@ using wojilu.Drawing;
 using wojilu.Members.Users.Domain;
 using wojilu.Members.Sites.Domain;
 using wojilu.Common.Resource;
+using wojilu.Web.Mvc;
 
 namespace wojilu.Web.Controller.Users {
 
     public class UserVo {
 
         public UserVo( User user ) {
+
+            this.Url = Link.ToMember( user );
+
+            this.RegisterDay = user.Created.ToShortDateString();
+            this.LastLoginDay = user.LastLoginTime.ToShortDateString();
+            this.Credit = user.Credit.ToString();
+            this.FollowerCount = user.FollowersCount.ToString();
+            this.FollowingCount = user.FollowingCount.ToString();
 
             this.Name = user.Name;
             this.Gender = AppResource.Gender.GetName( user.Gender );
@@ -37,8 +46,8 @@ namespace wojilu.Web.Controller.Users {
             this.Tel = user.Profile.Tel;
             this.WebSite = user.Profile.WebSite;
 
-            this.Face = user.PicOriginal;
-            this.FaceMedium = user.PicMedium;
+            this.Face = user.PicO;
+            this.FaceMedium = user.PicM;
             this.FaceSmall = user.PicSmall;
 
             this.RoleSite = getRoleString( user );
@@ -52,6 +61,15 @@ namespace wojilu.Web.Controller.Users {
             this.Eat = user.Profile.Eat;
             this.Book = user.Profile.Book;
         }
+
+        public String Url { get; set; }
+
+        public String RegisterDay { get; set; }
+        public String LastLoginDay { get; set; }
+
+        public String Credit { get; set; }
+        public String FollowerCount { get; set; }
+        public String FollowingCount { get; set; }
 
         public String Name {get;set;}
         public String Gender { get; set; }

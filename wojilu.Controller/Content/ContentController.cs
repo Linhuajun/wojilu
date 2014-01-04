@@ -22,60 +22,39 @@ namespace wojilu.Web.Controller.Content {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( ContentController ) );
 
-        public IContentSectionService SectionService { get; set; }
-        public IContentSectionTemplateService TplService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentSectionService SectionService { get; set; }
+        public virtual IContentCustomTemplateService ctService { get; set; }
 
         public ContentController() {
             SectionService = new ContentSectionService();
-            TplService = new ContentSectionTemplateService();
             ctService = new ContentCustomTemplateService();
         }
 
         [CachePage( typeof( ContentIndexPageCache ) )]
         [CacheAction( typeof( ContentIndexCache ) )]
-        public void Index() {
+        public virtual void Index() {
 
             ContentApp app = ctx.app.obj as ContentApp;
             ContentSetting setting = app.GetSettingsObj();
-            if (setting.CacheSeconds > 0) {
-                String content = loadFromCache();
-                if (strUtil.IsNullOrEmpty( content )) {
-                    content = loadHtml( IndexPage );
-                    SysCache.Put( getKey(), content, setting.CacheSeconds );
-                }
-                actionContent( content );
+
+            ctx.Page.Title = ctx.app.Name;
+            ctx.Page.Description = setting.MetaDescription;
+
+            if (strUtil.HasText( setting.MetaKeywords )) {
+                this.Page.Keywords = setting.MetaKeywords;
             }
             else {
-                run( IndexPage );
+                this.Page.Keywords = ctx.app.Name;
             }
-        }
-
-        private string getKey() {
-            return typeof( ContentApp ).FullName + "_" + ctx.app.Id;
-        }
-
-        private string loadFromCache() {
-            Object objCache = SysCache.Get( getKey() );
-            if (objCache == null) return null;
-            return objCache.ToString();
-        }
-
-        [NonVisit]
-        public void IndexPage() {
-
-            WebUtils.pageTitle( this, ctx.app.Name );
-
-            ContentApp app = ctx.app.obj as ContentApp;
 
             set( "app.Style", app.Style );
             set( "app.SkinStyle", app.SkinStyle );
+            set( "lnkSendPost", to( new Submit.PostController().Index ) );
 
             List<ContentSection> sections = SectionService.GetByApp( ctx.app.Id );
             bindRows( app, sections );
 
         }
-
 
     }
 }

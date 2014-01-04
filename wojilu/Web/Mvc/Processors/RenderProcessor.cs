@@ -17,9 +17,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using wojilu.Web.Context;
+
 using wojilu.Data;
 using wojilu.Caching;
+using wojilu.Web.Context;
 
 namespace wojilu.Web.Mvc.Processors {
 
@@ -51,15 +52,12 @@ namespace wojilu.Web.Mvc.Processors {
             ctx.web.ResponseWrite( context.getContent() );
 
             MvcEventPublisher.Instance.EndRender( ctx );
-
         }
 
         private static void addPageCache( ProcessContext context, MvcContext ctx ) {
 
             if (ctx.controller == null) return;
-
-            if (MvcConfig.Instance.IsPageCache==false) return;
-
+            if (ctx.IsMock) return;
 
             IPageCache pageCache = ControllerMeta.GetPageCache( ctx.controller.GetType(), ctx.route.action );
             if (pageCache == null) return;
@@ -72,22 +70,20 @@ namespace wojilu.Web.Mvc.Processors {
 
             logger.Info( "add page cache, key=" + key );
             pageCache.AfterCachePage( ctx );
-
-
         }
 
         private static String processPageMeta( string pageContent, MvcContext ctx ) {
 
             if (pageContent == null) return "";
 
-            String title = ctx.GetPageMeta().Title;
+            String title = ctx.Page.Title;
             if (strUtil.IsNullOrEmpty( title )) title = config.Instance.Site.SiteName;
             if (ctx.utils.getIsHome()) title = config.Instance.Site.SiteName + lang.get( "homePage" );
 
             String result = pageContent.Replace( "#{pageTitle}", title );
-            result = result.Replace( "#{pageDescription}", ctx.GetPageMeta().Description );
-            result = result.Replace( "#{pageKeywords}", ctx.GetPageMeta().Keywords );
-            result = result.Replace( "#{pageRssLink}", ctx.GetPageMeta().RssLink );
+            result = result.Replace( "#{pageDescription}", ctx.Page.Description );
+            result = result.Replace( "#{pageKeywords}", ctx.Page.Keywords );
+            result = result.Replace( "#{pageRssLink}", ctx.Page.RssLink );
 
             return result;
         }

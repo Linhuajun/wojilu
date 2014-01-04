@@ -31,8 +31,8 @@ namespace wojilu.Data {
         private static readonly ILog logger = LogManager.GetLogger( typeof( TableBuilderBase ) );
 
         public List<String> CheckMappingTableIsExist( IDbCommand cmd, String db, List<String> existTables, MappingClass mapping ) {
-            foreach (DictionaryEntry entry in mapping.ClassList) {
-                EntityInfo entity = entry.Value as EntityInfo;
+            foreach( KeyValuePair<String, EntityInfo> kv in mapping.ClassList ) {
+                EntityInfo entity = kv.Value;
                 if (entity.Database.Equals( db ) == false) continue;
 
                 if (!isTableCreated( existTables, entity )) {
@@ -42,7 +42,7 @@ namespace wojilu.Data {
             return existTables;
         }
 
-        private List<String> createTable( EntityInfo entity, IDbCommand cmd, List<String> existTables, IDictionary clsList ) {
+        private List<String> createTable( EntityInfo entity, IDbCommand cmd, List<String> existTables, Dictionary<String, EntityInfo> clsList ) {
 
             StringBuilder sb = new StringBuilder();
             sb.AppendFormat( "Create Table {0} (", getFullName( entity.TableName, entity ) );
@@ -81,6 +81,9 @@ namespace wojilu.Data {
             if (ep.Type == typeof( int )) {
                 addColumn_Int( sb, ep, columnName );
             }
+            else if (ep.Type == typeof( long )) {
+                addColumn_Long( sb, columnName );
+            }
             else if (ep.Type == typeof( DateTime )) {
                 addColumn_Time( sb, columnName );
             }
@@ -105,13 +108,15 @@ namespace wojilu.Data {
 
         //------------------------------------------------------------------------------------------------------------------------
 
-        protected virtual void addColumn_PrimaryKey( EntityInfo entity, StringBuilder sb, IDictionary clsList ) {
+        protected virtual void addColumn_PrimaryKey( EntityInfo entity, StringBuilder sb, Dictionary<String, EntityInfo> clsList ) {
             // 不是自动编号
             if (!DbConfig.Instance.IsAutoId || isAddIdentityKey( entity.Type ) == false) {
-                sb.Append( " Id int primary key default 0, " );
+                //sb.Append( " Id int primary key default 0, " );
+                sb.Append( " Id bigint primary key default 0, " );
             }
             else {
-                sb.Append( " Id int identity(1,1) primary key, " );
+                //sb.Append( " Id int identity(1,1) primary key, " );
+                sb.Append( " Id bigint identity(1,1) primary key, " );
             }
         }
 
@@ -132,6 +137,10 @@ namespace wojilu.Data {
             }
         }
 
+        protected virtual void addColumn_Long( StringBuilder sb, string columnName ) {
+            sb.Append( columnName );
+            sb.Append( " bigint, " );
+        }
 
         protected virtual void addColumn_Time( StringBuilder sb, String columnName ) {
             sb.Append( columnName );
@@ -212,7 +221,7 @@ namespace wojilu.Data {
 
         protected virtual void addColumn_entity( StringBuilder sb, String columnName ) {
             sb.Append( columnName );
-            sb.Append( " int default 0, " );
+            sb.Append( " bigint default 0, " );
         }
 
 

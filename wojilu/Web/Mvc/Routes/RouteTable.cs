@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,15 +24,23 @@ using System.Text;
 namespace wojilu.Web.Mvc.Routes {
 
     /// <summary>
-    /// ¬∑”…±Ì
+    /// Ë∑ØÁî±Ë°®
     /// </summary>
     public sealed class RouteTable {
 
-        private static List<RouteSetting> routeTable = loadRouteTable();
+        private static volatile List<RouteSetting> routeTable;
+        private static Object _syncRoot = new object();
+
         private static String _routeTableString;
 
         public static List<RouteSetting> GetRoutes() {
+            if (routeTable == null) {
+                lock (_syncRoot) {
+                    if (routeTable == null) routeTable = loadRouteTable();
+                }
+            }
             return routeTable;
+
         }
 
         public static void Init( String configContent ) {
@@ -53,7 +61,7 @@ namespace wojilu.Web.Mvc.Routes {
                 if (line.Trim().StartsWith( "//" )) continue;
 
                 if (line.Trim().Equals( furlSetting )) {
-                    return; // ≈‰÷√“—æ≠¥Ê‘⁄£¨÷±Ω”∑µªÿ
+                    return; // ÈÖçÁΩÆÂ∑≤ÁªèÂ≠òÂú®ÔºåÁõ¥Êé•ËøîÂõû
                 }
 
                 if (line.Trim().StartsWith( "{owner}" )) {
@@ -87,8 +95,13 @@ namespace wojilu.Web.Mvc.Routes {
 
         private static String loadConfig() {
 
-            String configString = String.Empty;
-            if (SystemInfo.IsWeb) configString = File.Read( RouteConfig.Instance.getConfigPath() );
+            String configString = "";
+
+            String cfgAbsPath = RouteConfig.Instance.getConfigPath();
+            if (file.Exists( cfgAbsPath )) {
+                configString = File.Read( cfgAbsPath );
+            }
+
             if (strUtil.IsNullOrEmpty( configString )) configString = getDefaultRouteConfig();
 
             return configString;
@@ -108,6 +121,10 @@ namespace wojilu.Web.Mvc.Routes {
         }
 
         private RouteTable() { }
+
+        public static void Reset() {
+            routeTable = null;
+        }
 
     }
 }

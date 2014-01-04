@@ -13,7 +13,10 @@ namespace wojilu.Members.Users.Interface {
 
         void Login( User user, LoginTime expiration, String ip, MvcContext ctx );
 
+        void Login(User user, long userConnectId, LoginTime loginTime, string ip, MvcContext ctx);
+
         void UpdateLastLogin( User user, String ip );
+
 
     }
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ namespace wojilu.Common.AppBase {
 
 
     /// <summary>
-    /// �洢״̬(��ͨ���ݸ塢ɾ����ϵͳɾ��)
+    /// 存储状态(普通、草稿、删除、系统删除)
     /// </summary>
     public class SaveStatus {
 
@@ -29,6 +29,12 @@ namespace wojilu.Common.AppBase {
         public static readonly int Draft = 1;
         public static readonly int Delete = 2;
         public static readonly int SysDelete = 3;
+
+        /// <summary>
+        /// 私有数据，不公开显示
+        /// </summary>
+        public static readonly int Private = 4;
+
 
     }
 

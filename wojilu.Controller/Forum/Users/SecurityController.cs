@@ -11,7 +11,7 @@ namespace wojilu.Web.Controller.Forum.Users {
 
     public class SecurityController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
 
         public SecurityController() {
             boardService = new ForumBoardService();
@@ -29,7 +29,7 @@ namespace wojilu.Web.Controller.Forum.Users {
                 return;
             }
 
-            int boardId = ctx.GetInt( "boardId" );
+            long boardId = ctx.GetLong( "boardId" );
             ForumBoard board = boardService.GetById( boardId, ctx.owner.obj );
             if (board == null) {
                 echo( "版块不存在" );

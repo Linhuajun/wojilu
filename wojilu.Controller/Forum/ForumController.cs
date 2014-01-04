@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -16,19 +16,20 @@ using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Interface;
 using wojilu.Web.Controller.Common;
 using wojilu.Web.Controller.Forum.Caching;
+using wojilu.Common.Picks;
 
 namespace wojilu.Web.Controller.Forum {
 
     [App( typeof( ForumApp ) )]
     public partial class ForumController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
-        public IForumService forumService { get; set; }
-        public IForumLinkService linkService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IUserService userService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumPickService pickService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumService forumService { get; set; }
+        public virtual IForumLinkService linkService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumPickService pickService { get; set; }
 
         public ForumController() {
             forumService = new ForumService();
@@ -42,14 +43,18 @@ namespace wojilu.Web.Controller.Forum {
 
         [CachePage( typeof( ForumIndexPageCache ) )]
         [CacheAction( typeof( ForumIndexCache ) )]
-        public void Index() {
-
-            WebUtils.pageTitle( this, ctx.app.Name );
+        public virtual void Index() {
 
             List<ForumBoard> categories = getTree().GetRoots();
             List<ForumLink> linkList = linkService.GetByApp( ctx.app.Id, ctx.owner.Id );
 
             ForumApp forum = ctx.app.obj as ForumApp;
+            ForumSetting setting = forum.GetSettingsObj();
+
+            ctx.Page.Title = ctx.app.Name;
+            ctx.Page.Keywords = setting.MetaKeywords;
+            ctx.Page.Description = setting.MetaDescription;
+
             String notice = strUtil.HasText( forum.Notice ) ? "<div class=\"forumPanel\" id=\"forumNotice\">" + forum.Notice + "</div>" : "";
             set( "forumNotice", notice );
 
@@ -58,7 +63,7 @@ namespace wojilu.Web.Controller.Forum {
 
 
         [NonVisit]
-        public void TopList() {
+        public virtual void TopList() {
 
             ForumApp app = ctx.app.obj as ForumApp;
 
@@ -69,7 +74,7 @@ namespace wojilu.Web.Controller.Forum {
 
             ForumSetting s = app.GetSettingsObj();
 
-            List<ForumPickedImg> pickedImg = ForumPickedImg.find( "AppId=" + ctx.app.Id ).list( s.HomeImgCount );
+            List<ForumPickedImg> pickedImg = db.find<ForumPickedImg>( "AppId=" + ctx.app.Id ).list( s.HomeImgCount );
             bindImgs( pickedImg );
 
             //List<ForumTopic> newPosts = topicService.GetByApp( ctx.app.Id, s.HomeListCount );
@@ -82,29 +87,29 @@ namespace wojilu.Web.Controller.Forum {
             //bindPosts( posts, "post" );
 
             List<ForumTopic> newPosts = topicService.GetByApp( ctx.app.Id, 30 );
-            List<MergedPost> results = pickService.GetAll( newPosts, ctx.app.Id );
+            List<MergedData> results = pickService.GetAll( newPosts, ctx.app.Id );
 
             bindCustomList( results );
         }
 
 
-        private void bindCustomList( List<MergedPost> list ) {
+        private void bindCustomList( List<MergedData> list ) {
 
             IBlock hBlock = getBlock( "hotPick" );
             IBlock pBlock = getBlock( "pickList" );
 
-            // °ó¶¨µÚÒ»¸ö
+            // ç»‘å®šç¬¬ä¸€ä¸ª
             if (list.Count == 0) return;
             bindPick( list[0], hBlock, 1 );
 
-            // °ó¶¨ÁÐ±í
+            // ç»‘å®šåˆ—è¡¨
             if (list.Count == 1) return;
             for (int i = 1; i < list.Count; i++) {
                 bindPick( list[i], pBlock, i + 1 );
             }
         }
 
-        private void bindPick( MergedPost x, IBlock block, int index ) {
+        private void bindPick( MergedData x, IBlock block, int index ) {
 
             block.Set( "x.Title", x.Title );
             block.Set( "x.Summary", x.Summary );

@@ -3,20 +3,24 @@
  */
 
 using System;
+using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
+using wojilu.Config;
 using wojilu.Common;
+using wojilu.Common.Onlines;
+using wojilu.Common.AppBase;
 
 using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Interface;
 using wojilu.Members.Users.Domain;
+using wojilu.Members.Sites.Domain;
 
 using wojilu.Web.Controller.Common;
 using wojilu.Web.Controller.Users.Admin;
-using wojilu.Common.Onlines;
-using wojilu.Config;
-using wojilu.Common.AppBase;
+
+using wojilu.OAuth;
 
 namespace wojilu.Web.Controller {
 
@@ -24,11 +28,11 @@ namespace wojilu.Web.Controller {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( MainController ) );
 
-        public IUserService userService { get; set; }
-        public IUserConfirmService confirmService { get; set; }
-        public ILoginService loginService { get; set; }
-        public IFriendService friendService { get; set; }
-        public IInviteService inviteService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IUserConfirmService confirmService { get; set; }
+        public virtual ILoginService loginService { get; set; }
+        public virtual IFriendService friendService { get; set; }
+        public virtual IInviteService inviteService { get; set; }
 
         public MainController() {
 
@@ -42,17 +46,57 @@ namespace wojilu.Web.Controller {
 
         }
 
-        public void Index() {
+        public virtual void xtest() {
+            set( "welcomeMsg", "hello world!" );
+        }
+
+        public virtual void xx() {
+        }
+
+        public virtual void Index() {
             redirect( new SiteInitController().Index );
         }
 
-        public void Login() {
+        public virtual void LoginBox() {
 
+            if (ctx.viewer.IsLogin) {
+                echo( "对不起，您已经登录" );
+                return;
+            }
+
+            set( "loginAction", Link.To( Site.Instance, new MainController().CheckLogin ) );
+            set( "regLink", Link.To( Site.Instance, new RegisterController().Register ) );
+            set( "resetPwdLink", Link.To( Site.Instance, new wojilu.Web.Controller.Common.ResetPwdController().StepOne ) );
+
+            IBlock block = getBlock( "validBox" );
+            if (config.Instance.Site.LoginNeedImgValidation) {
+                block.Set( "valideCode", Html.Captcha );
+                block.Next();
+            }
+
+            set( "returnUrl", ctx.Get( "returnUrl" ) );
+        }
+
+        public virtual void Login() {
+
+            if (ctx.viewer.IsLogin) {
+                echo( "对不起，您已经登录" );
+                return;
+            }
+
+            String returnUrl = getReturnUrl();
+            if (strUtil.HasText( returnUrl ) &&
+                (returnUrl.IndexOf( "frm=true" ) >= 0 || returnUrl.IndexOf( "nolayout=" ) >= 0)
+                ) {
+                run( LoginBox );
+                return;
+
+            }
 
             Page.Title = lang( "userLogin" );
             target( CheckLogin );
 
-            set( "returnUrl", getReturnUrl() );
+            set( "returnUrl", returnUrl );
 
             String lblUnRegisterTip = string.Format( lang( "unRegisterTip" ), to( new RegisterController().Register ) );
             set( "lblUnRegisterTip", lblUnRegisterTip );
@@ -60,20 +104,41 @@ namespace wojilu.Web.Controller {
             set( "resetPwdLink", to( new ResetPwdController().StepOne ) );
 
             setLoginValidationCode();
+
+            IBlock confirmEmailBlock = getBlock( "sendConfirmEmail" );
+            if (config.Instance.Site.EnableEmail) {
+                confirmEmailBlock.Set( "resendLink", to( new Common.ActivationController().SendEmailLogin ) );
+                confirmEmailBlock.Next();
+            }
+
+            load( "connectLogin", connectLogin );
+        }
+
+        public virtual void connectLogin() {
+
+            IBlock block = getBlock( "connectWrap" );
+            List<AuthConnectConfig> xlist = AuthConnectConfig.GetEnabledList();
+            if (xlist.Count == 0) return;
+
+            String lnk = Link.To( Site.Instance, new ConnectController().Login ) + "?connectType=";
+            xlist.ForEach( x => x.data.show = lnk + x.TypeFullName );
+            block.BindList( "connects", "x", xlist );
+
+            block.Next();
         }
 
         [HttpPost, DbTransaction]
-        public void Logout() {
+        public virtual void Logout() {
             ctx.web.UserLogout();
             OnlineStats.Instance.SubtractMemberCount();
             echoRedirect( lang( "logoutok" ), ctx.url.SiteAndAppPath );
         }
 
         [HttpPost, DbTransaction]
-        public void CheckLogin() {
+        public virtual void CheckLogin() {
 
             if (ctx.viewer.IsLogin) {
-                echo( "您有帐号，并且已经登录" );
+                echo( "对不起，您已经登录" );
                 return;
             }
 
@@ -100,7 +165,7 @@ namespace wojilu.Web.Controller {
             }
 
             if (userService.IsUserDeleted( member )) {
-                errors.Add( lang( "exUsere" ) );
+                errors.Add( lang( "exUser" ) );
                 run( Login );
                 return;
             }
@@ -108,13 +173,6 @@ namespace wojilu.Web.Controller {
             if (config.Instance.Site.UserNeedApprove && member.Status == MemberStatus.Approving) {
                 errors.Add( "您的账号尚未经过审核，请耐心等候" );
                 run( Login );
-                return;
-            }
-
-            // 需要激活才能登录
-            if ( member.IsEmailConfirmed==0 && config.Instance.Site.LoginType == LoginType.ActivationEmail ) {
-                ActivationController.AllowSendActivationEmail( ctx, member.Id );
-                redirect( new ActivationController().SendEmailButton );
                 return;
             }
 
@@ -126,12 +184,11 @@ namespace wojilu.Web.Controller {
 
             loginService.Login( member, expiration, ctx.Ip, ctx );
 
-            //echoToParent( lang( "loginok" ), getSavedReturnUrl() );
             echoRedirect( lang( "loginok" ), getSavedReturnUrl() );
         }
 
 
-        public void ConfirmEmail() {
+        public virtual void ConfirmEmail() {
 
             String code = ctx.Get( "c" );
 
@@ -143,7 +200,7 @@ namespace wojilu.Web.Controller {
                 echoRedirect( lang( "confirmok" ), sys.Path.Root );
             }
             else {
-                actionContent( "<div style=\"width:300px;margin:auto;padding:50px;font-size:28px;font-weight:bold;color:red;\">" + lang( "exConfirm" ) + "</div>" );
+                content( "<div style=\"width:300px;margin:auto;padding:50px;font-size:28px;font-weight:bold;color:red;\">" + lang( "exConfirm" ) + "</div>" );
             }
         }
 
@@ -166,6 +223,7 @@ namespace wojilu.Web.Controller {
         }
 
         private String getSavedReturnUrl() {
+
             String returnUrl = ctx.Post( "returnUrl" );
             if (strUtil.IsNullOrEmpty( returnUrl )) {
                 returnUrl = sys.Path.Root;
@@ -173,15 +231,19 @@ namespace wojilu.Web.Controller {
 
             returnUrl = returnUrl.Replace( "&amp;", "&" );
 
+            // 禁止跳转到注册页面
+            String regLink = to( new RegisterController().Register );
+            if (returnUrl.IndexOf( regLink ) >= 0) return sys.Path.Root;
+
             return returnUrl;
         }
 
-        public void lost() {
+        public virtual void lost() {
             HideLayout( typeof( LayoutController ) );
-            actionContent( "wojilu.lostPage" );
+            content( "wojilu.lostPage" );
         }
 
-        public void LoginScript() {
+        public virtual void LoginScript() {
             HideLayout( typeof( LayoutController ) );
 
             IBlock welcomeBlock = getBlock( "welcome" );
@@ -191,7 +253,7 @@ namespace wojilu.Web.Controller {
 
                 welcomeBlock.Set( "user.Name", ctx.viewer.obj.Name );
                 welcomeBlock.Set( "user.LogoutLink", t2( new MainController().Logout ) );
-                welcomeBlock.Set( "user.HomeLink", Link.To( ctx.viewer.obj, new FeedController().My, -1 ) );
+                welcomeBlock.Set( "user.HomeLink", Link.To( ctx.viewer.obj, new HomeController().Index, -1 ) );
                 welcomeBlock.Set( "user.SpaceLink", toUser( ctx.viewer.obj ) );
                 welcomeBlock.Next();
             }

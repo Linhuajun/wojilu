@@ -16,11 +16,11 @@ namespace wojilu.Web.Controller.Forum.Edits {
     [App( typeof( ForumApp ) )]
     public class TopicController : ControllerBase {
 
-        public IAttachmentService attachService { get; set; }
-        public IForumBoardService boardService { get; set; }
-        public IForumCategoryService categoryService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IForumTopicService topicService { get; set; }
+        public virtual IAttachmentService attachService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumCategoryService categoryService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
 
         public TopicController() {
             boardService = new ForumBoardService();
@@ -30,7 +30,7 @@ namespace wojilu.Web.Controller.Forum.Edits {
             attachService = new AttachmentService();
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( Update, id );
 
@@ -45,13 +45,13 @@ namespace wojilu.Web.Controller.Forum.Edits {
             set( "post.Title", post.Title );
             set( "post.TagList", topic.Tag.TextString );
 
-            editor( "Content", post.Content, "300px" );
+            set( "Content", post.Content );
 
             set( "attachmentLink", to( new Edits.AttachmentController().Admin, id ) );
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             ForumBoard board = getTree().GetById( topic.ForumBoard.Id );
@@ -68,7 +68,6 @@ namespace wojilu.Web.Controller.Forum.Edits {
                 }
 
                 topicService.Update( topic, (User)ctx.viewer.obj, ctx.owner.obj );
-                new ForumCacheRemove( boardService, topicService, this ).UpdateTopic( topic );
                 echoRedirect( lang( "opok" ), alink.ToAppData( topic ) );
             }
         }
@@ -77,7 +76,7 @@ namespace wojilu.Web.Controller.Forum.Edits {
             List<ForumCategory> categories = categoryService.GetByBoard( board.Id );
             if (categories.Count > 0) {
                 categories.Insert( 0, new ForumCategory( 0, alang( "plsSelectCategory" ) ) );
-                int categoryId = topic.Category == null ? 0 : topic.Category.Id;
+                long categoryId = topic.Category == null ? 0 : topic.Category.Id;
                 set( "post.Category", Html.DropList( categories, "CategoryId", "Name", "Id", categoryId ) );
             }
             else {
@@ -87,7 +86,7 @@ namespace wojilu.Web.Controller.Forum.Edits {
 
         //------------------------------------------------------------------
 
-        public void EditQ( int id ) {
+        public virtual void EditQ( long id ) {
 
             target( UpdateQ, id );
 
@@ -113,13 +112,13 @@ namespace wojilu.Web.Controller.Forum.Edits {
                 set( "rewardTip", alang( "rewardTip" ) );
             }
 
-            editor( "Content", post.Content, "300px" );
+            set( "Content", post.Content );
 
             set( "attachmentLink", to( new Edits.AttachmentController().Admin, id ) );
         }
 
         [HttpPost, DbTransaction]
-        public void UpdateQ( int id ) {
+        public virtual void UpdateQ( long id ) {
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
             ForumBoard board = getTree().GetById( topic.ForumBoard.Id );
@@ -141,7 +140,6 @@ namespace wojilu.Web.Controller.Forum.Edits {
                 }
 
                 topicService.Update( topic, (User)ctx.viewer.obj, ctx.owner.obj );
-                new ForumCacheRemove( boardService, topicService, this ).UpdateTopic( topic );
                 echoRedirect( lang( "opok" ), alink.ToAppData( topic ) );
             }
         }

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -48,7 +48,10 @@ namespace wojilu.Web.Controller.Admin.Sys {
             return lang( "editFileTip" );
         }
 
-        public void Index() {
+        public virtual void afterUpdate() {
+        }
+
+        public virtual void Index() {
 
             String absRootDir = PathHelper.Map( getRootPath() );
 
@@ -141,7 +144,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
             return strUtil.TrimStart( rdir, absViewDir ).Replace( "\\", "/" ).TrimStart( '/' );
         }
 
-        public void Edit() {
+        public virtual void Edit() {
 
             target( Update );
 
@@ -182,6 +185,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
             }
 
             String templateContent = strUtil.EncodeTextarea( file.Read( filePath ) );
+            templateContent = templateContent.Replace( "#{", "&#35;{" );
             set( "templateContent", templateContent );
             set( "editTip", this.getEditTip() );
         }
@@ -224,7 +228,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
             return false;
         }
 
-        public void ShowPic() {
+        public virtual void ShowPic() {
 
             String filePath = ctx.GetItem( "filePath" ).ToString();
             String ViewDir = ctx.GetItem( "ViewDir" ).ToString();
@@ -236,7 +240,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
             set( "picUrl", picUrl );
         }
 
-        public void ShowFile() {
+        public virtual void ShowFile() {
 
             String filePath = ctx.GetItem( "filePath" ).ToString();
             String ViewDir = ctx.GetItem( "ViewDir" ).ToString();
@@ -245,7 +249,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
 
         }
 
-        // ¼ì²é·Ç·¨´«ÈëµÄ²ÎÊı
+        // æ£€æŸ¥éæ³•ä¼ å…¥çš„å‚æ•°
         private Result validateFile( String currentFile ) {
             Result result = new Result();
             if (strUtil.IsNullOrEmpty( currentFile )) {
@@ -270,7 +274,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
         }
 
         [HttpPost]
-        public void Update() {
+        public virtual void Update() {
 
             String currentFile = ctx.Post( "file" );
             Result result = validateFile( currentFile );
@@ -289,7 +293,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
 
             String TemplateContent = ctx.PostHtmlAll( "TemplateContent" );
             if (file.Read( filePath.Trim() ).Equals( TemplateContent )) {
-                echo( "Ã»ÓĞĞŞ¸ÄÄÚÈİ" );
+                echo( "æ²¡æœ‰ä¿®æ”¹å†…å®¹" );
                 return;
             }
 
@@ -298,15 +302,16 @@ namespace wojilu.Web.Controller.Admin.Sys {
                 file.Write( backupPath, file.Read( filePath ) );
             }
 
-            // ±¸·İÇ°Ò»¸ö°æ±¾ÄÚÈİ(Èç¹ûÊÇÏµÍ³Ä¬ÈÏÄÚÈİ£¬Ò²¾ÍÊÇµÚÒ»¸ö°æ±¾»á×Ô¶¯±¸·İ)
+            // å¤‡ä»½å‰ä¸€ä¸ªç‰ˆæœ¬å†…å®¹(å¦‚æœæ˜¯ç³»ç»Ÿé»˜è®¤å†…å®¹ï¼Œä¹Ÿå°±æ˜¯ç¬¬ä¸€ä¸ªç‰ˆæœ¬ä¼šè‡ªåŠ¨å¤‡ä»½)
             else if (ctx.PostIsCheck( "IsBackupLast" )==1) {
                 file.Write( getLastBackupFilePath( filePath ), file.Read( filePath ) );
             }
 
             file.Write( filePath, TemplateContent );
 
-            echoRedirect( lang( "opok" ) );
+            afterUpdate();
 
+            echoRedirect( lang( "opok" ) );
         }
 
         private string getBackupFilePath( string absFilePath ) {
@@ -324,7 +329,7 @@ namespace wojilu.Web.Controller.Admin.Sys {
         }
 
         [HttpPut]
-        public void Restore() {
+        public virtual void Restore() {
 
             String currentFile = ctx.Get( "file" );
             Result result = validateFile( currentFile );
@@ -368,12 +373,9 @@ namespace wojilu.Web.Controller.Admin.Sys {
                 return;
             }
 
-
-
-            String cmdBackup = "<div style=\"padding:5px 0px;\"><label><input name=\"IsBackupLast\" type=\"checkbox\" /> " + lang( "editBackupLast" ) + "</label></div>";
+            String cmdBackup = "<div style=\"padding:5px 0px;\"><label><input name=\"IsBackupLast\" type=\"checkbox\" checked=\"checked\" /> " + lang( "editBackupLast" ) + "</label></div>";
             set( "backupCmd", cmdBackup );
             set( "disabled", "" );
-
 
             String lnkRestore = to( Restore ) + "?file=" + fileName;
             String imgBackup = strUtil.Join( sys.Path.Img, "back.gif" );

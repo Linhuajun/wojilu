@@ -66,19 +66,25 @@ namespace wojilu.Web.Mvc {
         /// <returns></returns>
         public static ControllerBase FindController( String typeName, MvcContext ctx ) {
 
-            if (typeName == null) throw new NullReferenceException();
+            if (typeName == null) throw new ArgumentNullException( "typeName" );
 
-            if (ObjectContext.Instance.TypeList.ContainsKey( typeName ) == false) return null;
-            Type controllerType = ObjectContext.Instance.TypeList[typeName] as Type;
-            return FindController( controllerType, ctx );
+            if (ObjectContext.Instance.TypeList.ContainsKey( typeName )) {
 
-            //IControllerFactory factory;
-            //factories.TryGetValue( typeName, out factory );
-            //if (factory == null) return null;
-            //ControllerBase result = factory.New();
-            //InjectController( result, ctx );
+                Type controllerType = ObjectContext.Instance.TypeList[typeName] as Type;
+                return FindController( controllerType, ctx );
 
-            //return result;
+            }
+            else if (MvcConfig.Instance.IsUrlToLower
+                && ObjectContext.Instance.LowerTypeList.ContainsKey( typeName.ToLower() )
+                ) {
+
+                Type controllerType = ObjectContext.Instance.LowerTypeList[typeName.ToLower()] as Type;
+                return FindController( controllerType, ctx );
+            }
+
+            else {
+                return null;
+            }
         }
 
         /// <summary>
@@ -90,19 +96,22 @@ namespace wojilu.Web.Mvc {
         public static ControllerBase FindController( Type controllerType, MvcContext ctx ) {
             if (controllerType == null) return null;
 
-            ControllerBase result = ObjectContext.CreateObject( controllerType ) as ControllerBase;
-            if (result == null) return null;
-            result.setContext( ctx );
-            setControllerAppInfo( controllerType, result );
+            ControllerBase controller = null;
 
-            //IControllerFactory factory;
-            //factories.TryGetValue( controllerType.FullName, out factory );
-            //if (factory == null) return null;
+            try {
+                controller = ObjectContext.Create( controllerType ) as ControllerBase;
+            }
+            catch (Exception ex) {
+                throw new Exception( "创建控制器失败，controller=" + controllerType.FullName, ex );
+            }
 
-            //ControllerBase result = factory.New();
-            //InjectController( result, ctx );
+            if (controller == null) return null;
 
-            return result;
+            ObjectContext.InterceptProperty( controller );
+            controller.setContext( ctx );
+            setControllerAppInfo( controllerType, controller );
+
+            return controller;
         }
 
         /// <summary>
@@ -113,6 +122,7 @@ namespace wojilu.Web.Mvc {
         public static void InjectController( ControllerBase controller, MvcContext ctx ) {
             if (controller == null) return;
             ObjectContext.Inject( controller );
+            ObjectContext.InterceptProperty( controller );
             controller.setContext( ctx );
             setControllerAppInfo( controller.GetType(), controller );
         }

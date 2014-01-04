@@ -19,9 +19,9 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
     [App( typeof( ReaderApp ) )]
     public partial class MainController : ControllerBase {
 
-        IFeedSourceService srcService { get; set; }
-        IFeedSysCategoryService categoryService { get; set; }
-        public IFeedSourceService feedService { get; set; }
+        public virtual IFeedSourceService srcService { get; set; }
+        public virtual IFeedSysCategoryService categoryService { get; set; }
+        public virtual IFeedSourceService feedService { get; set; }
 
         public MainController() {
             srcService = new FeedSourceService();
@@ -29,7 +29,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
             feedService = new FeedSourceService();
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             set( "addLink", to( Add ) );
 
@@ -60,7 +60,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
         [HttpPost, DbTransaction]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             FeedSource target = srcService.GetById( id );
@@ -82,7 +82,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
 
         }
 
-        public void Add() {
+        public virtual void Add() {
 
             List<FeedSysCategory> categories = categoryService.GetAll();
             if (categories.Count == 0) {
@@ -95,7 +95,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             String rssLink = ctx.Post( "Link" );
             if (strUtil.IsNullOrEmpty( rssLink )) {
@@ -103,7 +103,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
                 return;
             }
 
-            int categoryId = ctx.PostInt( "CategoryId" );
+            long categoryId = ctx.PostLong( "CategoryId" );
             FeedSysCategory category = categoryService.GetById( categoryId );
             String name = ctx.Post( "Name" );
 
@@ -116,7 +116,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
                 redirect( Index );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             FeedSource f = feedService.GetById( id );
             if (f == null) {
@@ -134,12 +134,12 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
             set( "feed.Title", f.Title );
             set( "feed.Name", f.Name );
             set( "feed.RssLink", f.FeedLink );
-            int selected = f.Category == null ? 0 : f.Category.Id;
+            long selected = f.Category == null ? 0 : f.Category.Id;
             dropList( "CategoryId", categories, "Name=Id", selected );
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             FeedSource f = feedService.GetById( id );
             if (f == null) {
@@ -148,7 +148,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
             }
 
             f.Name = ctx.Post( "Name" );
-            int categoryId = ctx.PostInt( "CategoryId" );
+            long categoryId = ctx.PostLong( "CategoryId" );
             f.Category = new FeedSysCategory( categoryId );
 
             feedService.Update( f );
@@ -157,7 +157,7 @@ namespace wojilu.Web.Controller.Admin.Apps.Reader {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             FeedSource f = feedService.GetById( id );
             if (f == null) {

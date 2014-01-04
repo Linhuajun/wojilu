@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,16 +21,16 @@ using System.Text;
 namespace wojilu.Common.Security {
 
     /// <summary>
-    /// Ȩ��ϵͳ�е� action �ӿ�
+    /// 权限系统中的 action 接口
     /// </summary>
     public interface ISecurityAction {
 
-        int Id { get; set; }
+        long Id { get; set; }
         String Name { get; set; }
         String Url { get; set; }
 
         IList findAll();
-        ISecurityAction GetById( int id );
+        ISecurityAction GetById( long id );
         void insert();
         Result update();
         void delete();

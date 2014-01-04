@@ -12,8 +12,46 @@ namespace wojilu.Web.Controller.Layouts {
 
     public class MenuHelper {
 
-        public static void bindMenuSingle( IBlock block, IMenu menu, MvcContext ctx ) {
+        public static string getCurrentClass( IMenu menu, Object currentModuleUrl, String currentClass ) {
+            return getCurrentClass( menu.RawUrl, currentModuleUrl, currentClass );
+        }
 
+        public static string getCurrentClass( String rawUrl, Object currentModuleUrl, String currentClass ) {
+
+            if (currentModuleUrl == null) return "";
+
+            if (currentModuleUrl is String) {
+
+                return getCssClassByString( rawUrl, currentModuleUrl.ToString(), currentClass );
+
+            }
+            else if (currentModuleUrl is String[]) {
+
+                return getCssClassByArray( rawUrl, currentModuleUrl as String[], currentClass );
+            }
+            else {
+                return "";
+            }
+        }
+
+        private static String getCssClassByArray( String rawUrl, String[] arrUrl, String currentClass ) {
+
+            foreach (String cUrl in arrUrl) {
+                if (cUrl == null) continue;
+                String cssClass = getCssClassByString( rawUrl, cUrl, currentClass );
+                if (strUtil.HasText( cssClass )) {
+                    return cssClass;
+                }
+            }
+            return "";
+        }
+
+        private static String getCssClassByString( String rawUrl, String currentModuleUrl, String currentClass ) {
+            String cUrl = strUtil.TrimEnd( currentModuleUrl, MvcConfig.Instance.UrlExt ).TrimStart( '/' );
+            return strUtil.EqualsIgnoreCase( cUrl, rawUrl ) ? currentClass : "";
+        }
+
+        public static void bindMenuSingle( IBlock block, IMenu menu, MvcContext ctx ) {
 
             block.Set( "menu.Id", menu.Id );
             block.Set( "menu.Name", menu.Name );
@@ -137,6 +175,7 @@ namespace wojilu.Web.Controller.Layouts {
 
             foreach (IMenu m in list) {
 
+                if (m == null || strUtil.IsNullOrEmpty( m.RawUrl )) continue;
                 if (m.RawUrl.StartsWith( "http:" )) continue;
 
                 Route rt = RouteTool.RecognizePath( m.RawUrl );

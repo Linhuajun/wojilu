@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -19,13 +19,13 @@ namespace wojilu.Common.Tags {
         }
 
         /// <summary>
-        /// ±£´æÄ³¸ö app µÄ tag ĞÅÏ¢£¬±ÈÈçÔÚ ForumTag ÖĞ±£´æ
+        /// ä¿å­˜æŸä¸ª app çš„ tag ä¿¡æ¯ï¼Œæ¯”å¦‚åœ¨ ForumTag ä¸­ä¿å­˜
         /// </summary>
         /// <param name="app"></param>
         /// <param name="tagString"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public static Boolean Insert( IApp app, String tagString, int userId ) {
+        public static bool Insert(IApp app, string tagString, long userId) {
             Result result = new Result();
             if (strUtil.IsNullOrEmpty( tagString )) {
                 return false;
@@ -37,7 +37,7 @@ namespace wojilu.Common.Tags {
             return true;
         }
 
-        private static Tag getTag( String strTag, int userId ) {
+        private static Tag getTag(string strTag, long userId) {
             Tag tag = TagService.GetTag( strTag );
             if (tag == null) {
                 tag = new Tag();

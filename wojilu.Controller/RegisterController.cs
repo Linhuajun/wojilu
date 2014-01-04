@@ -4,22 +4,22 @@
 
 using System;
 
+using wojilu.Web.Mvc;
+using wojilu.Web.Mvc.Attr;
+
+using wojilu.Config;
 using wojilu.Common;
 using wojilu.Common.AppBase;
 using wojilu.Common.MemberApp.Interface;
 using wojilu.Common.Menus.Interface;
 using wojilu.Common.Resource;
 
-using wojilu.Config;
-
 using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Interface;
 using wojilu.Members.Users.Service;
 
 using wojilu.Web.Controller.Common;
-using wojilu.Web.Controller.Utils;
-using wojilu.Web.Mvc;
-using wojilu.Web.Mvc.Attr;
+using wojilu.Web.Controller.Helpers;
 
 namespace wojilu.Web.Controller {
 
@@ -27,11 +27,11 @@ namespace wojilu.Web.Controller {
 
         private static readonly ILog logger = LogManager.GetLogger( typeof( RegisterController ) );
 
-        public IUserService userService { get; set; }
-        public IUserConfirmService confirmService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IUserConfirmService confirmService { get; set; }
         public IConfirmEmail confirmEmail { get; set; }
-        public ILoginService loginService { get; set; }
-        public IInviteService inviteService { get; set; }
+        public virtual ILoginService loginService { get; set; }
+        public virtual IInviteService inviteService { get; set; }
 
         public virtual IMemberAppService appService { get; set; }
         public virtual IMenuService menuService { get; set; }
@@ -58,10 +58,10 @@ namespace wojilu.Web.Controller {
             }
         }
 
-        public void Invite( int userId ) {
+        public virtual void Invite( long userId ) {
 
             if (ctx.viewer.IsLogin) {
-                echo( "您有帐号，并且已经登录" );
+                echo( "对不起，您已经登录" );
                 return;
             }
 
@@ -78,14 +78,19 @@ namespace wojilu.Web.Controller {
             set( "inviteCode", inviteCode );
 
             set( "userName", user.Name );
-            set( "userPic", user.PicMedium );
+            set( "userPic", user.PicM );
 
             set( "loginLink", to( new MainController().Login ) );
 
         }
 
         [HttpPost]
-        public void RegisterFriend( int friendId ) {
+        public virtual void RegisterFriend( long friendId ) {
+
+            if (ctx.viewer.IsLogin) {
+                echo( "对不起，您已经登录" );
+                return;
+            }
 
             String inviteCode = ctx.Post( "inviteCode" );
 
@@ -98,14 +103,19 @@ namespace wojilu.Web.Controller {
             User friend = userService.GetById( friendId );
 
             set( "friend.Name", friend.Name );
-            set( "friend.Pic", friend.PicMedium );
+            set( "friend.Pic", friend.PicM );
             set( "friend.Id", friend.Id );
             set( "friend.Code", inviteCode );
 
             bindRegister();
         }
 
-        public void Register() {
+        public virtual void Register() {
+
+            if (ctx.viewer.IsLogin) {
+                echo( "对不起，您已经登录" );
+                return;
+            }
 
             if (config.Instance.Site.RegisterType == RegisterType.CloseUnlessInvite) {
                 echo( "对不起，您必须接受邀请才能注册" );
@@ -113,7 +123,9 @@ namespace wojilu.Web.Controller {
             }
 
             bindRegister();
+            load( "connectLogin", new MainController().connectLogin );
         }
+
 
         private void bindRegister() {
 
@@ -188,7 +200,7 @@ namespace wojilu.Web.Controller {
         }
 
         [HttpPost, DbTransaction]
-        public void CheckEmailExist() {
+        public virtual void CheckEmailExist() {
 
             String email = ctx.Post( "Email" );
 
@@ -201,7 +213,7 @@ namespace wojilu.Web.Controller {
         }
 
         [HttpPost, DbTransaction]
-        public void CheckUserExist() {
+        public virtual void CheckUserExist() {
 
             String name = ctx.Post( "Name" );
 
@@ -214,7 +226,7 @@ namespace wojilu.Web.Controller {
         }
 
         [HttpPost, DbTransaction]
-        public void CheckUrlExist() {
+        public virtual void CheckUrlExist() {
 
             String url = ctx.Post( "FriendUrl" );
             if (userService.IsUrlReservedOrExist( url )) {
@@ -228,7 +240,7 @@ namespace wojilu.Web.Controller {
 
         //--------------------------------------------------------------------------------
 
-        public void Done() {
+        public virtual void Done() {
 
             set( "email", ctx.Get( "email" ) );
             set( "domainName", config.Instance.Site.GetSmtpUserDomain() );
@@ -244,7 +256,7 @@ namespace wojilu.Web.Controller {
         }
 
         [HttpPost, DbTransaction]
-        public void SaveReg() {
+        public virtual void SaveReg() {
 
             if (ctx.viewer.IsLogin) {
                 echo( "您有帐号，并且已经登录" );
@@ -253,7 +265,7 @@ namespace wojilu.Web.Controller {
 
             if (config.Instance.Site.RegisterType == RegisterType.CloseUnlessInvite) {
 
-                int friendId = ctx.PostInt( "friendId" );
+                long friendId = ctx.PostLong( "friendId" );
                 String friendCode = ctx.Post( "friendCode" );
                 Result result = inviteService.Validate( friendId, friendCode );
                 if (result.HasErrors) {
@@ -277,10 +289,10 @@ namespace wojilu.Web.Controller {
             }
 
             // 是否开启空间
-            RegUtils.CheckUserSpace( user, ctx );
+            RegHelper.CheckUserSpace( user, ctx );
 
             // 好友处理
-            RegUtils.ProcessFriend( user, ctx );
+            RegHelper.ProcessFriend( user, ctx );
 
             // 是否需要审核、激活
             if (config.Instance.Site.UserNeedApprove) {
@@ -292,11 +304,7 @@ namespace wojilu.Web.Controller {
                 set( "siteName", config.Instance.Site.SiteName );
             }
             else if (config.Instance.Site.EnableEmail) {
-
-                if (config.Instance.Site.LoginType == LoginType.Open) {
-                    loginService.Login( user, LoginTime.Forever, ctx.Ip, ctx );
-                }
-
+                loginService.Login( user, LoginTime.Forever, ctx.Ip, ctx );
                 redirectUrl( to( Done ) + "?email=" + user.Email );
 
             }
@@ -307,16 +315,16 @@ namespace wojilu.Web.Controller {
 
         }
 
-        public void needApproveMsg() {
+        public virtual void needApproveMsg() {
             set( "siteName", config.Instance.Site.SiteName );
         }
 
-        public void SendConfirmEmail( int userId ) {
+        public virtual void SendConfirmEmail( long userId ) {
 
             User user = userService.GetById( userId );
-            Boolean sent = confirmEmail.SendEmail( user, null, null );
+            Result sent = confirmEmail.SendEmail( user, null, null );
 
-            if (sent) {
+            if (sent.IsValid) {
                 echoAjaxOk();
             }
             else
@@ -333,14 +341,14 @@ namespace wojilu.Web.Controller {
             return returnUrl;
         }
 
-        public User validateUser() {
+        public virtual User validateUser() {
 
             if (config.Instance.Site.RegisterNeedImgValidateion) Html.Captcha.CheckError( ctx );
 
             String name = ctx.Post( "Name" );
             String pwd = ctx.Post( "Password1" );
             String pageUrl = ctx.Post( "FriendUrl" );
-            String email = ctx.Post( "Email" );
+            String email = strUtil.SubString( ctx.Post( "Email" ), RegPattern.EmailLength );
 
 
             if (strUtil.IsNullOrEmpty( name )) {

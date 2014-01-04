@@ -6,7 +6,6 @@ using System;
 using System.IO;
 
 using wojilu.Web.Mvc;
-using wojilu.Web.Mvc.Attr;
 using wojilu.Web.Utils;
 using wojilu.Members.Users.Domain;
 using wojilu.Common.Microblogs.Service;
@@ -17,27 +16,26 @@ using wojilu.Apps.Photo.Interface;
 using wojilu.Apps.Photo.Service;
 using wojilu.Web.Controller.Users.Admin;
 using System.Collections.Generic;
-using wojilu.Serialization;
 using wojilu.Common;
 
 namespace wojilu.Web.Controller.Microblogs.My {
 
     public class MbSaveController : ControllerBase {
 
-        public IMicroblogService microblogService { get; set; }
-        public IPhotoPostService postService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
 
         public MbSaveController() {
             microblogService = new MicroblogService();
             postService = new PhotoPostService();
         }
 
-        public void Publish() {
+        public virtual void Publish() {
 
-            if (Component.IsClose( typeof( MicroblogApp ) )) {
-                actionContent( "" );
-                return;
-            }
+            //if (Component.IsClose( typeof( MicroblogApp ) )) {
+            //    content( "" );
+            //    return;
+            //}
 
 
             target( new MicroblogSaveController().Create );
@@ -60,11 +58,11 @@ namespace wojilu.Web.Controller.Microblogs.My {
 
         }
 
-        public void UploadForm() {
+        public virtual void UploadForm() {
             target( SavePicIE );
         }
 
-        public void SavePicIE() {
+        public virtual void SavePicIE() {
             HttpFile postedFile = ctx.GetFileSingle();
 
             Result result = Uploader.SaveImg( postedFile );
@@ -79,7 +77,7 @@ namespace wojilu.Web.Controller.Microblogs.My {
             set( "picUrl", post.DataUrl );
         }
 
-        public void SavePic() {
+        public virtual void SavePic() {
 
             HttpFile postedFile = ctx.GetFileSingle();
 
@@ -96,7 +94,7 @@ namespace wojilu.Web.Controller.Microblogs.My {
             dic["picThumbUrl"] = post.ImgThumbUrl;
             dic["picUrl"] = post.DataUrl;
 
-            String json = JsonString.ConvertDictionary( dic );
+            String json = Json.ToString( dic );
 
             echoText( json );
 

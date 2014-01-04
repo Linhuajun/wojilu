@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -63,8 +63,11 @@ namespace wojilu.Web.Controller.Layouts {
             IBlock block = getBlock( "gnavLink" );
             foreach (IMenu menu in list) {
 
+                block.Set( "menu.CurrentClass", getCurrentClass( menu, ctx.GetItemString( "_moduleUrl" ), "current-group-menu" ) );
+
                 IBlock subNavBlock = block.GetBlock( "subNav" );
                 IBlock rootBlock = block.GetBlock( "rootNav" );
+
                 List<IMenu> subMenus = MenuHelper.getSubMenus( menus, menu );
 
                 if (subMenus.Count == 0) {
@@ -79,6 +82,28 @@ namespace wojilu.Web.Controller.Layouts {
                 block.Next();
 
             }
+        }
+
+        public virtual string getCurrentClass( IMenu menu, String currentModuleUrl, String currentClass ) {
+
+            if (strUtil.IsNullOrEmpty( currentModuleUrl )) return "";
+
+            // 论坛特殊处理：因为论坛链接不是论坛首页，而是版块首页
+            if (menu.RawUrl.ToLower().IndexOf( "forum" ) < 0) return MenuHelper.getCurrentClass( menu, currentModuleUrl, currentClass );
+
+            String forumAppUrl = getForumAppUrl( menu.RawUrl );
+
+            if (currentModuleUrl.IndexOf( forumAppUrl ) >= 0) return currentClass;
+            return "";
+        }
+
+        private string getForumAppUrl( string rawUrl ) {
+            String[] arr = rawUrl.Split( wojilu.Web.Mvc.Routes.RouteTool.Separator );
+            return joinUrl( joinUrl( arr[0], "Forum" ), "Index" );
+        }
+
+        private String joinUrl( String a, String b ) {
+            return strUtil.Join( a, b, MvcConfig.Instance.UrlSeparator );
         }
 
 
@@ -99,7 +124,7 @@ namespace wojilu.Web.Controller.Layouts {
 
         private void bindSkin() {
             skinService.SetSkin( new GroupSkin() );
-            String skinContent = skinService.GetUserSkin( ctx.owner.obj, ctx.GetInt( "skinId" ), MvcConfig.Instance.CssVersion );
+            String skinContent = skinService.GetUserSkin( ctx.owner.obj, ctx.GetLong( "skinId" ), MvcConfig.Instance.CssVersion );
             set( "skinContent", skinContent );
         }
 
@@ -111,15 +136,14 @@ namespace wojilu.Web.Controller.Layouts {
 
         private String getJoinCmd( Group group ) {
 
-            //String lnkJoin = to( new Groups.MemberController().JoinGroup );
             String lnkJoin = to( new Groups.JoinController().Index );
             String lnkQuit = to( new Groups.JoinController().Quit );
 
 
-            String joinStr = string.Format( "<span href='{0}' class='frmBox cmd'><img src=\"{1}\" /> {2}</span>", lnkJoin, strUtil.Join( sys.Path.Img, "add.gif" ), lang( "joinGroup" ) );
-            String quitStr = string.Format( "<span href='{0}' class='frmBox cmd'>{1} {2}</span>", lnkQuit, ForumLocationUtil.separator, lang( "quitGroup" ) );
+            String joinStr = string.Format( "<span href='{0}' class='frmBox btn btn-mini'><i class='icon-plus'></i> {1}</span>", lnkJoin, lang( "joinGroup" ) );
+            String quitStr = string.Format( "<span href='{0}' class='frmBox btn btn-mini'><i class='icon-off'></i> {1}</span>", lnkQuit, lang( "quitGroup" ) );
 
-            int status = mgrService.MemberStatus( (User)ctx.viewer.obj, group.Id );
+            long status = mgrService.MemberStatus( (User)ctx.viewer.obj, group.Id );
 
             String cmd = "";
             if (status == GroupRole.Member.Id || status == GroupRole.Administrator.Id)
@@ -143,7 +167,7 @@ namespace wojilu.Web.Controller.Layouts {
         }
 
 
-        //public void bindGroupNav( IList list ) {
+        //public virtual void bindGroupNav( IList list ) {
 
         //    IBlock block = getBlock( "gnavLink" );
 

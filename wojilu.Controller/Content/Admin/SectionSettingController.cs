@@ -17,9 +17,9 @@ namespace wojilu.Web.Controller.Content.Admin {
     [App( typeof( ContentApp ) )]
     public class SectionSettingController : ControllerBase {
 
-        public IContentSectionService sectionService { get; set; }
-        public IContentCustomTemplateService ctService { get; set; }
-        public IContentSectionTemplateService templatelService { get; set; }
+        public virtual IContentSectionService sectionService { get; set; }
+        public virtual IContentCustomTemplateService ctService { get; set; }
+        public virtual IContentSectionTemplateService templatelService { get; set; }
 
         public SectionSettingController() {
             sectionService = new ContentSectionService();
@@ -27,7 +27,7 @@ namespace wojilu.Web.Controller.Content.Admin {
             templatelService = new ContentSectionTemplateService();
         }
 
-        public void Edit( int sectionId ) {
+        public virtual void Edit( long sectionId ) {
 
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             if (section == null) {
@@ -40,10 +40,12 @@ namespace wojilu.Web.Controller.Content.Admin {
             set( "section.Title", section.Title );
             set( "section.MoreLink", section.MoreLink );
 
+            set( "section.MetaKeywords", section.MetaKeywords );
+            set( "section.MetaDescription", section.MetaDescription );
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
             ContentSection section = sectionService.GetById( id, ctx.app.Id );
             if (section == null) {
                 echoToParentPart( lang( "exDataNotFound" ) );
@@ -61,6 +63,10 @@ namespace wojilu.Web.Controller.Content.Admin {
                 section.Title = strUtil.SubString( section.Title, 50 );
             }
 
+            section.MetaKeywords = ctx.Post( "MetaKeywords" );
+            section.MetaDescription = strUtil.CutString( ctx.Post( "MetaDescription" ), 250 );
+
+
             sectionService.Update( section );
 
             echoToParentPart( lang( "opok" ) );
@@ -69,7 +75,7 @@ namespace wojilu.Web.Controller.Content.Admin {
         //-----------------------------------------------------------------------------------------------------
 
 
-        public void EditCount( int sectionId ) {
+        public virtual void EditCount( long sectionId ) {
 
             ContentSection section = sectionService.GetById( sectionId, ctx.app.Id );
             if (section == null) {
@@ -84,10 +90,13 @@ namespace wojilu.Web.Controller.Content.Admin {
             set( "section.Title", section.Title );
             set( "section.MoreLink", section.MoreLink );
 
+            set( "section.MetaKeywords", section.MetaKeywords );
+            set( "section.MetaDescription", section.MetaDescription );
+
         }
 
         [HttpPost, DbTransaction]
-        public void SaveCount( int sectionId ) {
+        public virtual void SaveCount( long sectionId ) {
 
             ContentSection s = sectionService.GetById( sectionId, ctx.app.Id );
             if (s == null) {
@@ -96,6 +105,9 @@ namespace wojilu.Web.Controller.Content.Admin {
 
             s.Title = ctx.Post( "Title" );
             s.MoreLink = strUtil.CutString( ctx.PostHtml( "MoreLink" ), 250 );
+            s.MetaKeywords = ctx.Post( "MetaKeywords" );
+            s.MetaDescription = strUtil.CutString( ctx.Post( "MetaDescription" ), 250 );
+
             if (strUtil.IsNullOrEmpty( s.Title )) {
                 errors.Add( lang( "exName" ) );
                 run( EditCount, sectionId );
@@ -116,7 +128,7 @@ namespace wojilu.Web.Controller.Content.Admin {
 
         //-----------------------------------------------------------------------------------------------------
 
-        public void EditBinder( int id ) {
+        public virtual void EditBinder( long id ) {
 
             ContentSection section = sectionService.GetById( id, ctx.app.Id );
             if (section == null) {
@@ -132,6 +144,10 @@ namespace wojilu.Web.Controller.Content.Admin {
 
             set( "section.Title", section.Title );
             set( "section.MoreLink", section.MoreLink );
+
+            set( "section.MetaKeywords", section.MetaKeywords );
+            set( "section.MetaDescription", section.MetaDescription );
+
         }
 
         private void bindSettingEdit( ContentSection section, Service service ) {
@@ -150,15 +166,15 @@ namespace wojilu.Web.Controller.Content.Admin {
 
 
         [HttpPost, DbTransaction]
-        public void UpdateBinder( int id ) {
+        public virtual void UpdateBinder( long id ) {
             ContentSection section = sectionService.GetById( id, ctx.app.Id );
             if (section == null) {
                 echoToParentPart( lang( "exDataNotFound" ) );
                 return;
             }
 
-            int tplId = section.TemplateId;
-            int cTplId = section.CustomTemplateId;
+            long tplId = section.TemplateId;
+            long cTplId = section.CustomTemplateId;
 
             section = ContentValidator.ValidateSectionEdit( section, ctx );
             if (errors.HasErrors) {
@@ -169,6 +185,9 @@ namespace wojilu.Web.Controller.Content.Admin {
             // 此处不修改模板
             section.TemplateId = tplId;
             section.CustomTemplateId = cTplId;
+
+            section.MetaKeywords = ctx.Post( "MetaKeywords" );
+            section.MetaDescription = strUtil.CutString( ctx.Post( "MetaDescription" ), 250 );
 
 
             if (section.ServiceId > 0) {
@@ -199,7 +218,7 @@ namespace wojilu.Web.Controller.Content.Admin {
             sectionService.Update( section );
         }
 
-        private String sectionNotFound( int id ) {
+        private String sectionNotFound( long id ) {
             return lang( "exDataNotFound" ) + ":ContentSection, id=" + id;
         }
 

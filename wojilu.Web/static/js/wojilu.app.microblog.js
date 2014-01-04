@@ -1,4 +1,4 @@
-﻿define(['wojilu.core.ems'], function(x) {
+﻿define(['wojilu.core.ems', 'wojilu.app.microblog.view'], function(x, viewHelper) {
 
     function _getEmotionTable() {
         var trS = '<table cellpadding="3" class="emSelector"><tr id="emRow1">';
@@ -163,6 +163,8 @@
             var picUrl = $( '#picUrl' ).val();
             var videoId = $( '#videoId' ).val();
             var srcType = $('#srcType' ).val();
+			var fromPage = $('#fromPage' ).val();
+			var returnUrl = $('#returnUrl').val();
 
             if( wojilu.str.isNull( mycontent ) ) {			
                 $('#loading').html( '' );
@@ -174,7 +176,7 @@
             btn.attr( 'disabled', 'disabled' );
             
             var url = pubUrl.toAjax();
-            $.post( url, { 'Content':mycontent, 'PicUrl':picUrl, 'videoId':videoId, 'srcType':srcType }, function( data ) {
+            $.post( url, { 'Content':mycontent, 'PicUrl':picUrl, 'videoId':videoId, 'srcType':srcType, 'fromPage':fromPage }, function( data ) {
 
                 btn.attr( 'disabled', false );
                 
@@ -201,7 +203,7 @@
                         newBlog.fadeIn('slow');
 
                         // 给新博增加点击事件
-                        addBlogEvent( newBlog );
+                        viewHelper.addBlogEvent( newBlog );
                         wojilu.ui.frmBox( newBlog );
                         wojilu.ui.frmUpdate( newBlog );
                         wojilu.ui.httpMethod( newBlog );
@@ -217,7 +219,12 @@
                         }, 2000 );
                     }
                     else {
-                        wojilu.tool.getRootParent().wojilu.tool.forward( msg.ForwardUrl,0);
+						if( returnUrl ) {
+							wojilu.tool.getRootParent().wojilu.tool.forward( returnUrl,0);
+						}
+						else {
+							wojilu.tool.getRootParent().wojilu.tool.forward( msg.ForwardUrl,0);
+						}
                     }
                 }
                 else {

@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using System.Web;
+
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
-using wojilu.Serialization;
+using wojilu.Caching;
 
 namespace wojilu.Web.Controller.Admin {
 
     public class CacheController : ControllerBase {
+
+        private IApplicationCache _appCache = CacheManager.GetApplicationCache();
 
         public override void CheckPermission() {
 
@@ -19,18 +20,18 @@ namespace wojilu.Web.Controller.Admin {
             }
         }        
 
-        public void Index() {
+        public virtual void Index() {
 
             set( "clearLink", to( Clear ) );
             set( "addLink", to( Add ) );
             set( "deleteKeyLink", to( DeleteByKey ) );
             set( "veiwLink", to( ViewCache ) );
 
-            IDictionaryEnumerator e = HttpRuntime.Cache.GetEnumerator();
+            IDictionaryEnumerator e = _appCache.GetEnumerator();
 
             IBlock block = getBlock( "list" );
 
-            set( "cacheCount", HttpRuntime.Cache.Count );
+            set( "cacheCount", _appCache.Count );
 
             int count = 0;
             while (e.MoveNext()) {
@@ -51,14 +52,14 @@ namespace wojilu.Web.Controller.Admin {
 
         }
 
-        public void Add() {
+        public virtual void Add() {
 
             target( Create );
 
         }
 
         [HttpPost]
-        public void Create() {
+        public virtual void Create() {
 
             String key = ctx.web.post( "cacheKey" );
             String value = ctx.PostHtmlAll( "cacheValue" );
@@ -71,15 +72,15 @@ namespace wojilu.Web.Controller.Admin {
                 return;
             }
 
-            HttpRuntime.Cache.Insert( key, value );
+            _appCache.Put( key, value );
             echoToParentPart( lang( "opok" ) );
         }
 
-        public void ViewCache() {
+        public virtual void ViewCache() {
             target( Read );
         }
 
-        public void Read() {
+        public virtual void Read() {
 
             String key = ctx.web.param( "key" );
 
@@ -88,11 +89,11 @@ namespace wojilu.Web.Controller.Admin {
                 return;
             }
 
-            Object val = HttpRuntime.Cache.Get( key );
+            Object val = _appCache.Get( key );
             String cacheValue = val == null ? "" : val.ToString();
 
             if (key.StartsWith( "__object_" )) {
-                cacheValue = JsonString.ConvertEntity( val as IEntity );
+                cacheValue = Json.ToString( val as IEntity );
             }
 
             set( "cacheValue", strUtil.EncodeTextarea( cacheValue ) );
@@ -102,7 +103,7 @@ namespace wojilu.Web.Controller.Admin {
         }
 
         [HttpPost]
-        public void Update() {
+        public virtual void Update() {
 
             String key = ctx.web.post( "cacheKey" );
             String value = ctx.PostHtmlAll( "cacheValue" );
@@ -119,39 +120,31 @@ namespace wojilu.Web.Controller.Admin {
                 return;
             }
 
-            HttpRuntime.Cache.Insert( key, value );
+            _appCache.Put( key, value );
             echoToParentPart( lang( "opok" ) );
         }
 
-        public void Clear() {
-
-
-            IDictionaryEnumerator e = HttpRuntime.Cache.GetEnumerator();
-
-            while (e.MoveNext()) {
-                DictionaryEntry entry = e.Entry;
-                HttpRuntime.Cache.Remove( entry.Key.ToString() );
-            }
-
+        public virtual void Clear() {
+            sys.Clear.ClearAll();
             echoRedirect( lang( "opok" ) );
-
         }
 
-        public void DeleteByKey() {
+        public virtual void DeleteByKey() {
             target( Remove );
         }
 
         [HttpDelete]
-        public void Remove() {
+        public virtual void Remove() {
             String key = ctx.web.param( "key" );
             
             if (strUtil.IsNullOrEmpty( key )) {
                 echoRedirect( "cache key 不能为空" );
                 return;
             }
-            HttpRuntime.Cache.Remove( key );
+            _appCache.Remove( key );
             echoRedirect( lang( "opok" ) );
         }
+
 
     }
 

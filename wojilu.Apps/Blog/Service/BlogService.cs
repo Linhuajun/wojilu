@@ -9,28 +9,21 @@ using wojilu.Apps.Blog.Domain;
 using wojilu.Apps.Blog.Interface;
 using wojilu.Common.Jobs;
 using wojilu.Common.AppBase.Interface;
+using wojilu.Members.Users.Domain;
 
 namespace wojilu.Apps.Blog.Service {
 
 
     public class BlogService : IBlogService {
 
+        public virtual BlogApp GetFirstByUser(long ownerId) {
+            return BlogApp.find( "OwnerId=" + ownerId + " and OwnerType=:OwnerType" )
+                .set( "OwnerType", typeof( User ).FullName )
+                .first();
+        }
+
         public virtual List<BlogApp> GetBlogAppAll() {
             return BlogApp.findAll();
-        }
-
-        public virtual void UpdateCommentCount( IApp blogApp ) {
-
-            BlogApp blog = blogApp as BlogApp;
-            int count = BlogPostComment.find( "AppId=" + blog.Id ).count();
-            blog.CommentCount = count;
-            blog.update( "CommentCount" );
-        }
-
-        public virtual void UpdateCommentCount( int appId ) {
-
-            BlogApp blogApp = BlogApp.findById( appId );
-            this.UpdateCommentCount( blogApp );
         }
 
         public virtual void UpdateCount( BlogApp blog ) {

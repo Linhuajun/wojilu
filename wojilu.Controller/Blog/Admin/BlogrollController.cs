@@ -19,13 +19,13 @@ namespace wojilu.Web.Controller.Blog.Admin {
     [App( typeof( BlogApp ) )]
     public class BlogrollController : ControllerBase {
 
-        public IBlogrollService rollService { get; set; }
+        public virtual IBlogrollService rollService { get; set; }
 
         public BlogrollController() {
             rollService = new BlogrollService();
         }
 
-        public void AdminList() {
+        public virtual void AdminList() {
 
             set( "addLink", to( Add ) );
 
@@ -41,24 +41,23 @@ namespace wojilu.Web.Controller.Blog.Admin {
             }
         }
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
             Blogroll roll = Validate( null );
             if (errors.HasErrors) {
                 echoError();
             }
             else {
                 rollService.Insert( roll, ctx.owner.obj.Id, ctx.app.Id );
-                echoRedirect( lang( "opok" ), AdminList );
-
+                echoRedirectPart( lang( "opok" ), to( AdminList ) );
             }
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
             Blogroll blogroll = rollService.GetById( id, ctx.app.Id );
             if (blogroll == null) {
                 echoRedirect( lang( "exDataNotFound" ) );
@@ -72,7 +71,7 @@ namespace wojilu.Web.Controller.Blog.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
             Blogroll blogroll = rollService.GetById( id, ctx.app.Id );
             blogroll = Validate( blogroll );
             if (errors.HasErrors) {
@@ -80,12 +79,12 @@ namespace wojilu.Web.Controller.Blog.Admin {
             }
             else {
                 rollService.Update( blogroll );
-                echoRedirect( lang( "opok" ), AdminList );
+                echoRedirectPart( lang( "opok" ), to( AdminList ) );
             }
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             Blogroll blogroll = rollService.GetById( id, ctx.app.Id );
             if (blogroll != null) {
                 rollService.Delete( blogroll );

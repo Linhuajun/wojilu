@@ -14,7 +14,7 @@ namespace wojilu.Web.Controller.Download.Admin {
     public class LangController : ControllerBase {
 
 
-        public void List() {
+        public virtual void List() {
 
             set( "addLink", to( Add ) );
             set( "sortAction", to( SaveSort ) );
@@ -23,7 +23,7 @@ namespace wojilu.Web.Controller.Download.Admin {
             bindList( "list", "data", list, bindLink );
         }
 
-        private void bindLink( IBlock block, int id ) {
+        private void bindLink( IBlock block, long id ) {
             block.Set( "data.LinkEdit", to( Edit, id ) );
             block.Set( "data.LinkDelete", to( Delete, id ) );
         }
@@ -31,7 +31,7 @@ namespace wojilu.Web.Controller.Download.Admin {
         [HttpPost]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             FileLang data = FileLang.GetById( id );
@@ -54,16 +54,15 @@ namespace wojilu.Web.Controller.Download.Admin {
 
         }
 
-        public void Add() {
+        public virtual void Add() {
             target( Create );
         }
 
         [HttpPost]
-        public void Create() {
+        public virtual void Create() {
             string name = ctx.Post( "Name" );
             if (strUtil.IsNullOrEmpty( name )) {
-                errors.Add( "请填写名称" );
-                run( Add );
+                echoError( "请填写名称" );
                 return;
             }
 
@@ -71,10 +70,10 @@ namespace wojilu.Web.Controller.Download.Admin {
             pf.Name = name;
             pf.insert();
 
-            echoRedirect( lang( "opok" ), List );
+            echoToParentPart( lang( "opok" ) );
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
             target( Update, id );
 
             FileLang pf = FileLang.GetById( id );
@@ -82,12 +81,11 @@ namespace wojilu.Web.Controller.Download.Admin {
         }
 
         [HttpPost]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             string name = ctx.Post( "Name" );
             if (strUtil.IsNullOrEmpty( name )) {
-                errors.Add( "请填写名称" );
-                run( Edit, id );
+                echoError( "请填写名称" );
                 return;
             }
 
@@ -95,11 +93,11 @@ namespace wojilu.Web.Controller.Download.Admin {
             pf.Name = name;
             pf.update();
 
-            echoRedirect( lang( "opok" ), List );
+            echoToParentPart( lang( "opok" ) );
         }
 
         [HttpDelete]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
 
             FileLang f = FileLang.GetById( id );
             if (f != null) {

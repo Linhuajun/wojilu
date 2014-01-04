@@ -5,18 +5,15 @@
 using System;
 using System.Collections.Generic;
 
-using wojilu.Web.Mvc;
-using wojilu.Serialization;
 using wojilu.ORM;
 using wojilu.Common;
+using wojilu.Web.Mvc;
 
 using wojilu.Apps.Forum.Domain;
 using wojilu.Apps.Forum.Interface;
 using wojilu.Common.AppBase.Interface;
 
-using wojilu.Common.Feeds.Domain;
-using wojilu.Common.Feeds.Interface;
-using wojilu.Common.Feeds.Service;
+using wojilu.Common.Jobs;
 
 using wojilu.Common.Money.Domain;
 using wojilu.Common.Money.Interface;
@@ -31,7 +28,10 @@ using wojilu.Members.Sites.Domain;
 using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Interface;
 using wojilu.Members.Users.Service;
-using wojilu.Common.Jobs;
+using wojilu.Common.Microblogs.Service;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Microblogs;
+
 
 namespace wojilu.Apps.Forum.Service {
 
@@ -49,7 +49,7 @@ namespace wojilu.Apps.Forum.Service {
 
         public virtual IUserIncomeService incomeService { get; set; }
         public virtual INotificationService notificationService { get; set; }
-        public virtual IFeedService feedService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
 
         public ForumPostService() {
 
@@ -66,13 +66,14 @@ namespace wojilu.Apps.Forum.Service {
             incomeService = new UserIncomeService();
 
             notificationService = new NotificationService();
-            feedService = new FeedService();
+            microblogService = new MicroblogService();
+
         }
 
 
         //--------------------------------------- income -----------------------------------------
 
-        public virtual void AddAuthorIncome( ForumPost post, int actionId, String actionName ) {
+        public virtual void AddAuthorIncome(ForumPost post, long actionId, string actionName) {
 
             String msg = string.Format( "帖子被{0} <a href=\"{1}\">{2}</a>", actionName, alink.ToAppData( post ), post.Title );
             incomeService.AddIncome( post.Creator, actionId, msg );
@@ -86,11 +87,11 @@ namespace wojilu.Apps.Forum.Service {
 
         }
 
-        public virtual ForumPost GetById_ForAdmin( int id ) {
+        public virtual ForumPost GetById_ForAdmin(long id) {
             return db.findById<ForumPost>( id );
         }
 
-        public virtual ForumPost GetById( int id, IMember owner ) {
+        public virtual ForumPost GetById(long id, IMember owner) {
             ForumPost post = GetById_ForAdmin( id );
             if (post == null) return null;
             if (!((post.OwnerId == owner.Id) && post.OwnerType.Equals( owner.GetType().FullName ))) {
@@ -102,14 +103,14 @@ namespace wojilu.Apps.Forum.Service {
             return post;
         }
 
-        public virtual DataPage<ForumPost> GetPageList( int topicId, int pageSize, int memberId ) {
+        public virtual DataPage<ForumPost> GetPageList(long topicId, int pageSize, long memberId) {
             if (memberId > 0) {
                 return db.findPage<ForumPost>( "TopicId=" + topicId + " and Creator.Id=" + memberId + " and " + TopicStatus.GetShowCondition() + " order by Id asc", pageSize );
             }
             return db.findPage<ForumPost>( "TopicId=" + topicId + " and " + TopicStatus.GetShowCondition() + " order by Id asc", pageSize );
         }
 
-        public virtual int GetPageCount( int topicId, int pageSize ) {
+        public virtual int GetPageCount(long topicId, int pageSize) {
             String strCondition = "TopicId=" + topicId + " and " + TopicStatus.GetShowCondition();
             int count = ForumPost.count( strCondition );
             int page = count / pageSize;
@@ -117,20 +118,20 @@ namespace wojilu.Apps.Forum.Service {
             return imod > 0 ? page + 1 : page;
         }
 
-        public virtual DataPage<ForumPost> GetPageList_ForAdmin( int topicId, int pageSize ) {
+        public virtual DataPage<ForumPost> GetPageList_ForAdmin(long topicId, int pageSize) {
             return db.findPage<ForumPost>( "TopicId=" + topicId + " order by Id asc", pageSize );
         }
 
-        public virtual List<ForumPost> GetRecentByApp( int appId, int count ) {
+        public virtual List<ForumPost> GetRecentByApp(long appId, int count) {
             return ForumPost.find( "AppId=" + appId + " and " + TopicStatus.GetShowCondition() ).list( count );
         }
 
-        public virtual ForumPost GetPostByTopic( int topicId ) {
+        public virtual ForumPost GetPostByTopic(long topicId) {
             return db.find<ForumPost>( "TopicId=" + topicId + " and ParentId=0" ).first();
         }
 
 
-        public virtual ForumPost GetLastPostByTopic( int topicId ) {
+        public virtual ForumPost GetLastPostByTopic(long topicId) {
             return db.find<ForumPost>( "TopicId=" + topicId + " order by Id desc" ).first();
         }
 
@@ -138,12 +139,12 @@ namespace wojilu.Apps.Forum.Service {
             return db.find<ForumPost>( "Id in (" + ids + ")" ).list();
         }
 
-        public virtual DataPage<ForumPost> GetByAppAndUser( int appId, int userId, int pageSize ) {
+        public virtual DataPage<ForumPost> GetByAppAndUser(long appId, long userId, int pageSize) {
             if (userId <= 0 || appId <= 0) return DataPage<ForumPost>.GetEmpty();
             return ForumPost.findPage( "AppId=" + appId + " and CreatorId=" + userId + " and " + TopicStatus.GetShowCondition(), pageSize );
         }
 
-        public virtual DataPage<ForumPost> GetByUser( int userId, int pageSize ) {
+        public virtual DataPage<ForumPost> GetByUser(long userId, int pageSize) {
             if (userId <= 0) return DataPage<ForumPost>.GetEmpty();
             return ForumPost.findPage( "CreatorId=" + userId + " and OwnerType='" + typeof( Site ).FullName + "' and " + TopicStatus.GetShowCondition(), pageSize );
         }
@@ -244,16 +245,37 @@ namespace wojilu.Apps.Forum.Service {
             return result;
         }
 
+        public virtual Result InsertNoNotification( ForumPost post, User creator, IMember owner, IApp app ) {
+
+            post.AppId = app.Id;
+            post.Creator = creator;
+            post.CreatorUrl = creator.Url;
+            post.OwnerId = owner.Id;
+            post.OwnerUrl = owner.Url;
+            post.OwnerType = owner.GetType().FullName;
+            post.EditTime = DateTime.Now;
+
+            Result result = db.insert( post );
+
+            if (result.IsValid) {
+
+                updateCount( post, creator, owner, app );
+
+                String msg = string.Format( "回复帖子 <a href=\"{0}\">{1}</a>，得到奖励", alink.ToAppData( post ), post.Title );
+                incomeService.AddIncome( creator, UserAction.Forum_ReplyTopic.Id, msg );
+                addFeedInfo( post );
+
+            }
+            return result;
+        }
+
         private void addFeedInfo( ForumPost data ) {
+
             String lnkPost = alink.ToAppData( data );
-            String post = string.Format( "<a href=\"{0}\">{1}</a>", lnkPost, data.Title );
 
-            Dictionary<string, object> dic = new Dictionary<string, object>();
-            dic.Add( "post", post );
-            String templateData = JSON.DicToString( dic );
-
-            TemplateBundle tplBundle = TemplateBundle.GetForumPostTemplateBundle();
-            feedService.publishUserAction( data.Creator, typeof( ForumPost ).FullName, tplBundle.Id, templateData, "" );
+            String summary = strUtil.ParseHtml( data.Content, MicroblogAppSetting.Instance.MicroblogContentMax );
+            String msg = MbTemplate.GetFeed( "回复了论坛帖子", data.Title, lnkPost, summary, null );
+            microblogService.AddSimplePrivate( data.Creator, msg, typeof( ForumPost ).FullName, data.Id, data.Ip );
         }
 
         private void addNotification( ForumPost post ) {
@@ -272,7 +294,7 @@ namespace wojilu.Apps.Forum.Service {
         private void addNotificationToTopicCreator( ForumTopic topic, ForumPost post ) {
 
             User creator = post.Creator;
-            int topicReceiverId = topic.Creator.Id;
+            long topicReceiverId = topic.Creator.Id;
 
             if (topicReceiverId == creator.Id) return;
 
@@ -292,9 +314,8 @@ namespace wojilu.Apps.Forum.Service {
             User parentUser = userService.GetById( parent.Creator.Id );
             if (parentUser == null) return;
 
-            int parentReceiverId = parent.Creator.Id;
-            parentReceiverId = parent.Creator.Id;
-            int topicReceiverId = topic.Creator.Id;
+            long parentReceiverId = parent.Creator.Id;
+            long topicReceiverId = topic.Creator.Id;
             if (parentReceiverId == creator.Id || parentReceiverId == topicReceiverId) return;
 
             String msgToParent = "<a href=\"" + Link.ToMember( creator ) + "\">" + creator.Name + "</a> " + alang.get( typeof( ForumApp ), "replyYourPost" ) + " <a href=\"" + alink.ToAppData( post ) + "\">" + topic.Title + "</a>";
@@ -367,10 +388,10 @@ namespace wojilu.Apps.Forum.Service {
         }
 
         public virtual void DeleteTrue( ForumPost post, IMember owner, User user, String ip ) {
-            int id = post.Id;
-            int creatorId = post.Creator.Id;
-            int topicId = post.TopicId;
-            int forumBoardId = post.ForumBoardId;
+            long id = post.Id;
+            long creatorId = post.Creator.Id;
+            long topicId = post.TopicId;
+            long forumBoardId = post.ForumBoardId;
 
             db.delete( post );
 
@@ -412,7 +433,7 @@ namespace wojilu.Apps.Forum.Service {
             notificationService.send( post.Creator.Id, msg );
         }
 
-        public virtual void SetPostCredit( ForumPost post, int currencyId, int credit, String reason, User viewer ) {
+        public virtual void SetPostCredit(ForumPost post, long currencyId, int credit, string reason, User viewer) {
             post.Rate += credit;
             db.update( post, "Rate" );
 
@@ -425,7 +446,7 @@ namespace wojilu.Apps.Forum.Service {
             notificationService.send( post.Creator.Id, msg );
         }
 
-        public virtual void BanPost( ForumPost post, String reason, int isSendMsg, User user, int appId, String ip ) {
+        public virtual void BanPost(ForumPost post, string reason, int isSendMsg, User user, long appId, string ip) {
 
             post.Status = 1;
             db.update( post, "Status" );
@@ -442,7 +463,7 @@ namespace wojilu.Apps.Forum.Service {
             forumLogService.AddPost( user, appId, post.Id, ForumLogAction.Ban, ip );
         }
 
-        public virtual void UnBanPost( ForumPost post, User user, int appId, String ip ) {
+        public virtual void UnBanPost(ForumPost post, User user, long appId, string ip) {
             post.Status = 0;
             db.update( post, "Status" );
 
@@ -451,11 +472,11 @@ namespace wojilu.Apps.Forum.Service {
             forumLogService.AddPost( user, appId, post.Id, ForumLogAction.UnBan, ip );
         }
 
-        public virtual DataPage<ForumPost> GetPageByApp( int appId, int pageSize ) {
+        public virtual DataPage<ForumPost> GetPageByApp(long appId, int pageSize) {
             return db.findPage<ForumPost>( "AppId=" + appId + " and " + TopicStatus.GetShowCondition(), pageSize );
         }
 
-        public virtual DataPage<ForumPost> GetDeletedPage( int appId ) {
+        public virtual DataPage<ForumPost> GetDeletedPage(long appId) {
             return db.findPage<ForumPost>( "AppId=" + appId + " and Status=" + TopicStatus.Delete );
         }
 

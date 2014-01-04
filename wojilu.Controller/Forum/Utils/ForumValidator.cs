@@ -14,6 +14,20 @@ namespace wojilu.Web.Controller.Forum.Utils {
 
     public class ForumValidator {
 
+        public static void AddCreateTime( MvcContext ctx ) {
+            ctx.web.SessionSet( "__forumLastPublish", DateTime.Now );
+        }
+
+        public static Boolean IsIntervalShort( MvcContext ctx ) {
+            Object objLast = ctx.web.SessionGet( "__forumLastPublish" );
+            if (objLast == null) return false;
+
+            ForumApp app = ctx.app.obj as ForumApp;
+            ForumSetting setting = app.GetSettingsObj();
+
+            return DateTime.Now.Subtract( (DateTime)objLast ).TotalSeconds <= setting.ReplyInterval;
+        }
+
         public static ForumBoard ValidateBoard( MvcContext ctx ) {
             return ValidateBoard( null, ctx );
         }
@@ -28,7 +42,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
             }
 
             String description = ctx.Post( "Description" );
-            int parentId = ctx.PostInt( "ParentId" );
+            long parentId = ctx.PostLong( "ParentId" );
             String notice = ctx.PostHtml( "Notice" );
 
 
@@ -46,7 +60,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
             board.Ip = ctx.Ip;
 
             board.IsCategory = ctx.PostInt( "IsCategory" );
-            board.ViewId = ctx.PostInt( "ViewId" );
+            board.ViewId = ctx.PostLong( "ViewId" );
 
             return board;
         }
@@ -70,7 +84,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
                 if (nameColor.StartsWith( "#" ) == false) ctx.errors.Add( errorInfo );
             }
 
-            int boardId = ctx.PostInt( "BoardId" );
+            long boardId = ctx.PostLong( "BoardId" );
 
             category.Name = name;
             category.NameColor = nameColor;
@@ -99,7 +113,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
 
             if (strUtil.IsNullOrEmpty( url ))
                 ctx.errors.Add( lang.get( "exUrl" ) );
-            else if (!url.ToLower().StartsWith( "http://" ))
+            else if (!url.ToLower().StartsWith( "http" ))
                 url = "http://" + url;
 
             //if (strUtil.IsNullOrEmpty( logo ))
@@ -121,9 +135,9 @@ namespace wojilu.Web.Controller.Forum.Utils {
         public static ForumPost ValidatePost( MvcContext ctx ) {
 
             ForumPost post = new ForumPost();
-            int boardId = ctx.PostInt( "forumId" );
-            int topicId = ctx.PostInt( "topicId" );
-            int parentId = ctx.PostInt( "parentId" );
+            long boardId = ctx.PostLong( "forumId" );
+            long topicId = ctx.PostLong( "topicId" );
+            long parentId = ctx.PostLong( "parentId" );
             String title = ctx.Post( "Title" );
             String content = ctx.PostHtml( "Content" );
 
@@ -190,7 +204,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
 
             topic.Title = title;
             topic.Content = content;
-            topic.Category = new ForumCategory( ctx.PostInt( "CategoryId" ) );
+            topic.Category = new ForumCategory( ctx.PostLong( "CategoryId" ) );
             topic.Reward = ctx.PostInt( "Reward" );
             topic.RewardAvailable = topic.Reward;
             topic.ReadPermission = ctx.PostInt( "ReadPermission" );
@@ -214,7 +228,7 @@ namespace wojilu.Web.Controller.Forum.Utils {
 
             topic.Title = title;
             topic.Content = content;
-            topic.Category = new ForumCategory( ctx.PostInt( "CategoryId" ) );
+            topic.Category = new ForumCategory( ctx.PostLong( "CategoryId" ) );
             topic.TagRawString = ctx.Post( "TagList" );
 
             return topic;

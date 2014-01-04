@@ -27,6 +27,7 @@ using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Routes;
 using wojilu.Web.Utils;
 using wojilu.Web.Mock;
+using System.Text;
 
 namespace wojilu.Web.Context {
 
@@ -34,6 +35,8 @@ namespace wojilu.Web.Context {
     /// mvc 上下文数据：即整个执行流程中常用的数据封装
     /// </summary>
     public class MvcContext {
+
+        private static readonly ILog logger = LogManager.GetLogger( typeof( MvcContext ) );
 
         private IWebContext _context;
         private MvcContextUtils _thisUtils;
@@ -44,6 +47,8 @@ namespace wojilu.Web.Context {
             _thisUtils = new MvcContextUtils( this );
 
             if (context is IMockContext) _isMock = true;
+
+            _pageMeta = new PageMeta( this );
         }
 
         /// <summary>
@@ -98,14 +103,14 @@ namespace wojilu.Web.Context {
         /// </summary>
         public IAppContext app { get { return utils.getAppContext(); } }
 
-        private PageMeta _pageMeta = new PageMeta();
+        private PageMeta _pageMeta;
 
         /// <summary>
         /// 页面元信息(包括Title/Keywords/Description/RssLink)
         /// </summary>
         /// <returns></returns>
-        public PageMeta GetPageMeta() {
-            return _pageMeta;
+        public PageMeta Page {
+            get { return _pageMeta; }
         }
 
 
@@ -120,6 +125,16 @@ namespace wojilu.Web.Context {
         /// <returns></returns>
         public Object GetItem( String key ) {
             return _contextItems[key];
+        }
+
+        /// <summary>
+        /// 根据 key 获取存储在 ctx 中某项的值，以字符串形式返回
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public String GetItemString( String key ) {
+            if (_contextItems[key] == null) return null;
+            return _contextItems[key].ToString();
         }
 
         /// <summary>
@@ -327,6 +342,13 @@ namespace wojilu.Web.Context {
         /// </summary>
         /// <param name="queryItemName"></param>
         /// <returns></returns>
+        public long GetLong(string queryItemName) {
+            if ((_context.get( queryItemName ) != null) && cvt.IsLong( _context.get( queryItemName ) )) {
+                return long.Parse( _context.get( queryItemName ) );
+            }
+            return 0;
+        }
+
         public int GetInt( String queryItemName ) {
             if ((_context.get( queryItemName ) != null) && cvt.IsInt( _context.get( queryItemName ) )) {
                 return int.Parse( _context.get( queryItemName ) );
@@ -358,26 +380,51 @@ namespace wojilu.Web.Context {
             return 0;
         }
 
+        private String _ip;
+
         /// <summary>
         /// 获取客户端 ip 地址
         /// </summary>
-        public String Ip { get { return getIp(); } }
+        public String Ip {
+            get {
+                if (_ip != null) return _ip;
+                _ip = getIp();
+                return _ip;
+            }
+        }
 
         private String getIp() {
 
             String ip;
-            if (_context.ClientVar( "HTTP_VIA" ) != null)
+            if (_context.ClientVar( "HTTP_VIA" ) != null) {
                 ip = _context.ClientVar( "HTTP_X_FORWARDED_FOR" );
-            else
+                if (strUtil.IsNullOrEmpty( ip ) || checkIp( ip ) == "unknow") {
+                    ip = _context.ClientVar( "REMOTE_ADDR" );
+                }
+            }
+            else {
                 ip = _context.ClientVar( "REMOTE_ADDR" );
+                if (strUtil.IsNullOrEmpty( ip ) || checkIp( ip ) == "unknow") {
+                    ip = _context.ClientVar( "HTTP_X_FORWARDED_FOR" );
+                }
+            }
 
-            return checkIp( ip );
+            String result = checkIp( ip );
+            if (result == "unknow") {
+                logger.Error( "ip unknow" );
+                logger.Error( "HTTP_VIA=" + _context.ClientVar( "HTTP_VIA" ) );
+                logger.Error( "HTTP_X_FORWARDED_FOR=" + _context.ClientVar( "HTTP_X_FORWARDED_FOR" ) );
+                logger.Error( "REMOTE_ADDR=" + _context.ClientVar( "REMOTE_ADDR" ) );
+            }
+            return result;
         }
 
         private String checkIp( String ip ) {
 
             int maxLength = 3 * 15 + 2;
             String unknow = "unknow";
+
+            if (ip == "::1") return "127.0.0.1";
 
             if (strUtil.IsNullOrEmpty( ip ) || ip.Length > maxLength || ip.Length < 7) return unknow;
 
@@ -452,6 +499,13 @@ namespace wojilu.Web.Context {
         /// </summary>
         /// <param name="postItem"></param>
         /// <returns></returns>
+        public long PostLong(string postItem) {
+            if ((_context.post( postItem ) != null) && cvt.IsLong( _context.post( postItem ) )) {
+                return long.Parse( _context.post( postItem ) );
+            }
+            return 0;
+        }
+
         public int PostInt( String postItem ) {
             if ((_context.post( postItem ) != null) && cvt.IsInt( _context.post( postItem ) )) {
                 return int.Parse( _context.post( postItem ) );
@@ -485,7 +539,8 @@ namespace wojilu.Web.Context {
         }
 
         /// <summary>
-        /// 获取客户端 post 的 html，结果已被过滤，只有在白名单中的 tag 才被允许
+        /// 获取客户端 post 的 html，结果已被过滤(管理员除外)，只有在白名单中的 tag 才被允许。
+        /// <para>自定义白名单方法：修改 mvc.config 中的 tagWhiteList 项。</para>
         /// </summary>
         /// <param name="postItem"></param>
         /// <returns></returns>
@@ -507,6 +562,21 @@ namespace wojilu.Web.Context {
         /// <param name="allowedTags"></param>
         /// <returns></returns>
         public String PostHtml( String postItem, String allowedTags ) {
+            String val = _context.post( postItem );
+            if (val != null) {
+                val = strUtil.TrimHtml( val );
+                val = HtmlFilter.Filter( val, allowedTags );
+            }
+            return val;
+        }
+
+        /// <summary>
+        /// 获取客户端 post 的 html，结果已被过滤，只允许 allowedTags 中指定的 tag
+        /// </summary>
+        /// <param name="postItem"></param>
+        /// <param name="allowedTags">允许的tag，包括属性列表</param>
+        /// <returns></returns>
+        public String PostHtml( String postItem, Dictionary<String, String> allowedTags ) {
             String val = _context.post( postItem );
             if (val != null) {
                 val = strUtil.TrimHtml( val );
@@ -565,6 +635,18 @@ namespace wojilu.Web.Context {
         }
 
         /// <summary>
+        /// 从客户端提交的数据中获取某项的值，并转换成long
+        /// </summary>
+        /// <param name="postItem"></param>
+        /// <returns></returns>
+        public long ParamLong( String postItem ) {
+            if ((_context.param( postItem ) != null) && cvt.IsLong( _context.param( postItem ) )) {
+                return Int64.Parse( _context.param( postItem ) );
+            }
+            return 0;
+        }
+
+        /// <summary>
         /// 从客户端提交的数据中获取某项的值，并转换成 Decimal
         /// </summary>
         /// <param name="postItem"></param>
@@ -599,18 +681,70 @@ namespace wojilu.Web.Context {
             return Validator.Validate( target );
         }
 
+        public Result Validate( IEntity target, String actionType ) {
+            return Validator.Validate( target, actionType );
+        }
+
+        /// <summary>
+        /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public T PostObject<T>() {
+            return PostObject<T>( null );
+        }
+
+        /// <summary>
+        /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lblName">表单中对象名称。如果为空，使用属性名</param>
+        /// <returns></returns>
+        public T PostObject<T>( String lblName ) {
+            return PostValue<T>( lblName );
+        }
+
+        /// <summary>
+        /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public Object PostObject( Object obj ) {
+            return PostObject( obj, null );
+        }
+
+        /// <summary>
+        /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="lblName">表单中对象名称。如果为空，使用属性名</param>
+        /// <returns></returns>
+        public Object PostObject( Object obj, String lblName ) {
+            return PostValue( obj, lblName );
+        }
+
         /// <summary>
         /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public T PostValue<T>() {
+            return PostValue<T>( strUtil.GetCamelCase( typeof( T ).Name ) );
+        }
+
+        /// <summary>
+        /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lblName">表单中对象名称。如果为空，则使用对象类型的camel格式</param>
+        /// <returns></returns>
+        public T PostValue<T>( String lblName ) {
 
             EntityInfo entityInfo = Entity.GetInfo( typeof( T ) );
             Type t = typeof( T );
             T obj = (T)rft.GetInstance( t );
 
-            setObjectProperties( entityInfo, t, obj );
+            setObjectProperties( lblName, entityInfo, t, obj );
 
             IEntity entity = obj as IEntity;
             if (entity != null) {
@@ -627,28 +761,43 @@ namespace wojilu.Web.Context {
         /// <param name="obj"></param>
         /// <returns></returns>
         public Object PostValue( Object obj ) {
+            return PostValue( obj, strUtil.GetCamelCase( obj.GetType().Name ) );
+        }
+
+        /// <summary>
+        /// 获取客户端post的数据，并自动赋值到对象各属性，最后进行验证
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="lblName">表单中对象名称。如果为空，则使用对象类型的camel格式</param>
+        /// <returns></returns>
+        public Object PostValue( Object obj, String lblName ) {
 
             EntityInfo entityInfo = Entity.GetInfo( obj );
             Type t = obj.GetType();
-            setObjectProperties( entityInfo, t, obj );
+            setObjectProperties( lblName, entityInfo, t, obj );
 
             IEntity entity = obj as IEntity;
             if (entity != null) {
-                Result result = Validate( entity );
+                Result result = Validate( entity, "update" );
                 if (result.HasErrors) errors.Join( result );
             }
 
             return obj;
         }
 
-        private void setObjectProperties( EntityInfo entityInfo, Type t, Object obj ) {
-            String camelType = strUtil.GetCamelCase( t.Name );
-            String prefix = camelType + ".";
+
+        private void setObjectProperties( String lblName, EntityInfo entityInfo, Type t, Object obj ) {
+
+            String prefix = "";
+
+            if (strUtil.HasText( lblName )) {
+                prefix = lblName + ".";
+            }
 
             NameValueCollection posts = _context.postValueAll();
             foreach (String key in posts.Keys) {
 
-                if (key.StartsWith( prefix ) == false) continue;
+                if (strUtil.HasText( prefix ) && key.StartsWith( prefix ) == false) continue;
 
                 String propertyName = strUtil.TrimStart( key, prefix );
                 PropertyInfo p = t.GetProperty( propertyName );
@@ -749,6 +898,22 @@ namespace wojilu.Web.Context {
                 if (_link == null) _link = new CtxLink( this );
                 return _link;
             }
+        }
+
+        public void load( StringBuilder sb, aAction action ) {
+            sb.Append( this.controller.loadHtml( action ) );
+        }
+
+        public void load( StringBuilder sb, aActionWithId action, int id ) {
+            sb.Append( this.controller.loadHtml( action, id ) );
+        }
+
+        public void load( StringBuilder sb, String controller, String action ) {
+            sb.Append( this.controller.loadHtml( controller, action ) );
+        }
+
+        public void load( StringBuilder sb, String controller, String action, int id ) {
+            sb.Append( this.controller.loadHtml( controller, action, id ) );
         }
 
     }

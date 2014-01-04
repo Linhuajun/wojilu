@@ -1,27 +1,32 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+
 using wojilu.Web.Mvc;
-using wojilu.Members.Users.Interface;
-using wojilu.Apps.Photo.Interface;
-using wojilu.Members.Users.Service;
-using wojilu.Apps.Photo.Service;
-using wojilu.Members.Users.Domain;
-using wojilu.Apps.Photo.Domain;
-using wojilu.Common.AppBase;
+using wojilu.Web.Mvc.Attr;
 using wojilu.Web.Controller.Common;
+
+using wojilu.Members.Users.Domain;
+using wojilu.Members.Users.Interface;
+using wojilu.Members.Users.Service;
+
+using wojilu.Apps.Photo.Domain;
+using wojilu.Apps.Photo.Interface;
+using wojilu.Apps.Photo.Service;
 
 namespace wojilu.Web.Controller.Photo.Wf {
 
-
-
+    [App( typeof( PhotoApp ) )]
     public class UserHomeController : ControllerBase {
 
-        public IUserService userService { get; set; }
-        public IPhotoAlbumService categoryService { get; set; }
-        public IPhotoPostService postService { get; set; }
-        public IPhotoSysCategoryService sysCategoryService { get; set; }
-        public PhotoLikeService likeService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IPhotoAlbumService categoryService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
+        public virtual IPhotoSysCategoryService sysCategoryService { get; set; }
+        public virtual PhotoLikeService likeService { get; set; }
 
         public UserHomeController() {
             userService = new UserService();
@@ -42,7 +47,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
         private void bindUserInfo( User u ) {
             set( "u.Name", u.Name );
             set( "u.Created", u.Created.ToShortDateString() );
-            set( "u.PicMedium", u.PicMedium );
+            set( "u.PicMedium", u.PicM );
             set( "u.Link", PhotoLink.ToUser( u ) );
 
             set( "u.Gender", u.GenderString );
@@ -72,7 +77,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
 
             String shareLink = Link.To( ctx.owner.obj, new wojilu.Web.Controller.ShareController().Add );
             shareLink = shareLink + string.Format( "?url={0}&title={1}&pic={2}",
-                getFullUrl( PhotoLink.ToUser( u ) ), u.Name + "的图片首页", u.PicOriginal );
+                getFullUrl( PhotoLink.ToUser( u ) ), u.Name + "的图片首页", u.PicO );
 
             set( "shareLink", shareLink );
         }
@@ -99,7 +104,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             view( "/Photo/Wf/Home/Index" );
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             setWaterfallView();
 
@@ -121,7 +126,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             PhotoBinder.BindPhotoList( this, list, u.Id );
         }
 
-        public void Category( int id ) {
+        public virtual void Category( long id ) {
 
             setWaterfallView();
 
@@ -150,7 +155,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             PhotoBinder.BindPhotoList( this, list, u.Id );
         }
 
-        public void Like() {
+        public virtual void Like() {
 
             setWaterfallView();
 
@@ -172,7 +177,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             PhotoBinder.BindPhotoList( this, list, ctx.viewer.Id );
         }
 
-        public void Album() {
+        public virtual void Album() {
 
             String userUrl = ctx.route.getItem( "user" );
             User u = userService.GetByUrl( userUrl );
@@ -208,7 +213,7 @@ namespace wojilu.Web.Controller.Photo.Wf {
             }
         }
 
-        public void Follower() {
+        public virtual void Follower() {
         }
 
     }

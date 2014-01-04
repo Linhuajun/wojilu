@@ -206,7 +206,7 @@ namespace wojilu.Net {
 
 
         /// <summary>
-        /// 将页面中的图片下载到本地，返回经过替换的页面内容。图片存储路径 /static/upload/wimg/2009-9-18/20552283166069276.jpg
+        /// 将页面中的图片下载到本地，返回经过替换的页面内容。图片存储路径 /static/upload/wimg/2009/9/18/20552283166069276.jpg
         /// </summary>
         /// <param name="pageBody">网页内容</param>
         /// <param name="siteUrl">如果图片是相对路径，则需要提供url。如果没有，请传入null</param>
@@ -219,8 +219,6 @@ namespace wojilu.Net {
             for (int i = 0; i < matchs.Count; i++) {
 
                 string picUrl = matchs[i].Groups[1].Value;
-
-                if (!picUrl.ToLower().EndsWith( "jpg" ) && !picUrl.ToLower().EndsWith( "jpeg" ) && !picUrl.ToLower().EndsWith( "gif" ) && !picUrl.ToLower().EndsWith( "bmp" ) && !picUrl.ToLower().EndsWith( "png" )) continue;
 
                 string newPicUrl = downPic( picUrl.Trim(), siteUrl );
                 pageBody = pageBody.Replace( picUrl, newPicUrl );
@@ -239,6 +237,15 @@ namespace wojilu.Net {
                 picUrl = strUtil.Join( siteUrl, picUrl );
             }
 
+            return DownloadPic( picUrl );
+        }
+
+        /// <summary>
+        /// 抓取远程图片，保存到服务器
+        /// </summary>
+        /// <param name="picUrl">图片网址，必须http开头</param>
+        /// <returns>返回从根目录/开始的图片路径</returns>
+        public static string DownloadPic( string picUrl ) {
             // 2、图片保存的路径
             string picExt = Path.GetExtension( picUrl ).ToLower();
             if (string.IsNullOrEmpty( picExt )) picExt = ".jpg";

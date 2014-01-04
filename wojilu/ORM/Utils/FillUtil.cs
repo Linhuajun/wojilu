@@ -43,17 +43,21 @@ namespace wojilu.ORM {
 
                 try {
                     if (ep.IsEntity || ep.IsAbstractEntity) {
-                        setEntityPropertyValueById( obj, state, ep, rd.GetInt32( i ) );
+
+                        Object objId = rd.GetValue( i );
+
+                        setEntityPropertyValueById( obj, state, ep, cvt.ToLong( objId ) );
                     }
                     else {
-                        ep.SetValue( obj, getReaderValue( fdvalue, ep.Type ) );
+                        ep.SetValue( obj, getReaderValue( rd, i, fdvalue, ep.Type ) );
                     }
 
                 }
                 catch (Exception ex) {
-                    logger.Error( ex.Message + "=" + ep.Name + "_" + ep.Type );
+                    String msg = string.Format( "{0}=>{1}_{2}", ex.Message, ep.Type.FullName, ep.Name );
+                    logger.Error( msg );
                     logger.Error( ex.StackTrace );
-                    throw ex;
+                    throw new OrmException( msg, ex );
                 }
 
             }
@@ -61,7 +65,7 @@ namespace wojilu.ORM {
             return obj;
         }
 
-        private static void setEntityPropertyValueById( IEntity obj, ObjectInfo state, EntityPropertyInfo property, int pid ) {
+        private static void setEntityPropertyValueById( IEntity obj, ObjectInfo state, EntityPropertyInfo property, long pid ) {
 
             if (!property.IsAbstractEntity) {
                 IEntity objValue = Entity.New( property.Type.FullName );
@@ -76,13 +80,16 @@ namespace wojilu.ORM {
             }
         }
 
-        private static Object getReaderValue( Object rdValue, Type ptype ) {
+        private static Object getReaderValue( IDataRecord rd, int i, Object rdValue, Type ptype ) {
 
             if (ptype == typeof( decimal ))
                 return Convert.ToDecimal( rdValue );
 
             if (ptype == typeof( int ))
                 return Convert.ToInt32( rdValue );
+
+            if (ptype == typeof( long ))
+                return Convert.ToInt64( rdValue );
 
             return rdValue;
         }

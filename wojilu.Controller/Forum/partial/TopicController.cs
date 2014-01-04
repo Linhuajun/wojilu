@@ -9,11 +9,13 @@ using System.Text;
 
 using wojilu.Web.Mvc;
 using wojilu.Web.Mvc.Attr;
+using wojilu.ORM;
 
 using wojilu.Common;
-using wojilu.Common.AppBase;
 using wojilu.Common.Money.Domain;
 using wojilu.Common.Security;
+using wojilu.Common.Tags;
+using wojilu.Common.AppBase.Interface;
 
 using wojilu.Members.Sites.Domain;
 using wojilu.Members.Users.Domain;
@@ -27,7 +29,7 @@ namespace wojilu.Web.Controller.Forum {
     public partial class TopicController : ControllerBase {
 
         [NonVisit]
-        public void PostLoop() {
+        public virtual void PostLoop() {
 
             List<ForumPost> posts = ctx.GetItem( "posts" ) as List<ForumPost>;
             List<Attachment> attachs = ctx.GetItem( "attachs" ) as List<Attachment>;
@@ -43,7 +45,7 @@ namespace wojilu.Web.Controller.Forum {
                 ForumPost data = posts[i];
                 if (data.Creator == null) continue;
 
-                getPostTopic( data );
+                populatePostTopic( data );
 
                 block.Set( "post.Id", data.Id );
                 block.Set( "post.TopicId", data.TopicId );
@@ -52,13 +54,12 @@ namespace wojilu.Web.Controller.Forum {
 
                 String face = "";
                 if (strUtil.HasText( data.Creator.Pic )) {
-                    face = string.Format( "<img src=\"{0}\"/>", data.Creator.PicMedium );
+                    face = string.Format( "<img src=\"{0}\"/>", data.Creator.PicM );
                 }
 
                 block.Set( "post.MemberFace", face );
 
-
-                block.Set( "post.MemberRank", getRankStr( data ) );
+                block.Set( "post.MemberRank", data.Creator.Rank.Name );
                 block.Set( "post.StarList", data.Creator.Rank.StarHtml );
                 block.Set( "post.IncomeList", data.Creator.IncomeInfo );
                 block.Set( "post.MemberTitle", getUserTitle( data ) );
@@ -88,25 +89,66 @@ namespace wojilu.Web.Controller.Forum {
                     bindPostOne( block, data, board, attachList );
                 }
 
+                block.Set( "relativePosts", getRelativePosts( data ) );
+
                 block.Set( "adForumPosts", AdItem.GetAdById( AdCategory.ForumPosts ) );
 
 
                 block.Next();
             }
 
-            set( "moderatorJson", moderatorService.GetModeratorJson( board ) );
-            set( "creatorId", topic.Creator.Id );
-            set( "tagAction", to( new Edits.TagController().SaveTag, topic.Id ) );
         }
 
-        private static String getRankStr( ForumPost data ) {
+        private string getRelativePosts( ForumPost data ) {
 
-            if (data.Creator.RoleId != SiteRole.NormalMember.Id) {
-                return data.Creator.Role.Name;
+            if (data.ParentId > 0) return "";
+            ForumTopic topic = data.Topic;
+            if (topic == null) return "";
+
+            String tagIds = topic.Tag.TagIds;
+            if (strUtil.IsNullOrEmpty( tagIds )) return "";
+
+            List<DataTagShip> list = DataTagShip.find( "TagId in (" + tagIds + ")" ).list( 21 );
+            if (list.Count <= 1) return "";
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine( "<div class=\"relative-post\">" );
+            sb.AppendLine( "<div class=\"relative-title\">相关文章</div>" );
+            sb.AppendLine( "<ul>" );
+
+            List<IAppData> addList = new List<IAppData>();
+
+            foreach (DataTagShip dt in list) {
+
+                if (dt.DataId == topic.Id && dt.TypeFullName == typeof( ForumTopic ).FullName) continue;
+
+                EntityInfo ei = Entity.GetInfo( dt.TypeFullName );
+                if (ei == null) continue;
+
+                IAppData obj = ndb.findById( ei.Type, dt.DataId ) as IAppData;
+                if (obj == null) continue;
+
+                if (hasAdded( addList, obj )) continue;
+
+                sb.AppendFormat( "<li><div><a href=\"{0}\">{1}</a></div></li>", alink.ToAppData( obj ), obj.Title );
+                sb.AppendLine();
+
+                addList.Add( obj );
             }
-            else {
-                return data.Creator.Rank.Name;
+
+            sb.AppendLine( "</ul>" );
+            sb.AppendLine( "<div style=\"clear:both;\"></div>" );
+            sb.AppendLine( "</div>" );
+
+            return sb.ToString();
+        }
+
+        private bool hasAdded( List<IAppData> xlist, IAppData obj ) {
+
+            foreach (IAppData x in xlist) {
+                if (x.Id == obj.Id && x.GetType() == obj.GetType()) return true;
             }
+            return false;
         }
 
         private void bindTopicOne( IBlock block, ForumPost data, ForumBoard board, List<Attachment> attachList ) {
@@ -176,7 +218,7 @@ namespace wojilu.Web.Controller.Forum {
 
         private String getAdminActions( ForumPost data ) {
             StringBuilder sb = new StringBuilder();
-            sb.AppendFormat( "<span class=\"dropdown postAdmin\"><a href=\"#\" class=\"dropdown-toggle postAdmin\" id=\"postAdmin{0}\" data-toggle=\"dropdown\"><i class=\"icon-cog\"></i> {1} <span class=\"caret\"></span></a>", data.Id, alang( "admin" ) );
+            sb.AppendFormat( "<span class=\"dropdown postAdmin\"><a href=\"#\" class=\"dropdown-toggle\" id=\"postAdmin{0}\" data-toggle=\"dropdown\" data-hover=\"dropdown\"><i class=\"icon-cog\"></i> {1} <span class=\"caret\"></span></a>", data.Id, alang( "admin" ) );
             sb.AppendFormat( "<ul class=\"dropdown-menu post-admin-items\" id=\"menuItems_postAdmin{0}\">", data.Id );
             setEditActionItem( data, sb );
             setCreditAction( data, sb );
@@ -187,7 +229,7 @@ namespace wojilu.Web.Controller.Forum {
             return sb.ToString();
         }
 
-        private List<Attachment> getAttachByPost( List<Attachment> attachs, int postId ) {
+        private List<Attachment> getAttachByPost(List<Attachment> attachs, long postId) {
             List<Attachment> list = new List<Attachment>();
             foreach (Attachment attachment in attachs) {
                 if (attachment.PostId == postId) {
@@ -205,7 +247,7 @@ namespace wojilu.Web.Controller.Forum {
 
             if (data.Status == 1) return "<div class=\"banned\">" + alang( "postBanned" ) + "</div>";
 
-            ForumTopic topic = getPostTopic( data );
+            ForumTopic topic = populatePostTopic( data );
 
             String content = data.Content;
 
@@ -250,15 +292,23 @@ namespace wojilu.Web.Controller.Forum {
             return addAttachment( board, data, attachList, content );
         }
 
-        private ForumTopic getPostTopic( ForumPost post ) {
+        private ForumTopic populatePostTopic( ForumPost post ) {
             ForumTopic topic = topicService.GetById( post.TopicId, ctx.owner.obj );
             post.Topic = topic;
             return topic;
         }
 
         private String getUserTitle( ForumPost data ) {
-            if (strUtil.IsNullOrEmpty( data.Creator.Title )) return "";
-            return string.Format( "<div>{0}: {1}</div>", alang( "userTitle" ), data.Creator.Title );
+
+            if (data.Creator.RoleId != SiteRole.NormalMember.Id) {
+                return data.Creator.Role.Name;
+            }
+
+            if (moderatorService.IsModerator( data.AppId, data.Creator.Name )) {
+                return "版主";
+            }
+
+            return data.Creator.Rank.Name;
         }
 
         //----------------------------------------------------------------------------------------------------------------------------------
@@ -346,7 +396,7 @@ namespace wojilu.Web.Controller.Forum {
 
         private void setLockAction( ForumPost data, StringBuilder sb ) {
             if (data.ParentId <= 0) {
-                ForumTopic topic = getPostTopic( data );
+                ForumTopic topic = populatePostTopic( data );
                 if (topic.IsLocked == 1) {
                     sb.AppendFormat( "<li cmdurl=\"{0}\"><a href='#' class=\"postAdminItem putCmd\"><i class=\"icon-lock\"></i> {1}</a></li>", to( new Moderators.PostSaveController().UnLock, topic.Id ) + "?boardId=" + data.ForumBoardId, alang( "cmdUnlock" ) );
                 }
@@ -372,7 +422,7 @@ namespace wojilu.Web.Controller.Forum {
             }
 
             StringBuilder sb = new StringBuilder();
-            String created = attachList[0].Created.ToString();
+            String created = getAttachmentLastUpdateTime( attachList ).ToString();
             sb.Append( "<div class=\"hr\"></div><div class=\"attachmentTitleWrap\"><div class=\"attachmentTitle\">" + alang( "attachment" ) + " <span class=\"note\">(" + created + ")</span> " );
             if (ctx.viewer.Id == data.Creator.Id || hasAdminPermission( data )) {
                 sb.AppendFormat( "<a href=\"{0}\">" + alang( "adminAttachment" ) + "</a>", to( new Edits.AttachmentController().Admin, data.TopicId ) );
@@ -386,14 +436,13 @@ namespace wojilu.Web.Controller.Forum {
 
                 if (attachment.IsImage) {
 
-                    sb.AppendFormat( "<li><div>{0} <span class=\"note\">({1}KB)</span></div>", fileName, attachment.FileSizeKB );
+                    sb.AppendFormat( "<li><div>{0} <span class=\"note\">({1}KB, {2})</span></div>", fileName, attachment.FileSizeKB, attachment.Created );
                     sb.AppendFormat( "<div><a href=\"{0}\" target=\"_blank\"><img src=\"{1}\" /></a></div></li>",
                         attachment.FileUrl, attachment.FileMediuUrl );
                 }
                 else {
 
-
-                    sb.AppendFormat( "<li><div>{0} <span class=\"note right10\">({1}KB)</span>", fileName, attachment.FileSizeKB );
+                    sb.AppendFormat( "<li><div>{0} <span class=\"note right10\">({1}KB, {2})</span>", fileName, attachment.FileSizeKB, attachment.Created );
 
                     sb.AppendFormat( "<img src=\"{1}\" /><a href=\"{0}\" target=\"_blank\">" + alang( "hitDownload" ) + "</a></div>", to( new AttachmentController().Show, attachment.Id ) + "?id=" + attachment.Guid, strUtil.Join( sys.Path.Img, "/s/download.png" ) );
                 }
@@ -405,6 +454,16 @@ namespace wojilu.Web.Controller.Forum {
             return content;
         }
 
+        private DateTime getAttachmentLastUpdateTime( List<Attachment> attachList ) {
+
+            DateTime result = attachList[0].Created;
+            foreach (Attachment x in attachList) {
+                if (x.Created > result) result = x.Created;
+            }
+
+            return result;
+        }
+
         private String addEditInfo( ForumPost data, String content ) {
             User user = userService.GetById( data.EditMemberId );
             String str = string.Format( "<div class=\"updateNote\">" + alang( "lastEditInfo" ) + "</div>",
@@ -414,7 +473,7 @@ namespace wojilu.Web.Controller.Forum {
         }
 
         private String addLockedInfo( ForumPost data, String content ) {
-            if (getPostTopic( data ).IsLocked == 1) {
+            if (populatePostTopic( data ).IsLocked == 1) {
                 return ("<div class=\"locked\">" + alang( "exLockTip" ) + "</div>" + content);
             }
             return content;
@@ -452,7 +511,7 @@ namespace wojilu.Web.Controller.Forum {
         }
 
         private String addContentInfo( ForumTopic data, String content ) {
-            return content + "<div class=\"extDataPanel\">" + ExtData.GetExtView( data.Id, typeof( ForumTopic ).FullName, data.TypeName, ctx ) + "</div>";
+            return content + "<div class=\"extDataPanel\">" + wojilu.Common.AppBase.ExtObject.GetExtView( data.Id, typeof( ForumTopic ).FullName, data.TypeName, ctx ) + "</div>";
         }
 
         private String addRateLog( ForumPost data, String content ) {

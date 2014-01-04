@@ -33,7 +33,7 @@ namespace wojilu.ORM.Operation {
             return Delete( obj.Id, obj, Entity.GetInfo( obj ) );
         }
 
-        public static int Delete( Type t, int id ) {
+        public static int Delete( Type t, long id ) {
             IEntity obj = FindByIdOperation.FindById( id, new ObjectInfo( t ) );
             if (obj != null) {
                 return Delete( obj );
@@ -42,7 +42,7 @@ namespace wojilu.ORM.Operation {
         }
 
 
-        public static int Delete( int id, IEntity obj, EntityInfo entityInfo ) {
+        public static int Delete( long id, IEntity obj, EntityInfo entityInfo ) {
 
             List<IInterceptor> ilist = MappingClass.Instance.InterceptorList;
             for (int i = 0; i < ilist.Count; i++) {
@@ -53,7 +53,7 @@ namespace wojilu.ORM.Operation {
             rowAffected += deleteSingle( id, entityInfo );
             if (entityInfo.ChildEntityList.Count > 0) {
                 foreach (EntityInfo info in entityInfo.ChildEntityList) {
-                    rowAffected += deleteSingle( id, MappingClass.Instance.ClassList[info.Type.FullName] as EntityInfo );
+                    rowAffected += deleteSingle( id, Entity.GetInfo( info.Type.FullName ) );
                 }
             }
             if (entityInfo.Parent != null) {
@@ -77,7 +77,7 @@ namespace wojilu.ORM.Operation {
             }
 
             String deleteSql = new SqlBuilder( entityInfo ).GetDeleteSql( condition );
-            logger.Info(LoggerUtil.SqlPrefix+ "delete sql : " + deleteSql );
+            logger.Info( LoggerUtil.SqlPrefix + "delete sql : " + deleteSql );
 
             List<IInterceptor> ilist = MappingClass.Instance.InterceptorList;
             for (int i = 0; i < ilist.Count; i++) {
@@ -100,16 +100,16 @@ namespace wojilu.ORM.Operation {
 
 
         private static int Delete( Type t, String deleteCondition ) {
-            return DeleteBatch( deleteCondition, MappingClass.Instance.ClassList[t.FullName] as EntityInfo );
+            return DeleteBatch( deleteCondition, Entity.GetInfo( t.FullName ) );
         }
 
-        private static int deleteSingle( int id, EntityInfo entityInfo ) {
+        private static int deleteSingle( long id, EntityInfo entityInfo ) {
 
             IDbCommand command = DataFactory.GetCommand( getDeleteSql( id, entityInfo ), DbContext.getConnection( entityInfo ) );
             return command.ExecuteNonQuery();
         }
 
-        private static String getDeleteSql( int id, EntityInfo entityInfo ) {
+        private static String getDeleteSql( long id, EntityInfo entityInfo ) {
             String str = String.Format( "delete from {0} where Id={1}", entityInfo.TableName, id );
             logger.Info( "Delete(int id): " + str );
             return str;

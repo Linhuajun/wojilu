@@ -36,7 +36,7 @@ namespace wojilu.Web.Controller.Forum.Users {
             pollService = new ForumPollService();
         }
 
-        public void Detail() {
+        public virtual void Detail() {
 
             ForumPoll p = ctx.GetItem( "poll" ) as ForumPoll;
 
@@ -46,7 +46,11 @@ namespace wojilu.Web.Controller.Forum.Users {
                 return;
             }
 
+            ForumBoard board = setCurrentBoard( p );
+
             set( "topicId", p.TopicId );
+            set( "resultLink", to( GetPollResultHtml, p.Id ) + "?boardId=" + board.Id );
+            set( "poll.VoteLink", to( Vote, p.Id ) + "?boardId=" + board.Id );
 
             String hideCss = "display:none;";
             if (p.CheckHasVote( ctx.viewer.Id ) || (p.IsClosed() && p.IsVisible == 0)) {
@@ -62,14 +66,14 @@ namespace wojilu.Web.Controller.Forum.Users {
             load( "pollResult", pollResult );
         }
 
-        public void pollForm() {
+        public virtual void pollForm() {
 
             ForumPoll p = ctx.GetItem( "poll" ) as ForumPoll;
             ForumBoard board = setCurrentBoard( p );
 
             set( "topicId", p.TopicId );
 
-            set( "getResultHtmlLink", to( GetPollResultHtml, p.Id ) + "?boardId=" + board.Id );
+            set( "resultLink", to( GetPollResultHtml, p.Id ) + "?boardId=" + board.Id );
 
             set( "poll.Id", p.Id );
             set( "poll.Title", p.Title );
@@ -105,7 +109,7 @@ namespace wojilu.Web.Controller.Forum.Users {
         private void bindViewLink( ForumPoll p ) {
             IBlock lnkView = getBlock( "lnkView" );
             IBlock lblView = getBlock( "lblView" );
-            if (p.IsVisible == 0) {
+            if (p.IsVisible == 0 || isAuthor( p ) || ctx.viewer.IsAdministrator() || ctx.viewer.IsOwnerAdministrator( ctx.owner.obj )) {
                 lnkView.Set( "topicId", p.TopicId );
                 lnkView.Next();
             }
@@ -114,14 +118,18 @@ namespace wojilu.Web.Controller.Forum.Users {
             }
         }
 
-        public void GetPollResultHtml( int pollId ) {
+        private bool isAuthor( ForumPoll p ) {
+            return ctx.viewer.Id == p.Creator.Id;
+        }
+
+        public virtual void GetPollResultHtml( long pollId ) {
             ForumPoll p = pollService.GetById( pollId );
             ctx.SetItem( "poll", p );
 
             echo( loadHtml( pollResult ) );
         }
 
-        public void pollResult() {
+        public virtual void pollResult() {
 
             ForumPoll p = ctx.GetItem( "poll" ) as ForumPoll;
             ForumBoard board = setCurrentBoard( p );
@@ -150,7 +158,7 @@ namespace wojilu.Web.Controller.Forum.Users {
                 opblock.Next();
 
                 iColor++;
-                if (iColor > 6) iColor = 1;
+                if (iColor > colorCount) iColor = 1;
             }
 
             set( "poll.ExpiryInfo", p.GetRealExpiryDate() );
@@ -181,25 +189,29 @@ namespace wojilu.Web.Controller.Forum.Users {
                 html.CheckBox( "pollOption", Convert.ToString( (optionIndex + 1) ), optionText );
             }
             else {
-                html.Radio( "pollOption", Convert.ToString( (optionIndex + 1) ), optionText );
+                String __name = "pollOption";
+                String __val = Convert.ToString( (optionIndex + 1) );
+                String __txt = optionText;
+
+                html.Code( string.Format( "<label class=\"radio\"><input type=\"radio\" name=\"{0}\" id=\"{3}\" value=\"{1}\" /> {2}</label> ", __name, __val, __txt, __name + __val ) );
             }
             return html.ToString();
         }
 
         //----------------------------------------------------------------------------
 
-        public void Add() {
+        public virtual void Add() {
 
-            int id = ctx.GetInt( "boardId" );
+            long id = ctx.GetLong( "boardId" );
             set( "ActionLink", to( Create ) + "?boardId=" + id );
             List<ForumBoard> pathboards = getTree().GetPath( id );
             bindAddForm( id, pathboards );
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
-            int id = ctx.GetInt( "boardId" );
+            long id = ctx.GetLong( "boardId" );
             ForumBoard board = boardService.GetById( id, ctx.owner.obj );
 
             ForumPoll poll = new PollValidator<ForumPoll>().Validate( ctx );
@@ -214,16 +226,16 @@ namespace wojilu.Web.Controller.Forum.Users {
         }
 
         [HttpPost, DbTransaction]
-        public void Vote( int id ) {
+        public virtual void Vote( long id ) {
 
             ForumPoll poll = pollService.GetById( id );
             if (poll == null) {
-                echoError( alang( "exPollItemNotFound" ) );
+                echoError( lang( "exPollItemNotFound" ) );
                 return;
             }
 
             if (poll.CheckHasVote( ctx.viewer.Id )) {
-                echoError( alang( "exVoted" ) );
+                echoError( lang( "exVoted" ) );
                 return;
             }
 
@@ -245,12 +257,12 @@ namespace wojilu.Web.Controller.Forum.Users {
             echoAjaxOk();
         }
 
-        public void Voter( int id ) {
+        public virtual void Voter( long id ) {
 
             ForumPoll poll = pollService.GetById( id );
 
             if (poll == null) {
-                echoText( alang( "exPollItemNotFound" ) );
+                echoText( lang( "exPollItemNotFound" ) );
                 return;
             }
 
@@ -276,12 +288,11 @@ namespace wojilu.Web.Controller.Forum.Users {
             return board;
         }
 
-        private void bindAddForm( int id, List<ForumBoard> pathboards ) {
+        private void bindAddForm( long id, List<ForumBoard> pathboards ) {
 
             set( "location", ForumLocationUtil.GetPollAdd( pathboards, ctx ) );
             set( "optionCount", 5 );
             set( "forumId", id );
-            editor( "Question", "", "150px" );
 
             if ((ctx.Post( "PollType" ) == null) || (ctx.Post( "PollType" ) == "0")) {
                 set( "singleCheck", " checked=\"checked\"" );

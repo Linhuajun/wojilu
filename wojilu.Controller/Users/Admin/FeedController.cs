@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -21,10 +21,10 @@ namespace wojilu.Web.Controller.Users.Admin {
 
     public partial class FeedController : ControllerBase {
 
-        public IFeedService feedService { get; set; }
-        public IFriendService friendService { get; set; }
-        public IVisitorService visitorService { get; set; }
-        public IFollowerService followService { get; set; }
+        public virtual IFeedService feedService { get; set; }
+        public virtual IFriendService friendService { get; set; }
+        public virtual IVisitorService visitorService { get; set; }
+        public virtual IFollowerService followService { get; set; }
 
         public FeedController() {
             feedService = new FeedService();
@@ -37,14 +37,14 @@ namespace wojilu.Web.Controller.Users.Admin {
 
             Boolean isFeedClose = Component.IsClose( typeof( FeedApp ) );
             if (isFeedClose) {
-                echo( "∂‘≤ª∆£¨±æπ¶ƒ‹“—æ≠Õ£”√" );
+                echo( "ÂØπ‰∏çËµ∑ÔºåÊú¨ÂäüËÉΩÂ∑≤ÁªèÂÅúÁî®" );
             }
         }
 
         public override void Layout() {
         }
 
-        public virtual void My( int id ) {
+        public virtual void My( long id ) {
 
             feedService.ClearFeeds();
 
@@ -61,21 +61,19 @@ namespace wojilu.Web.Controller.Users.Admin {
 
             //load( "publish", new Microblogs.My.MbSaveController().Publish );
 
-            if (Component.IsClose( typeof( MicroblogApp ) )) {
-                set( "publish", "" );
-            }
-            else {
-
+            //if (Component.IsClose( typeof( MicroblogApp ) )) {
+            //    set( "publish", "" );
+            //}
+            //else {
                 load( "publish", new Microblogs.My.MicroblogController().Publisher );
-
-            }
+            //}
 
             bindFeedTypes();
 
             set( "friendsFrame", to( Friends ) );
             set( "followingFrame", to( Following ) );
 
-            String dataType = FeedType.GetByInt( id );
+            String dataType = FeedType.GetByInt( (int)id );
             bindFeeds( dataType );
 
             bindVisitorList();
@@ -111,7 +109,7 @@ namespace wojilu.Web.Controller.Users.Admin {
 
         private DataPage<Feed> getFeedList( String dataType ) {
 
-            int userId = ctx.GetInt( "uid" );
+            long userId = ctx.GetLong( "uid" );
             if (feedService.IsUserIdValid( userId, ctx.owner.Id )) {
                 return feedService.GetUserSelf( userId, dataType, 50 );
             }
@@ -144,12 +142,12 @@ namespace wojilu.Web.Controller.Users.Admin {
             return FeedUtils.mergeFeed( results );
         }
 
-        public void Friends() {
+        public virtual void Friends() {
             DataPage<User> friends = friendService.GetFriendsPage( ctx.owner.obj.Id, 6 );
             bindShareFriends( friends );
         }
 
-        public void Following() {
+        public virtual void Following() {
             DataPage<User> friends = followService.GetFollowingPage( ctx.owner.obj.Id, 6 );
             bindShareFollowing( friends );
         }

@@ -30,17 +30,17 @@ namespace wojilu.Web.Controller.Forum {
     [App( typeof( ForumApp ) )]
     public partial class TopicController : ControllerBase {
 
-        public IForumBoardService boardService { get; set; }
-        public IForumTopicService topicService { get; set; }
-        public IForumPostService postService { get; set; }
-        public IUserIncomeService incomeService { get; set; }
-        public IAttachmentService attachService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IForumPostService postService { get; set; }
+        public virtual IUserIncomeService incomeService { get; set; }
+        public virtual IAttachmentService attachService { get; set; }
 
-        public IUserService userService { get; set; }
-        public IForumRateService rateService { get; set; }
-        public ICurrencyService currencyService { get; set; }
-        public IForumBuyLogService buylogService { get; set; }
-        public IModeratorService moderatorService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IForumRateService rateService { get; set; }
+        public virtual ICurrencyService currencyService { get; set; }
+        public virtual IForumBuyLogService buylogService { get; set; }
+        public virtual IModeratorService moderatorService { get; set; }
 
         public TopicController() {
             boardService = new ForumBoardService();
@@ -82,7 +82,7 @@ namespace wojilu.Web.Controller.Forum {
             return _tree;
         }
 
-        public void Show( int id ) {
+        public virtual void Show( long id ) {
 
 
             ForumTopic topic = topicService.GetById( id, ctx.owner.obj );
@@ -93,11 +93,15 @@ namespace wojilu.Web.Controller.Forum {
 
             topicService.AddHits( topic );
 
-            int userId = ctx.GetInt( "userId" );
+            long userId = ctx.GetLong( "userId" );
             bindPosts( id, topic, board, userId );
+
+            set( "moderatorJson", moderatorService.GetModeratorJson( board ) );
+            set( "creatorId", topic.Creator.Id );
+            set( "tagAction", to( new Edits.TagController().SaveTag, topic.Id ) );
         }
 
-        private void bindPosts( int id, ForumTopic topic, ForumBoard board, int userId ) {
+        private void bindPosts( long id, ForumTopic topic, ForumBoard board, long userId ) {
             DataPage<ForumPost> list = postService.GetPageList( id, getPageSize( ctx.app.obj ), userId );
 
             ForumPost lastPost = getLastPost( list, topic.Id );
@@ -107,7 +111,7 @@ namespace wojilu.Web.Controller.Forum {
 
             forwardPreNext( topic );
 
-            WebUtils.pageTitle( this, topic.Title, board.Name );
+            ctx.Page.SetTitle( topic.Title, board.Name );
             Page.Keywords = topic.Tag.TextString;
 
             List<ForumBoard> pathboards = getTree().GetPath( board.Id );
@@ -132,7 +136,7 @@ namespace wojilu.Web.Controller.Forum {
             set( "page", pager );
         }
 
-        private ForumPost getLastPost( DataPage<ForumPost> list, int topicId ) {
+        private ForumPost getLastPost(DataPage<ForumPost> list, long topicId) {
             ForumPost lastPost;
             if (list.Current == list.PageCount) {
                 lastPost = list.Results[list.Results.Count - 1];
@@ -170,7 +174,7 @@ namespace wojilu.Web.Controller.Forum {
 
             User user = ctx.viewer.obj as User;
             if (strUtil.HasText( user.Pic )) {
-                formBlock.Set( "currentUser", "<img src=\"" + user.PicMedium + "\"/>" );
+                formBlock.Set( "currentUser", "<img src=\"" + user.PicM + "\"/>" );
             }
             else {
                 formBlock.Set( "currentUser", user.Name );
@@ -182,10 +186,13 @@ namespace wojilu.Web.Controller.Forum {
             formBlock.Set( "post.ParentId", lastPost.Id );
             formBlock.Set( "forumBoard.Id", topic.ForumBoard.Id );
 
-            Editor ed = Editor.NewOne( "Content", "", "150px", sys.Path.Editor, MvcConfig.Instance.JsVersion, Editor.ToolbarType.Basic );
+            IEditor ed = EditorFactory.NewOne( "Content", "", "150px", Editor.ToolbarType.Basic );
             ed.AddUploadUrl( ctx );
 
             formBlock.Set( "Editor", ed );
+
+            formBlock.Set( "currentPageId", ctx.route.page );
+
             formBlock.Next();
         }
 

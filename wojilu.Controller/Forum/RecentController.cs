@@ -20,9 +20,9 @@ namespace wojilu.Web.Controller.Forum {
     [App( typeof( ForumApp ) )]
     public class RecentController : ControllerBase {
 
-        public IForumTopicService topicService { get; set; }
-        public IForumBoardService boardService { get; set; }
-        public IForumPostService postService { get; set; }
+        public virtual IForumTopicService topicService { get; set; }
+        public virtual IForumBoardService boardService { get; set; }
+        public virtual IForumPostService postService { get; set; }
 
         public RecentController() {
             topicService = new ForumTopicService();
@@ -56,9 +56,9 @@ namespace wojilu.Web.Controller.Forum {
         }
 
         [CacheAction( typeof( ForumRecentTopicCache ) )]
-        public void Topic() {
+        public virtual void Topic() {
 
-            WebUtils.pageTitle( this, alang( "newTopic" ) );
+            ctx.Page.Title = alang( "newTopic" );
 
             DataPage<ForumTopic> plist = topicService.GetPageByApp( ctx.app.Id, 50 );
             bintTopics( plist.Results, plist.PageBar );
@@ -66,17 +66,17 @@ namespace wojilu.Web.Controller.Forum {
 
 
         [CacheAction( typeof( ForumRecentPostCache ) )]
-        public void Post() {
+        public virtual void Post() {
 
-            WebUtils.pageTitle( this, alang( "newPosts" ) );
+            ctx.Page.Title = alang( "newPosts" );
 
             DataPage<ForumPost> results = postService.GetPageByApp( ctx.app.Id, 50 );
             bindPosts( results );
         }
 
-        public void ImgTopic() {            
+        public virtual void ImgTopic() {
 
-            DataPage<ForumPickedImg> list = ForumPickedImg.findPage( "AppId=" + ctx.app.Id );
+            DataPage<ForumPickedImg> list = db.findPage<ForumPickedImg>( "AppId=" + ctx.app.Id );
 
             IBlock block = getBlock( "list" );
             foreach (ForumPickedImg f in list.Results) {
@@ -92,35 +92,35 @@ namespace wojilu.Web.Controller.Forum {
             
         }
 
-        public void MyTopic() {
+        public virtual void MyTopic() {
             view( "Topic" );
             DataPage<ForumTopic> plist = topicService.GetByUserAndApp( ctx.app.Id, ctx.viewer.Id, 50 );
             bintTopics( plist.Results, plist.PageBar );
         }
 
-        public void Picked() {
+        public virtual void Picked() {
             view( "Topic" );
 
 
-            WebUtils.pageTitle( this, alang( "picked" ) );
+            ctx.Page.Title = alang( "picked" );
 
             DataPage<ForumTopic> plist = topicService.GetPickedByApp( ctx.app.Id, 50 );
             bintTopics( plist.Results, plist.PageBar );
         }
 
-        public void Replies() {
+        public virtual void Replies() {
             view( "Topic" );
 
-            WebUtils.pageTitle( this, alang( "rankByReplies" ) );
+            ctx.Page.Title = alang( "rankByReplies" );
 
             List<ForumTopic> list = topicService.GetByAppAndReplies( ctx.app.Id, 50 );
             bintTopics( list, "" );
         }
 
-        public void Views() {
+        public virtual void Views() {
             view( "Topic" );
 
-            WebUtils.pageTitle( this, alang( "rankByViews" ) );
+            ctx.Page.Title = alang( "rankByViews" );
 
             List<ForumTopic> list = topicService.GetByAppAndViews( ctx.app.Id, 50 );
             bintTopics( list, "" );
@@ -128,7 +128,7 @@ namespace wojilu.Web.Controller.Forum {
 
 
 
-        public void MyPost() {
+        public virtual void MyPost() {
             view( "Post" );
             DataPage<ForumPost> results = postService.GetByAppAndUser( ctx.app.Id, ctx.viewer.Id, 50 );
             bindPosts( results );

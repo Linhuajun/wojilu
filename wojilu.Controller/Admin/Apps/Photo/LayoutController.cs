@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -17,8 +17,8 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
     [App( typeof( PhotoApp ) )]
     public class LayoutController : ControllerBase {
 
-        public ISysPhotoService photoService { get; set; }
-        public IPhotoSysCategoryService categoryService { get; set; }
+        public virtual ISysPhotoService photoService { get; set; }
+        public virtual IPhotoSysCategoryService categoryService { get; set; }
 
         public LayoutController() {
             photoService = new SysPhotoService();
@@ -27,25 +27,15 @@ namespace wojilu.Web.Controller.Admin.Apps.Photo {
 
         public override void Layout() {
 
-
             set( "listLink", to( new MainController().Index, -1 ) );
-            set( "pickedLink", to( new MainController().Picked ) );
-            set( "trashLink", to( new MainController().Trash ) );
-            set( "commentLink", to( new CommentController().List ) + "?type=" + typeof( PhotoPostComment ).FullName );
+            set( "pickedLink", to( new PostAdminController().Picked ) );
+            set( "trashLink", to( new PostAdminController().Trash ) );
+            set( "commentLink", to( new CommentController().List ) );
 
             int trashCount = photoService.GetSystemDeleteCount();
             set( "trashCount", trashCount );
 
             set( "categoryLink", to( new SysCategoryController().List ) );
-
-
-            IList categories = categoryService.GetAll();
-            bindList( "categories", "c", categories, bindLink );
-
-        }
-
-        private void bindLink( IBlock tpl, int id ) {
-            tpl.Set( "c.LinkCategory", to( new MainController().Index, id ) );
         }
 
 

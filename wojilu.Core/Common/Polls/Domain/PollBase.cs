@@ -17,9 +17,9 @@ namespace wojilu.Common.Polls.Domain {
     [Serializable]
     public abstract class PollBase : ObjectBase<PollBase>, IAppData {
 
-        public int AppId { get; set; }
+        public long AppId { get; set; }
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         public String OwnerUrl { get; set; }
 
@@ -32,7 +32,7 @@ namespace wojilu.Common.Polls.Domain {
         [NotNull( Lang = "exTitle" )]
         public String Title { get; set; }
 
-        public int TopicId { get; set; }
+        public long TopicId { get; set; }
 
         [LongText]
         public String Question { get; set; }
@@ -116,7 +116,7 @@ namespace wojilu.Common.Polls.Domain {
         }
 
 
-        public Boolean CheckHasVote( int userId ) {
+        public bool CheckHasVote(long userId) {
 
             String typeName = this.GetType().FullName + "Result";
             Type t = ObjectContext.Instance.TypeList[typeName];

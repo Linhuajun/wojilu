@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -20,20 +20,20 @@ namespace wojilu.Web.Controller.Blog {
     [App( typeof( BlogApp ) )]
     public partial class BlogController : ControllerBase {
 
-        public IBlogPostService postService { get; set; }
-
-        public BlogController() {
-            postService = new BlogPostService();
-        }
+        public virtual IBlogPostService postService { get; set; }
         
         [CacheAction( typeof( BlogIndexCache ) )]
-        public void Index() {
+        public virtual void Index() {
 
-            WebUtils.pageTitle( this, lang( "blog" ) );
+            ctx.Page.Title = lang( "blog" );
 
             BlogApp app = ctx.app.obj as BlogApp;
-            BlogSetting s = app.GetSettingsObj();
+            if (app == null) {
+                echoError( "app不存在" );
+                return;
+            }
 
+            BlogSetting s = app.GetSettingsObj();
 
             DataPage<BlogPost> results = postService.GetPage( ctx.app.Id, s.PerPageBlogs );
 
@@ -48,7 +48,7 @@ namespace wojilu.Web.Controller.Blog {
 
         }
 
-        public void Rss() {
+        public virtual void Rss() {
 
             BlogApp app = ctx.app.obj as BlogApp;
             BlogSetting s = app.GetSettingsObj();

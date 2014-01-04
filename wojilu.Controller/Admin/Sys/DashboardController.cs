@@ -8,37 +8,37 @@ using System.Collections;
 
 using wojilu.Web.Mvc;
 
+using wojilu.Common.MemberApp.Interface;
 using wojilu.Members.Users.Domain;
 using wojilu.Members.Users.Service;
 using wojilu.Members.Users.Interface;
 
-using wojilu.Common.Feeds.Service;
-using wojilu.Common.Feeds.Domain;
-using wojilu.Common.Feeds.Interface;
-
-using wojilu.Web.Controller.Users.Admin;
-using wojilu.Common.MemberApp.Interface;
 using wojilu.Members.Sites.Service;
 using wojilu.Members.Sites.Domain;
-using wojilu.Web.Controller.Security;
-using wojilu.Web.Controller.Common.Feeds;
+using wojilu.Web.Controller.Photo;
+using wojilu.Common.Microblogs.Domain;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Microblogs.Service;
 
 namespace wojilu.Web.Controller.Admin.Sys {
 
-    public partial class DashboardController : ControllerBase {
+    public class DashboardController : ControllerBase {
 
-        public IFeedService feedService { get; set; }
-        public IUserService userService { get; set; }
-        public IMemberAppService siteAppService { get; set; }
+        public virtual IUserService userService { get; set; }
+        public virtual IMemberAppService siteAppService { get; set; }
+        public virtual IMicroblogService microblogService { get; set; }
+        public virtual IMicroblogFavoriteService mfService { get; set; }
+        public virtual ISysMicroblogService sysMicroblogService { get; set; }
 
         public DashboardController() {
-            feedService = new FeedService();
             userService = new UserService();
             siteAppService = new SiteAppService();
+            microblogService = new MicroblogService();
+            mfService = new MicroblogFavoriteService();
+            sysMicroblogService = new SysMicroblogService();
         }
 
-
-        public void Links() {
+        public virtual void Links() {
 
             set( "addMenu", to( new Admin.MenuController().AddMenu ) );
             set( "addFooterMenuLink", to( new FooterMenuController().Add ) );
@@ -47,6 +47,9 @@ namespace wojilu.Web.Controller.Admin.Sys {
             set( "userLink", lnkFull( to( new Users.MainController().Index ) ) );
             set( "blogLink", lnkFull( to( new Blog.MainController().Index ) ) );
             set( "photoLink", lnkFull( to( new Photo.MainController().Index ) ) );
+
+            set( "photoWfLink", lnkFull( PhotoLink.ToHome() ) );
+
             set( "microblogLink", lnkFull( alink.ToMicroblog() ) );
             set( "tagLink", lnkFull( to( new TagController().Index ) ) );
 
@@ -80,93 +83,69 @@ namespace wojilu.Web.Controller.Admin.Sys {
             bindAppList( apps, block );
         }
 
+        private void bindAppList( IList apps, IBlock block ) {
+            foreach (IMemberApp app in apps) {
+                block.Set( "app.Name", app.Name );
+                String lnk = lnkFull( alink.ToUserAppFull( app ) );
+                block.Set( "app.Link", lnk );
+                block.Next();
+            }
+        }
 
         private String lnkFull( String link ) {
             if (link.StartsWith( "http" )) return link;
             return strUtil.Join( ctx.url.SiteAndAppPath, link );
         }
 
-        public void Index() {
-            Home( -1 );
+        public virtual void Index() {
+            Feed( -1 );
         }
 
-        public void Home( int id ) {
+        public virtual void Feed( long id ) {
+            view( "Feed" );
+            bindUsers();
+
+            DataPage<Microblog> list = sysMicroblogService.GetPageAllByUser( id, 50 );
+            List<MicroblogVo> volist = mfService.CheckFavorite( list.Results, 0 );
+
+            ctx.SetItem( "_microblogVoList", volist );
+            ctx.SetItem( "_showUserFace", true );
+            load( "blogList", new wojilu.Web.Controller.Microblogs.MicroblogController().bindBlogs );
+
+            set( "page", list.PageBar );
+        }
+
+        public virtual void Home( long id ) {
 
             view( "Home" );
 
-            set( "searchTarget", to( Search ) );
-            set( "feedHomeLink", to( Home, -1 ) );
-
-            bindFeedTypes();
-
             bindUsers();
 
-            DataPage<Feed> feeds = getFeeds( id );
-            bindFeedList( feeds );
-
+            set( "feedList", loadHtml( new FeedAdminController().Home, id ) );
         }
 
-        private DataPage<Feed> getFeeds( int id ) {
+        //------------------------------------------------------------------------
 
-            String dataType = FeedType.GetByInt( id );
-            int userId = ctx.GetInt( "userId" );
-            User user = userService.GetById( userId );
+        private void bindUsers() {
+            List<User> newUsers = userService.GetNewList( 8 );
+            bindUserList( "newUsers", newUsers );
 
-            if (user != null) {
-                return feedService.GetAll( userId, dataType, 50 );
-            }
-            else {
-                return feedService.GetAll( dataType, 50 );
-            }
+            List<User> newLoginUsers = userService.GetNewLoginList( 8 );
+            bindUserList( "visitors", newLoginUsers );
         }
 
-        public void Search() {
+        private void bindUserList( String blockName, List<User> users ) {
 
-            String userName = ctx.Post( "UserName" );
-
-            if (strUtil.IsNullOrEmpty( userName )) {
-                echoRedirect( lang( "exUserName" ) );
-                return;
+            IBlock block = getBlock( blockName );
+            foreach (User user in users) {
+                block.Set( "user.Name", user.Name );
+                block.Set( "user.Face", user.PicSmall );
+                block.Set( "user.Created", cvt.ToTimeString( user.Created ) );
+                block.Set( "user.LastLoginTime", cvt.ToTimeString( user.LastLoginTime ) );
+                block.Set( "user.Link", toUser( user ) );
+                block.Next();
             }
-
-            User user = userService.GetByName( userName );
-            if (user == null) {
-                echoRedirect( lang( "exUserNotFound" ) );
-                return;
-            }
-
-            String lnk = to( Home, -1 ) + "?userId=" + user.Id;
-            redirectUrl( lnk );
         }
-
-        //-------------------------------------------------------------------------------
-
-
-        private List<FeedView> getFeedByDay( List<Feed> feeds, DateTime day ) {
-            List<Feed> results = new List<Feed>();
-            foreach (Feed feed in feeds) {
-                if (cvt.IsDayEqual( feed.Created, day )) results.Add( feed );
-            }
-            //return results;
-            return FeedUtils.mergeFeed( results );
-        }
-
-        private List<DateTime> getDayList( List<Feed> feeds ) {
-            List<DateTime> results = new List<DateTime>();
-            foreach (Feed feed in feeds) {
-                if (isDayAdded( results, feed.Created ) == false) results.Add( feed.Created );
-            }
-            return results;
-        }
-
-        private Boolean isDayAdded( List<DateTime> days, DateTime created ) {
-            foreach (DateTime day in days) {
-                if (cvt.IsDayEqual( day, created )) return true;
-            }
-            return false;
-        }
-
-
     }
 
 }

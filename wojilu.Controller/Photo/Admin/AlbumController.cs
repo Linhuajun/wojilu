@@ -1,4 +1,4 @@
-/*
+Ôªø/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -21,8 +21,8 @@ namespace wojilu.Web.Controller.Photo.Admin {
     [App( typeof( PhotoApp ) )]
     public class AlbumController : ControllerBase {
 
-        public IPhotoAlbumService albumService { get; set; }
-        public IPhotoPostService postService { get; set; }
+        public virtual IPhotoAlbumService albumService { get; set; }
+        public virtual IPhotoPostService postService { get; set; }
 
         public AlbumController() {
             base.HideLayout( typeof( Photo.LayoutController ) );
@@ -30,7 +30,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             postService = new PhotoPostService();
         }
 
-        public void OrderList() {
+        public virtual void OrderList() {
 
             set( "addLink", to( Add ) );
             set( "sortAction", to( SaveSort ) );
@@ -48,7 +48,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             }
         }
 
-        public void List() {
+        public virtual void List() {
 
             set( "addLink", to( Add ) );
             set( "sortLink", to( OrderList ) );
@@ -67,7 +67,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
                 String desc = strUtil.HasText( album.Description ) ? "<div class=\"descriptionInfo\">" + album.Description + "</div>" : "";
                 block.Set( "album.Description", desc );
 
-                String coverImg = getCover( album );
+                String coverImg = PhotoHelper.getCover( album );
                 block.Set( "album.Cover", coverImg );
 
 
@@ -85,27 +85,11 @@ namespace wojilu.Web.Controller.Photo.Admin {
             return count;
         }
 
-        private string getCover( PhotoAlbum album ) {
-
-            if (strUtil.HasText( album.Logo )) return sys.Path.GetPhotoThumb( album.Logo );
-
-            PhotoPost photo = PhotoPost.find( "AppId=" + ctx.app.Id + " and PhotoAlbum.Id=" + album.Id ).first();
-            if (photo != null) {
-
-                album.Logo = photo.DataUrl;
-                album.update( "Logo" );
-
-                return photo.ImgThumbUrl;
-            }
-
-            return strUtil.Join( sys.Path.Img, "/m/album.jpg" );
-        }
-
 
         [HttpPost, DbTransaction]
         public virtual void SaveSort() {
 
-            int id = ctx.PostInt( "id" );
+            long id = ctx.PostLong( "id" );
             String cmd = ctx.Post( "cmd" );
 
             PhotoAlbum acategory = db.findById<PhotoAlbum>( id );
@@ -129,13 +113,13 @@ namespace wojilu.Web.Controller.Photo.Admin {
 
         }
 
-        public void Add() {
+        public virtual void Add() {
             view( "Add" );
             target( Create );
         }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             PhotoAlbum album = ctx.PostValue<PhotoAlbum>();
             if (ctx.HasErrors) {
@@ -157,7 +141,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
             }
         }
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
             PhotoAlbum album = albumService.GetById( id, ctx.owner.Id );
             if (album == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
 
@@ -175,8 +159,8 @@ namespace wojilu.Web.Controller.Photo.Admin {
                 block.Set( "data.ImgThumbUrl", post.ImgThumbUrl );
                 block.Set( "data.EditLink", to( new PostController().Edit, post.Id ) );
 
-                String lblCover = string.Format( "<a href=\"{0}\" class=\"putCmd\">…ËŒ™◊®º≠∑‚√Ê</a>", to( SetCover, post.Id ) );
-                if (post.DataUrl.Equals( album.Logo )) lblCover = "<span class=\"currentCover\">∑‚√Ê</span>";
+                String lblCover = string.Format( "<a href=\"{0}\" class=\"putCmd\">ËÆæ‰∏∫‰∏ìËæëÂ∞ÅÈù¢</a>", to( SetCover, post.Id ) );
+                if (post.DataUrl.Equals( album.Logo )) lblCover = "<span class=\"currentCover\">Â∞ÅÈù¢</span>";
 
                 block.Set( "data.SetCoverLink", lblCover );
 
@@ -188,7 +172,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
         }
 
         [HttpPut, DbTransaction]
-        public void SetCover( int id ) {
+        public virtual void SetCover( long id ) {
 
             PhotoPost post = postService.GetById( id, ctx.owner.Id );
             if (post == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
@@ -202,7 +186,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
             PhotoAlbum album = albumService.GetById( id, ctx.owner.Id );
             if (album == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
 
@@ -221,7 +205,7 @@ namespace wojilu.Web.Controller.Photo.Admin {
         }
 
         [HttpDelete, DbTransaction]
-        public void Delete( int id ) {
+        public virtual void Delete( long id ) {
             PhotoAlbum album = albumService.GetById( id, ctx.owner.Id );
             if (album == null) { echoRedirect( lang( "exDataNotFound" ) ); return; }
 

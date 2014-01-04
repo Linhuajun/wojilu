@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -17,7 +17,7 @@ namespace wojilu.Web.Controller.Users.Admin {
 
     public class MyLinkController : ControllerBase {
 
-        public IMemberAppService userAppService { get; set; }
+        public virtual IMemberAppService userAppService { get; set; }
 
         public MyLinkController() {
             userAppService = new UserAppService();
@@ -27,11 +27,11 @@ namespace wojilu.Web.Controller.Users.Admin {
 
             Boolean isUserLinksClose = Component.IsClose( typeof( UserLinks ) );
             if (isUserLinksClose) {
-                echo( "¶Ô²»Æğ£¬±¾¹¦ÄÜÒÑ¾­Í£ÓÃ" );
+                echo( "å¯¹ä¸èµ·ï¼Œæœ¬åŠŸèƒ½å·²ç»åœç”¨" );
             }
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             set( "addMenu", to( new MenuController().AddMenu ) );
 
@@ -58,7 +58,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         private String lnkFull( String link ) {
-            if (link.StartsWith( "http" )) return link; // ¿ªÆô¶ş¼¶ÓòÃûÖ§³ÖÇé¿öÏÂ£¬linkÊÇÍêÕûurl
+            if (link.StartsWith( "http" )) return link; // å¼€å¯äºŒçº§åŸŸåæ”¯æŒæƒ…å†µä¸‹ï¼Œlinkæ˜¯å®Œæ•´url
             return strUtil.Join( ctx.url.SiteUrl, link );
         }
 

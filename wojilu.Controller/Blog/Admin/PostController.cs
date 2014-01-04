@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -16,34 +16,37 @@ using wojilu.Common.Feeds.Service;
 using wojilu.Common.Feeds.Interface;
 using wojilu.Common.AppBase;
 using wojilu.Common.Tags;
+using wojilu.Common.Upload;
 
 using wojilu.Apps.Blog.Domain;
 using wojilu.Apps.Blog.Service;
 using wojilu.Apps.Blog.Interface;
+using wojilu.Web.Controller.Users;
+using wojilu.Web.Controller.Admin;
 
 namespace wojilu.Web.Controller.Blog.Admin {
 
     [App( typeof( BlogApp ) )]
     public partial class PostController : ControllerBase {
 
-        public IBlogService blogService { get; set; }
-        public IBlogCategoryService categoryService { get; set; }
-        public IBlogPostService postService { get; set; }
+        public virtual IBlogService blogService { get; set; }
+        public virtual IBlogCategoryService categoryService { get; set; }
+        public virtual IBlogPostService postService { get; set; }
 
-        public IFeedService feedService { get; set; }
-        public IFriendService friendService { get; set; }
+        public virtual IFriendService friendService { get; set; }
+        public virtual IUserFileService fileService { get; set; }
 
         public PostController() {
 
             blogService = new BlogService();
             postService = new BlogPostService();
             categoryService = new BlogCategoryService();
-            feedService = new FeedService();
             friendService = new FriendService();
+            fileService = new UserFileService();
         }
 
 
-        public void Add() {
+        public virtual void Add() {
 
             List<BlogCategory> categories = categoryService.GetByApp( ctx.app.Id );
 
@@ -52,16 +55,22 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
             target( Create );
             bindAdd( categories );
-
+            bindUploadInfo();
         }
 
+        private void bindUploadInfo() {
+            //附件
+            set( "uploadLink", to( new UserUploadController().SaveUserFile ) ); // 接受上传的网址
+            set( "authJson", ctx.web.GetAuthJson() );
+            set( "jsPath", sys.Path.DiskJs );
+        }
 
         [HttpPost, DbTransaction]
-        public void Create() {
+        public virtual void Create() {
 
             BlogPost data = new BlogPost();
             BlogCategory category = new BlogCategory();
-            category.Id = ctx.PostInt( "CategoryId" );
+            category.Id = ctx.PostLong( "CategoryId" );
             data.Category = category;
             data.Title = ctx.Post( "Title" );
             data.Abstract = ctx.Post( "Abstract" );
@@ -90,21 +99,25 @@ namespace wojilu.Web.Controller.Blog.Admin {
             data.Tags = TagService.ResetRawTagString( tagStr );
             populatePost( data );
 
-            Result result = postService.Insert( data );
+            // 附件处理
+            long[] ids = cvt.ToLongArray( ctx.Post( "attachmentIds" ) );
+
+            Result result = postService.Insert( data, ids );
             if (result.IsValid) {
 
-                echoRedirectPart( lang( "opok" ), to( new MyListController().Index ), 1 );
+                echoRedirectPart( lang( "opok" ), to( new MyListController().Index ) );
             }
             else {
                 echoError( result );
             }
+
         }
 
 
 
         //-------------------------------- edit&save -------------------------------------------
 
-        public void Edit( int id ) {
+        public virtual void Edit( long id ) {
 
             target( Update, id );
 
@@ -116,10 +129,66 @@ namespace wojilu.Web.Controller.Blog.Admin {
 
             List<BlogCategory> categories = categoryService.GetByApp( ctx.app.Id );
             bindEdit( data, categories );
+
+            bindAttachmentPanel( data );
+        }
+
+        private void bindAttachmentPanel( BlogPost post ) {
+
+            //附件
+            String dataInfo = string.Format( "?dataId={0}&dataType={1}&viewerId={2}&viewerUrl={3}&ownerId={4}&ownerType={5}&ownerUrl={6}",
+                post.Id,
+                typeof( BlogPost ).FullName,
+                ctx.viewer.Id,
+                ctx.viewer.obj.Url,
+                ctx.owner.Id,
+                ctx.owner.obj.GetType().FullName,
+                ctx.owner.obj.Url );
+
+            set( "uploadLink", to( new UserUploadController().SaveUserFile ) ); // 接受上传的网址
+            set( "authJson", AdminSecurityUtils.GetAuthCookieJson( ctx ) );
+            set( "jsPath", sys.Path.DiskJs );
+
+            set( "dataId", post.Id );
+            set( "dataType", typeof( BlogPost ).FullName );
+
+            set( "viewerId", ctx.viewer.Id );
+            set( "viewerUrl", ctx.viewer.obj.Url );
+
+            set( "ownerId", ctx.owner.Id );
+            set( "ownerType", ctx.owner.obj.GetType().FullName );
+            set( "ownerUrl", ctx.owner.obj.Url );
+
+
+            bindAttachments( post );
+
+        }
+
+        private void bindAttachments( BlogPost post ) {
+
+            List<UserFile> list = fileService.GetByData( post );
+
+            IBlock block = getBlock( "attachments" );
+            foreach (UserFile obj in list) {
+
+                if (obj.IsPic == 1) {
+                    block.Set( "obj.PicLink", string.Format( "<a href=\"{0}\" target=\"_blank\" class=\"lnkPreview\">查看图片</a>", obj.PicO ) );
+                }
+                else {
+                    block.Set( "obj.PicLink", "" );
+                }
+
+                block.Set( "obj.Id", obj.Id );
+                block.Set( "obj.FileName", obj.FileName );
+                block.Set( "obj.FileSizeKB", obj.FileSizeKB );
+                block.Set( "obj.DeleteLink", to( new UserUploadController().DeleteUserFile, obj.Id ) );
+                block.Next();
+            }
+
         }
 
         [HttpPost, DbTransaction]
-        public void Update( int id ) {
+        public virtual void Update( long id ) {
 
             BlogPost post = postService.GetById( id, ctx.owner.Id );
             if (post == null) {
@@ -153,7 +222,7 @@ namespace wojilu.Web.Controller.Blog.Admin {
             Result result = db.update( post );
             if (result.IsValid) {
                 TagService.SaveDataTag( post, ctx.Post( "TagList" ) );
-                echoRedirectPart( lang( "opok" ), to( new MyListController().Index ), 1 );
+                echoRedirectPart( lang( "opok" ), to( new MyListController().Index ) );
             }
             else {
                 echoRedirect( result.ErrorsHtml );
@@ -177,25 +246,13 @@ namespace wojilu.Web.Controller.Blog.Admin {
             data.AppId = ctx.app.Id;
         }
 
-
-
-
-
         private void bindAdd( List<BlogCategory> categories ) {
             set( "categoryAddUrl", to( new CategoryController().New ) );
             set( "DraftActionUrl", to( new DraftController().SaveDraft ) );
-
-            //String dropList = Html.DropList( categories, "CategoryId", "Name", "Id", null );
-            //set( "categoryDropList", dropList );
             dropList( "CategoryId", categories, "Name=Id", null );
-
-            editor( "Content", "", "400px" );
         }
 
-
         private void bindEdit( BlogPost data, List<BlogCategory> categories ) {
-            //String categoryDropList = Html.DropList( categories, "CategoryId", "Name", "Id", data.Category.Id );
-            //set( "data.CatetgoryId", categoryDropList );
             dropList( "CategoryId", categories, "Name=Id", data.Category.Id );
 
             set( "data.Id", data.Id );
@@ -203,7 +260,7 @@ namespace wojilu.Web.Controller.Blog.Admin {
             set( "data.TagList", data.Tag.TextString );
             set( "data.Title", data.Title );
 
-            editor( "Content", data.Content, "400px" );
+            set( "Content", data.Content );
 
             set( "data.AccessStatus", AccessStatusUtil.GetRadioList( data.AccessStatus ) );
             set( "data.IsCloseComment", Html.CheckBox( "IsCloseComment", lang( "closeComment" ), "1", cvt.ToBool( data.CommentCondition ) ) );

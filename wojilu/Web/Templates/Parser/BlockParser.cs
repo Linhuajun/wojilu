@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ namespace wojilu.Web.Templates.Parser {
             BlockToken token = new BlockToken();
             token.setName( sbname.ToString() );
             token.setTokens( _tokens );
+            token.setType( TokenType.Block );
 
             return token;
 
@@ -61,7 +62,7 @@ namespace wojilu.Web.Templates.Parser {
                 sbname.Append( charSrc.current() );
                 charSrc.move();
             }
-           
+
 
             // 内部解析
             beginParse();
@@ -104,6 +105,23 @@ namespace wojilu.Web.Templates.Parser {
                     _tokens.Add( token );
                     continue;
 
+                }
+                else if (charSrc.isCode()) {
+
+                    CodeParser p = new CodeParser( this.charSrc );
+                    p.parse();
+
+                    Token token = p.getToken();
+                    _tokens.Add( token );
+                    continue;
+                }
+                else if (charSrc.isFunction()) {
+                    FunctionParser p = new FunctionParser( this.charSrc );
+                    p.parse();
+
+                    Token token = p.getToken();
+                    _tokens.Add( token );
+                    continue;
                 }
 
                 // string

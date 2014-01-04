@@ -11,20 +11,22 @@ using wojilu.Common.Tags;
 using wojilu.Common;
 using wojilu.Common.AppBase;
 using wojilu.Common.AppBase.Interface;
+using wojilu.Common.Microblogs.Interface;
+using wojilu.Common.Comments;
 
 namespace wojilu.Apps.Forum.Domain {
 
     [Serializable]
-    public class ForumTopic : ObjectBase<ForumTopic>, IPost, IAppData, IShareData, ISort, IHits {
+    public class ForumTopic : ObjectBase<ForumTopic>, IPost, IAppData, IShareData, ISort, IHits, ILike, ICommentTarget {
 
         public User Creator { get; set; }
         public String CreatorUrl { get; set; }
 
-        public int OwnerId { get; set; }
+        public long OwnerId { get; set; }
         public String OwnerType { get; set; }
         public String OwnerUrl { get; set; }
 
-        public int AppId { get; set; }
+        public long AppId { get; set; }
         public ForumBoard ForumBoard { get; set; }
         public ForumCategory Category { get; set; }
 
@@ -70,6 +72,7 @@ namespace wojilu.Apps.Forum.Domain {
         public DateTime Replied { get; set; }
         public int Replies { get; set; }
         public int LastReById { get; set; }
+        public int Likes { get; set; }
 
         // 原始存储的值
         public String RepliedUserFriendUrl { get; set; } 
@@ -125,6 +128,10 @@ namespace wojilu.Apps.Forum.Domain {
 
         public void updateOrderId() {
             db.update( this, "OrderId" );
+        }
+
+        public Type GetAppType() {
+            return typeof( ForumApp );
         }
 
     }

@@ -1,43 +1,49 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2010, www.wojilu.com. All rights reserved.
+ */
+
+using System;
 using System.Collections.Generic;
-using System.Text;
-using wojilu.Web.Mvc;
-using wojilu.Members.Users.Domain;
-using wojilu.Common;
-using wojilu.Web.Mvc.Attr;
-using wojilu.Common.Comments;
-using wojilu.Serialization;
+
 using wojilu.ORM;
+using wojilu.Web.Mvc;
+using wojilu.Web.Mvc.Attr;
+
+using wojilu.Common.Comments;
 using wojilu.Members.Interface;
+using wojilu.Members.Users.Domain;
 
 namespace wojilu.Web.Controller.Open {
 
-
-
     public class CommentController : ControllerBase {
 
-        public OpenCommentService commentService { get; set; }
+        public virtual IOpenCommentService commentService { get; set; }
 
         public CommentController() {
             commentService = new OpenCommentService();
         }
 
-
-        public void List() {
+        public virtual void List() {
 
             String url = ctx.Get( "url" );
-            url = strUtil.SqlClean( url, 50 );
+            url = strUtil.SqlClean( url, 100 );
 
-            int dataId = ctx.GetInt( "dataId" );
+            long dataId = ctx.GetLong( "dataId" );
             String dataType = ctx.Get( "dataType" );
+            int pageSize = ctx.GetInt( "pageSize" );
 
+            set( "createLink", to( Create ) );
             set( "thisUrl", url );
             set( "thisDataType", dataType );
             set( "thisDataId", dataId );
             set( "thisDataTitle", ctx.Get( "dataTitle" ) );
-            set( "thisDataUserId", ctx.GetInt( "dataUserId" ) );
+            set( "thisDataUserId", ctx.GetLong( "dataUserId" ) );
+            set( "thisOwnerId", ctx.GetLong( "ownerId" ) );
+            set( "thisAppId", ctx.GetLong( "appId" ) );
+            set( "thisFeedId", ctx.GetLong( "feedId" ) );
+            set( "thisRenumId", ctx.Get( "renumId" ) );
 
-            DataPage<OpenComment> datas = commentService.GetByDataDesc( dataType, dataId );
+            DataPage<OpenComment> datas = commentService.GetByDataDesc( dataType, dataId, pageSize );
             int replies = commentService.GetReplies( dataId, dataType, url );
 
             List<OpenComment> lists = datas.Results;
@@ -62,7 +68,7 @@ namespace wojilu.Web.Controller.Open {
 
             String pageBar = "";
             if (datas.PageCount > 1) {
-                pageBar = new ObjectPage( datas.RecordCount, datas.Size, datas.Current ).GetSimplePageBar();
+                pageBar = new PageHelper( datas.RecordCount, datas.Size, datas.Current ).GetSimplePageBar();
             }
             set( "page", pageBar );
         }
@@ -70,17 +76,17 @@ namespace wojilu.Web.Controller.Open {
 
 
         [HttpPost]
-        public void MoreReply() {
+        public virtual void MoreReply() {
 
-            int parentId = ctx.PostInt( "parentId" );
+            long parentId = ctx.PostLong( "parentId" );
             if (parentId <= 0) echoJson( "[]" );
 
-            int startId = ctx.PostInt( "startId" );
+            long startId = ctx.PostLong( "startId" );
             if (startId <= 0) echoJson( "[]" );
 
             List<OpenComment> moreList = commentService.GetMore( parentId, startId, OpenComment.subCacheSize, "desc" );
             List<CommentDto> dtoList = getCommentDto( moreList );
-            echoJson( JsonString.ConvertList( dtoList ) );
+            echoJson( dtoList );
         }
 
         private List<CommentDto> getCommentDto( List<OpenComment> moreList ) {
@@ -113,13 +119,13 @@ namespace wojilu.Web.Controller.Open {
             String authorText = "";
 
             if (user != null && user.Id > 0) {
-                userFace = string.Format( "<a href='{0}'><img src='{1}' style='width:48px;'/></a>", toUser( user ), user.PicSmall );
-                userName = string.Format( "<a href='{0}'>{1}</a>", toUser( user ), user.Name );
+                userFace = string.Format( "<a href=\"{0}\" target=\"_blank\"><img src=\"{1}\" style=\"width:48px;\"/></a>", toUser( user ), user.PicSmall );
+                userName = string.Format( "<a href=\"{0}\" target=\"_blank\">{1}</a>", toUser( user ), user.Name );
                 authorText = user.Name;
             }
             else {
 
-                userFace = "<img src='" + sys.Path.AvatarGuest + "' style='width:48px;'/></a>";
+                userFace = "<img src=\"" + sys.Path.AvatarGuest + "\" style=\"width:48px;\"/></a>";
                 userName = authorName;
                 authorText = authorName;
             }
@@ -148,7 +154,7 @@ namespace wojilu.Web.Controller.Open {
             }
         }
 
-        private int getStartId( List<OpenComment> lists ) {
+        private long getStartId( List<OpenComment> lists ) {
             if (lists.Count == 0) return 0;
             return lists[lists.Count - 1].Id;
         }
@@ -193,14 +199,13 @@ namespace wojilu.Web.Controller.Open {
             //if (c.ParentId == 0) return c.Content;
             //IComment parent = commentService.GetById( c.ParentId, ctx.app.Id );
             //if (parent == null) return c.Content;
-            //String quote = "<div class='quote'><span class='qSpan'>{0} : {1}</span></div>";
+            //String quote = "<div class=\"quote\"><span class=\"qSpan\">{0} : {1}</span></div>";
             //return string.Format( quote, parent.Author, strUtil.CutString( parent.Content, 50 ) ) + "<div>" + c.Content + "</div>";
 
             return c.Content;
         }
 
         private void bindForm() {
-            set( "createLink", to( Create ) );
 
             IBlock loginForm = getBlock( "loginForm" );
             IBlock guestForm = getBlock( "guestForm" );
@@ -223,8 +228,8 @@ namespace wojilu.Web.Controller.Open {
             return string.Format( lang( "contentLength" ), config.Instance.Site.CommentLength );
         }
 
-        [HttpPost]
-        public void Create() {
+        [HttpPost, DbTransaction]
+        public virtual void Create() {
 
             String userName;
             if (ctx.viewer.IsLogin) {
@@ -252,15 +257,19 @@ namespace wojilu.Web.Controller.Open {
             c.Content = content;
             c.TargetUrl = ctx.Post( "url" );
             c.TargetDataType = ctx.Post( "dataType" );
-            c.TargetDataId = ctx.PostInt( "dataId" );
+            c.TargetDataId = ctx.PostLong( "dataId" );
             c.TargetTitle = ctx.Post( "dataTitle" );
-            c.TargetUserId = ctx.PostInt( "dataUserId" );
+            c.TargetUserId = ctx.PostLong( "dataUserId" );
+
+            c.OwnerId = ctx.PostLong( "ownerId" );
+            c.AppId = ctx.PostLong( "appId" );
+            c.FeedId = ctx.PostLong( "feedId" );
 
             c.Ip = ctx.Ip;
             c.Author = userName;
             c.AuthorEmail = ctx.Post( "UserEmail" );
-            c.ParentId = ctx.PostInt( "ParentId" );
-            c.AtId = ctx.PostInt( "AtId" );
+            c.ParentId = ctx.PostLong( "ParentId" );
+            c.AtId = ctx.PostLong( "AtId" );
 
             if (ctx.viewer.IsLogin) {
                 c.Member = (User)ctx.viewer.obj;
@@ -276,8 +285,8 @@ namespace wojilu.Web.Controller.Open {
             }
         }
 
-        [HttpDelete]
-        public void Delete( int id ) {
+        [HttpDelete, DbTransaction]
+        public virtual void Delete( long id ) {
 
             OpenComment c = commentService.GetById( id );
             if (c == null) {
@@ -294,11 +303,11 @@ namespace wojilu.Web.Controller.Open {
             echoAjaxOk();
         }
 
-        [HttpDelete]
-        public void DeleteAll() {
+        [HttpDelete, DbTransaction]
+        public virtual void DeleteAll() {
             String url = ctx.Get( "url" );
             url = strUtil.SqlClean( url, 50 );
-            int dataId = ctx.GetInt( "dataId" );
+            long dataId = ctx.GetLong( "dataId" );
             String dataType = ctx.Get( "dataType" );
 
             if (checkAdminPermission( dataType, dataId ) == false) {
@@ -310,7 +319,7 @@ namespace wojilu.Web.Controller.Open {
             echoAjaxOk();
         }
 
-        private Boolean checkAdminPermission( string dataType, int dataId ) {
+        private Boolean checkAdminPermission( string dataType, long dataId ) {
 
             if (ctx.viewer.IsLogin == false) return false;
 
@@ -326,7 +335,7 @@ namespace wojilu.Web.Controller.Open {
             EntityInfo ei = Entity.GetInfo( obj );
             if (ei.GetProperty( "OwnerId" ) == null || ei.GetProperty( "OwnerType" ) == null) return false;
 
-            int ownerId = (int)obj.get( "OwnerId" );
+            long ownerId = (long)obj.get( "OwnerId" );
             String ownerType = obj.get( "OwnerType" ) as String;
             if (ownerId <= 0) return false;
 

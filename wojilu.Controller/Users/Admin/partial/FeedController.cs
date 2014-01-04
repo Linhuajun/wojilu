@@ -7,8 +7,6 @@ using System.Collections.Generic;
 
 using wojilu.Web.Mvc;
 
-using wojilu.Serialization;
-
 using wojilu.Apps.Blog.Domain;
 using wojilu.Apps.Photo.Domain;
 using wojilu.Apps.Forum.Domain;
@@ -33,7 +31,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         private String getTypeLink( Type t ) {
-            int userId = ctx.GetInt( "uid" );
+            long userId = ctx.GetLong( "uid" );
             if (userId <= 0)
                 return to( My, FeedType.Get( t ) );
             return to( My, FeedType.Get( t ) ) + "?uid=" + userId;
@@ -118,7 +116,7 @@ namespace wojilu.Web.Controller.Users.Admin {
 
 
         private Boolean isMyInfo( String bodyData ) {
-            Dictionary<string, object> dic = JSON.ToDictionary( bodyData );
+            JsonObject dic = Json.ParseJson( bodyData );
             if (dic.ContainsKey( "friendId" ) == false) return false;
             if (cvt.ToInt( dic["friendId"] ) == ctx.owner.obj.Id) return true;
             return false;

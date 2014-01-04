@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010 www.wojilu.com
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,7 +56,7 @@ namespace wojilu.ORM.Caching {
             }
         }
 
-        public static void AddPage( Type t, String condition, ObjectPage pager, IList list ) {
+        public static void AddPage( Type t, String condition, PageHelper pager, IList list ) {
             foreach (IObjectPool pool in pools) {
                 pool.AddPage( t, condition, pager, list );
             }
@@ -80,10 +80,10 @@ namespace wojilu.ORM.Caching {
             }
         }
 
-        //-------------------------------------------------------��ѯ-----------------------------------------------------------
+        //-------------------------------------------------------查询-----------------------------------------------------------
 
 
-        public static IEntity FindOne( Type t, int id ) {
+        public static IEntity FindOne( Type t, long id ) {
             foreach (IObjectPool pool in pools) {
                 IEntity result = pool.FindOne( t, id );
                 if (result != null) {
@@ -117,7 +117,7 @@ namespace wojilu.ORM.Caching {
             return null;
         }
 
-        public static IPageList FindPage( Type t, String condition, ObjectPage pager ) {
+        public static IPageList FindPage( Type t, String condition, PageHelper pager ) {
             foreach (IObjectPool pool in pools) {
                 IPageList result = pool.FindPage( t, condition, pager );
                 if (result != null) return result;
@@ -161,7 +161,7 @@ namespace wojilu.ORM.Caching {
             return Delete( obj.GetType(), obj.Id );
         }
 
-        public static int Delete( Type t, int id ) {
+        public static int Delete( Type t, long id ) {
             foreach (IObjectPool pool in pools) {
                 pool.Delete( t, id );
             }

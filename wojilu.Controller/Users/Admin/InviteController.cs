@@ -19,7 +19,7 @@ namespace wojilu.Web.Controller.Users.Admin {
 
     public class InviteController : ControllerBase {
 
-        public IInviteService inviteService { get; set; }
+        public virtual IInviteService inviteService { get; set; }
 
         public InviteController() {
             inviteService = new InviteService();
@@ -33,7 +33,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             }
         }
 
-        public void Index() {
+        public virtual void Index() {
 
             target( SendMail );
 
@@ -55,7 +55,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [HttpPost, DbTransaction]
-        public void SendMail() {
+        public virtual void SendMail() {
 
             String EmailList = ctx.Post( "EmailList" );
             if (strUtil.IsNullOrEmpty( EmailList )) {
@@ -67,7 +67,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             List<String> list = new List<string>();
             foreach (String mailStr in arrMail) {
                 if (strUtil.IsNullOrEmpty( mailStr )) continue;
-                String mail = mailStr.Trim();
+                String mail = strUtil.SubString( mailStr.Trim(), RegPattern.EmailLength );
                 if (RegPattern.IsMatch( mail, RegPattern.Email )) list.Add( mail );
             }
 
@@ -87,7 +87,7 @@ namespace wojilu.Web.Controller.Users.Admin {
         }
 
         [NonVisit]
-        public void MailBody() {
+        public virtual void MailBody() {
 
             User user = ctx.owner.obj as User;
             String userLink = getFullUrl( toUser( user ) );
@@ -95,7 +95,7 @@ namespace wojilu.Web.Controller.Users.Admin {
             set( "inviteLink", ctx.GetItem( "inviteLink" ) );
             set( "userName", user.Name );
 
-            String userPic = user.PicMedium;
+            String userPic = user.PicM;
             if (userPic.StartsWith( "/" )) userPic = getFullUrl( userPic );
 
             set( "userPic", userPic );

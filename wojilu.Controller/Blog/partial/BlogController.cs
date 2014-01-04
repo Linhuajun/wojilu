@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -38,25 +38,36 @@ namespace wojilu.Web.Controller.Blog {
             String status = string.Empty;
             if (post.IsTop == 1) status = "<span class=\"lblTop\">[" + lang( "sticky" ) + "]</span>";
             if (post.IsPick == 1) status = status + "<span class=\"lblTop\">[" + lang( "picked" ) + "]</span>";
+            if (post.AttachmentCount > 0) {
+                status = status + string.Format( "<span><img src=\"{0}\"/></span>", strUtil.Join( sys.Path.Img, "attachment.gif" ) );
+            }
 
+            String postLink = alink.ToAppData( post );
 
             listBlock.Set( "blogpost.Status", status );
             listBlock.Set( "blogpost.Title", post.Title );
-            listBlock.Set( "blogpost.Url", alink.ToAppData( post ) );
+            listBlock.Set( "blogpost.Url", postLink );
 
-            String body = s.ListMode == BlogListMode.Full ? post.Content : strUtil.ParseHtml( post.Content, 300 );
+            String body = s.ListMode == BlogListMode.Full ? post.Content : strUtil.ParseHtml( post.Content, s.ListAbstractLength );
             listBlock.Set( "blogpost.Body", body );
-
-
             listBlock.Set( "author", ctx.owner.obj.Name );
             listBlock.Set( "authroUrl", Link.ToMember( ctx.owner.obj ) );
             listBlock.Set( "blogpost.CreateTime", post.Created.ToShortTimeString() );
             listBlock.Set( "blogpost.CreateDate", post.Created.ToShortDateString() );
             listBlock.Set( "blogpost.Hits", post.Hits );
-            listBlock.Set( "blogpost.ReplyCount", post.Replies );
+
+            String replies = post.Replies > 0 ?
+                string.Format( "<a href=\"{0}\">{1}(<span class=\"blogItemReviews\">{2}</span>)</a>", postLink + "#comments", lang( "comment" ), post.Replies ) :
+                string.Format( "<a href=\"{0}\">发表评论</a>", postLink + "#comments" );
+            listBlock.Set( "blogpost.ReplyCount", replies );
+
+
+            listBlock.Set( "blogpost.CategoryName", post.Category.Name );
+            listBlock.Set( "blogpost.CategoryLink", to( new CategoryController().Show, post.Category.Id ) );
+
+            String tags = post.Tag.List.Count > 0 ? "tag:" + post.Tag.HtmlString : "";
+            listBlock.Set( "blogpost.TagList", tags );
         }
-
-
 
     }
 }

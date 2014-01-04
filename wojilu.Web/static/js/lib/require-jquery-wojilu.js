@@ -1,4 +1,4 @@
-/** vim: et:ts=4:sw=4:sts=4
+﻿/** vim: et:ts=4:sw=4:sts=4
  * @license RequireJS 2.0.6 Copyright (c) 2010-2012, The Dojo Foundation All Rights Reserved.
  * Available via the MIT or new BSD license.
  * see: http://github.com/jrburke/requirejs for details
@@ -5277,7 +5277,7 @@ jQuery.removeEvent = document.removeEventListener ?
 
 		if ( elem.detachEvent ) {
 
-			// #8545, #7054, preventing memory leaks for custom events in IE6-8 –
+			// #8545, #7054, preventing memory leaks for custom events in IE6-8 鈥?
 			// detachEvent needed property on element, by name of that event, to properly expose it to GC
 			if ( typeof elem[ name ] === "undefined" ) {
 				elem[ name ] = null;
@@ -11376,13 +11376,15 @@ wojilu.str = {
     },
 
     startsWith : function( txt, value ) {
+        if( !txt || !value) return false;
         return ( txt.substr( 0, value.length ) == value );
     },
 
     endsWith : function( txt, value ) {
+        if( !txt || !value) return false;
         return ( txt.substr( txt.length-value.length, txt.length ) == value ) ;
     },
-
+    
     isJson : function( obj ) {
         return typeof(obj) == "object" && Object.prototype.toString.call(obj).toLowerCase() == "[object object]" && !obj.length;    
     },
@@ -11401,10 +11403,6 @@ wojilu.str = {
             intIndexOfMatch = strText.indexOf( strTarget );
         };
         return strText;
-    },
-
-    endsWith : function ( txt, value ) {
-        return ( txt.substr( txt.length-value.length, txt.length ) == value ) ;
     },
 
     trimStart : function( txt, val ) {
@@ -11572,7 +11570,7 @@ wojilu.tool = {
         return url;
     },
 
-    forward : function( url, time ) { // 如果实在框架中跳转，则自动加上frm后缀，避免加载layout
+    forward : function( url, time ) { // 如果是在框架中跳转，则自动加上frm后缀，避免加载layout
         if( !time ) {time = 500;};
         setTimeout( function(){
             if( window.location.href.indexOf( 'frm=true' )>0 && url.indexOf( 'frm=true' )<0 ) {
@@ -11719,12 +11717,12 @@ wojilu.tool = {
     },
     
     makeTab : function(containerClassOrId, currentClass, otherClass) {
-    	var currentUrl = wojilu.str.trimHost( window.location.href );
+    	var currentUrl = wojilu.str.trimHost( window.location.href ).toLowerCase();
         currentUrl = wojilu.tool.getUrlWithoutQuery( wojilu.str.trimExt( currentUrl ));
     	$(containerClassOrId+' a' ).each( function(i) {
-            var link = $(this).attr( 'href' );
+            var link = $(this).attr( 'href' ).toLowerCase();
             link = wojilu.tool.getUrlWithoutQuery( wojilu.str.trimExt( link ) );
-            if( currentUrl.indexOf( link )>=0 || link.indexOf( currentUrl )>=0 ) {
+            if( currentUrl==link ) {
                 $(this).parent().removeClass( otherClass ).addClass( currentClass );
             };
     	});
@@ -11751,7 +11749,7 @@ wojilu.tool = {
         
         var arrFrames = parent.document.getElementsByTagName("IFRAME");
         for (var i = 0; i < arrFrames.length; i++) {    
-            if (arrFrames[i].contentWindow == window) { // box 所在的iframe
+            if (arrFrames[i].contentWindow == window) { // box 所在的ifram
                 var frmsrc = arrFrames[i].src;
                 srcFrmId = wojilu.tool.getQuery( 'srcFrmId', frmsrc );
                 if( srcFrmId=='' ) break; // 比如frmLink的页面
@@ -11874,9 +11872,10 @@ wojilu.upload.initFlash = function( selector, settings ) {
 
 String.prototype.trimStart = function(str) { return wojilu.str.trimStart(this,str);};
 String.prototype.trimEnd = function(str) { return wojilu.str.trimEnd(this,str);};
+String.prototype.startsWith = function(str) { return wojilu.str.startsWith(this,str);};
+String.prototype.endsWith = function(str) { return wojilu.str.endsWith(this,str);};
 String.prototype.toInt = function() { return parseInt(this)};
 String.prototype.cssVal = function() { return this.trimEnd('px').toInt();};
-String.prototype.startsWith = function(str) { if (str.length > this.length) return false; return this.substr(0, str.length) == str;};
 
 String.prototype.toAjax = function(onlyRadom) {
     var strAjax = onlyRadom ? '' : '&ajax=true';
@@ -11938,39 +11937,6 @@ wojilu.position = {
 
 wojilu.ui = new Object();
 
-var shouldHide = function( e, menuList, menuMore, isMore ) {    
-    var pi = wojilu.position.getMouse(e);
-    var piMenu = wojilu.position.getTarget( menuList[0] );
-    var piMore = wojilu.position.getTarget( menuMore[0] );
-    
-    var minX = piMenu.x;
-    var minY = piMore.y;        
-    var maxX = piMenu.y+menuList.height();
-    if( isMore ) maxX = piMore.x + menuMore.width();        
-    var maxY = piMenu.y+menuList.height();
-    
-    if( pi.x< minX ) return true;
-    if( pi.y< minY ) return true;
-    if( pi.x> maxX ) return true;
-    if( pi.y> maxY ) return true;
-    return false;
-};
-
-wojilu.ui.clickMenu = function(eleId) {
-    var ele = eleId ? $( eleId + ' .clickMenu' ) : $( '.clickMenu' );
-    ele.click( function() {
-        var tp = wojilu.position.getTarget(this);
-        var item = $( '#'+$(this).attr('list') ).appendTo( 'body' );
-        item.css( 'position', 'absolute' ).css( 'zIndex', 999 ).css( 'left' , tp.x ).css( 'top', tp.y + this.offsetHeight );
-        item.show().mouseout(function(){ $(this).hide(); }).mouseover( function() {$(this).show();});
-    }).mouseout( function(e) {
-        var menuList = $( '#'+$(this).attr('list') );
-        if( shouldHide( e, menuList, $(this), true ) ) {
-            menuList.hide();
-        }
-    });  
-};
-
 wojilu.ui.menu = function(eleId) {
     var ele = eleId ? $( eleId + ' .menuMore' ) : $( '.menuMore' );
     ele.hover(
@@ -11991,7 +11957,37 @@ wojilu.ui.menu = function(eleId) {
     );
 };
 
-wojilu.ui.tab = function() { wojilu.tool.makeTab( '.otherTab', 'currentTab', 'otherTab' );};
+wojilu.ui.xmenu = function() {
+    $('.xmenu').find('li').each(function () {
+        if ($(this).find('ul').length > 0) {
+            $(this).hover(function () {
+                $(this).find('>ul').stop(true, true).slideDown('fast');
+            }, function () {
+                $(this).find('>ul').stop(true, true).hide('fast');
+            });
+        }
+    });
+};
+
+wojilu.ui.tab = function() { wojilu.tool.makeTab( '.tabList', 'currentTab', 'otherTab' );};
+
+wojilu.ui.makeTab = function(tabMap) {
+	var href = window.location.href.toLowerCase();
+	logger.info( href );
+	for (var key in tabMap) {
+		logger.info( key );
+		if (href.indexOf(key.toLowerCase()) > -1) {
+			logger.info( '#' + tabMap[key] );
+			$('#' + tabMap[key]).addClass('currentTab');
+			return;
+		}
+	}
+	var defaultTab = tabMap['--'];
+	if( defaultTab ) {
+		$('#'+defaultTab).addClass( 'currentTab' );
+		logger.info( '#'+defaultTab );
+	}
+};
 
 wojilu.ui.pageReturn = function() {
 	$( '.btnReturn' ).click( function() {history.back();} );
@@ -12015,7 +12011,7 @@ wojilu.ui.tip = function() {
 		    if( $(this).val() == $(this).attr('tip') ) $(this).val('');
 		    $(this).removeClass('inputTip');
 	    });
-	    tipInputs.parents("form").submit( function () {//此处ltcszk贡献代码(http://www.wojilu.com/ltcszk)。
+	    tipInputs.parents("form").submit( function () {//此处ltcszk贡献代码(http://www.wojilu.com/ltcszk)
             tipInputs.click();
 	    });
 
@@ -12040,9 +12036,9 @@ wojilu.ui.postBack = function(control, httpMethod) {
         postForm +='<input name="frm" type="hidden" value="true" />';
     }
     postForm +='<input name="_httpmethod" type="hidden" value="'+httpMethod+'" /></form>';
-    
-    $(control).append( postForm );		
+    $('body').append( postForm );		
     $( '#' +formId ).submit();    
+    return false;
 };
 
 wojilu.ui.httpMethod = function(eleId) {
@@ -12059,6 +12055,7 @@ wojilu.ui.httpMethod = function(eleId) {
     eleAjaxDelete.unbind('click').click( function() {
         var cmd = $(this); 
         var ps = cmd.position();	    
+        var cmdCallback = cmd.attr( 'data-callback' );
         var boxHtml ='<div id="deleteMsgBox" class="ebox" style="width:190px; padding:10px 5px; text-align:center;">'+
             '<div style="margin-bottom:10px;">确实删除吗？</div>'+
             '<div>'+
@@ -12099,6 +12096,7 @@ wojilu.ui.httpMethod = function(eleId) {
                     };
                     $('#deleteMsgBox').hide();
                     isDeleteClick = false;
+                    if( cmdCallback ) eval( cmdCallback+'()' );
                 }
                 else {
                     alert( data );
@@ -12120,8 +12118,8 @@ wojilu.ui.httpMethod = function(eleId) {
 wojilu.ui.valid = function() {
 
     var arrRule = new Array();
-    arrRule['name'] = /^[a-zA-Z]{1}([a-zA-Z0-9]|[_]){2,19}$/;          //英文开头，可数字、下划线，3-20个字符
-    arrRule['name_cn'] = /^[a-zA-Z\u4E00-\u9FA5]{1}([0-9a-zA-Z \u4E00-\u9FA5]|[_]){1,19}$/;   //可中英文，长度2-19
+    arrRule['name'] = /^[a-zA-Z]{1}([a-zA-Z0-9]|[_]){2,19}$/; //英文开头，可数字、下划线，3-20个字符
+    arrRule['name_cn'] = /^[a-zA-Z\u4E00-\u9FA5]{1}([0-9a-zA-Z \u4E00-\u9FA5]|[_]){1,19}$/; //可中英文，长度2-19
     arrRule['password'] = /^.{4,20}$/;
     arrRule['int'] = /^[0-9]{1,10}$/;
     arrRule['email'] = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
@@ -12135,22 +12133,37 @@ wojilu.ui.valid = function() {
     validPage();
 
     function validPage() {
+        wojilu.editor.sync();
         var validator = $( '.valid' );
         if( validator.length<=0 ) return;
-        $( '.valid' ).each( addValid );
-        var form = $( '.valid' ).parents( 'form' );
-        form.submit( function() {
+        setTimeout( function() {
+            $( '.valid' ).each( addValid );
+        }, 800 );
+        bindSubmitValid();
+    };
+    
+    function bindSubmitValid() {
+        var formList = $( '.valid' ).closest( 'form' );        
+        for( var i=0;i<formList.length;i++ ) {
+            var btnSubmit = $(formList[i]).find("[type='submit']");
+            btnSubmit.click( onSubmitClick );
+        }
+    };
+    
+    function onSubmitClick() {
+        var form = $(this).closest( 'form' );
+        wojilu.editor.sync();
 
-            $( '.valid', $(this) ).each( validOne );
-            var errors = 0;
-            $( '.valid', $(this) ).each( function() {
-                var validResult = $(this).attr( 'result' );
-                if( validResult != 'ok' ) {
-                    errors +=1;
-                }
-            });
-            return errors==0;
+        $( '.valid', form ).each(validOne);
+
+        var errors = 0;
+        $( '.valid', form).each( function() {
+            var validResult = $(this).attr( 'result' );
+            if( validResult != 'ok' ) {
+                errors +=1;
+            }
         });
+        return errors==0;
     };
 
     function addValid() {
@@ -12159,7 +12172,12 @@ wojilu.ui.valid = function() {
         var isShow = validSpan.attr( 'show' );
         if( 'true'==isShow ) validSpan.html( validSpan.attr('msg') );
         var inputType = target.attr( 'type' );
-        if(  inputType == 'hidden' ) {
+        var inputId = target.attr('id');
+        if( inputId && inputId.startsWith( 'ueditor_' ) ) {
+            validSpan.attr('isEditor', 'true');
+            wojilu.editor.blur(target.attr('name'), function() {validInput(target, validSpan);});
+        }
+        else if(  inputType == 'hidden' ) {
             editorBlur( target, validSpan );
         }
         else if( inputType == 'checkbox' ) {
@@ -12205,6 +12223,7 @@ wojilu.ui.valid = function() {
     function setMsg( result, validSpan, msg ) {
         var target = getTarget(validSpan);
         var mode = validSpan.attr( 'mode' );
+        if( validSpan.hasClass('border') ) mode='border';
         if( result==-1 ) {
             if( 'border' == mode ) {
                 setErrorMsgSimple( validSpan, msg );
@@ -12243,7 +12262,14 @@ wojilu.ui.valid = function() {
     function setErrorMsgSimple( validSpan, msg ){
         if( !msg ) msg = lang.exFill;
         var target = getTarget(validSpan);
-        if( target.attr( 'type' )=='hidden' ) {
+        
+        var isEditor = validSpan.attr( 'isEditor' );
+        if( isEditor=='true' ) {
+            var editorId = validSpan.attr('to');
+            var divEditor = $('[id="'+editorId+'"]');
+            divEditor.addClass( 'editorWarning' );
+        }        
+        else if( target.attr( 'type' )=='hidden' ) {
             //editor
             target.parent().parent().addClass( 'inputWarning' );
         }
@@ -12267,8 +12293,15 @@ wojilu.ui.valid = function() {
     };
     
     function setOkMsgSimple(validSpan) {
-        var target = getTarget(validSpan);		
-        if( target.attr( 'type' )=='hidden' ) {
+        var target = getTarget(validSpan);
+
+        var isEditor = validSpan.attr( 'isEditor' );
+        if( isEditor=='true' ) {
+            var editorId = validSpan.attr('to');
+            var divEditor = $('[id="'+editorId+'"]');
+            divEditor.removeClass( 'editorWarning' );
+        }
+        else if( target.attr( 'type' )=='hidden' ) {
             target.next().removeClass( 'inputWarning' );
         }
         else if( target.attr( 'type' )=='checkbox' ) {
@@ -12305,6 +12338,8 @@ wojilu.ui.valid = function() {
         var rule = validSpan.attr( 'rule' );
         var msg = validSpan.attr( 'msg' );
         var mode = validSpan.attr( 'mode' );
+        if( validSpan.hasClass('border') ) mode='border';
+        
         var ajaxAction = validSpan.attr( 'ajaxAction' );        
 
         if( isValNull(target) ) {
@@ -12351,8 +12386,12 @@ wojilu.ui.valid = function() {
 
         if( rule=='password2' ) {
             var result = inputValue.search( arrRule['password'] );
-            var form = validSpan.parents( 'form' );
-            var isSame = ( inputValue==$( ':password', form[0] ).not(getTarget(validSpan)).val() );
+            var form = validSpan.closest('form');
+            
+            var pwdName1 = validSpan.attr( 'pwd1' );
+            var pwd1 = $('input[name='+pwdName1 +']',form);
+            var isSame = ( inputValue==pwd1.val() );
+            
             var pwdResult = (result==-1 || isSame==false)?-1:0;
             setMsg( pwdResult, validSpan, msg );
             return;
@@ -12385,6 +12424,7 @@ wojilu.ui.valid = function() {
     };
 
     function getTarget(validSpan) {
+        wojilu.editor.sync();
         var target = validSpan.attr( 'to' );
         if( target=='undefined' || target==null ) {
             return validSpan.prev();
@@ -12395,22 +12435,24 @@ wojilu.ui.valid = function() {
     };
 
     function getTargetSelector( target, validSpan ) {
-        var form = validSpan.parents( 'form' );
-        var tt = $("[name='"+target+"']", form);
+        var form = validSpan.closest('form');
+        var tt = form.find("[name='"+target+"']");
         return tt;
     };
 };
 
 wojilu.ui.ajaxFormCallback = function(thisForm,validFunc) {
     if( wojilu.ctx.isValid==false ) return false;
-        
+    
+    wojilu.editor.sync();
+    
     var actionUrl = $(thisForm).attr( 'action' ).toAjax();
     var loadingInfo = $(thisForm).attr( 'loading' );
-    loadingInfo = loadingInfo ? loadingInfo : "loading...";
+    loadingInfo = loadingInfo ? loadingInfo : "";
     
     var formValues = $(thisForm).serializeArray();
     
-    var btnSubmit = $( ':submit', thisForm );
+    var btnSubmit = $(thisForm).find("[type='submit']");
     btnSubmit.attr( 'disabled', 'disabled' );
     btnSubmit.after( ' <span class="loadingInfo"><img src="'+wojilu.path.img+'/ajax/loading.gif"/>' + loadingInfo + '</span>' );
     
@@ -12522,7 +12564,7 @@ wojilu.ui.box = {
     id : 0, mouseOffset : null, init : function() {},hideBg:function() {},
 
     getId:function() {
-        var frmdoc = !(top===self)?window.parent.document:document;
+        var frmdoc = wojilu.tool.getRootParent().document;
         var arrFrames = frmdoc.getElementsByTagName("IFRAME");
         var ifrm=1;
         for (var i = 0; i < arrFrames.length; i++) {    
@@ -12544,8 +12586,22 @@ wojilu.ui.box = {
 		boxWrap.css( 'left', box_x + 'px' );
 		boxWrap.css( 'top', box_y + 'px' );    
     },
+
+    showBoxById : function(eleId, boxWidth, boxHeight, boxTitle ) {
+        var showCallback = function(bid,loadingDiv, content) {
+            $('#boxContents'+bid).append( $('#'+eleId ) );
+        };
+        this.showBoxString_private( showCallback, '', boxWidth, boxHeight, boxTitle, '');
+    },
+
+	showBoxString : function(content, boxWidth, boxHeight, boxTitle, loadingDiv){
+        var showCallback = function(bid, loadingDiv, content) {
+            $('#boxContents'+bid).append( loadingDiv ).append( content );
+        };
+        this.showBoxString_private( showCallback, content, boxWidth, boxHeight, boxTitle, loadingDiv );
+    }, 
     
-	showBoxString : function(content, boxWidth, boxHeight, btitle, loadingDiv){
+	showBoxString_private : function(showCallback, content, boxWidth, boxHeight, btitle, loadingDiv){
     
         if( !(top===self) ) { window.parent.wojilu.ui.box.showBoxString(content,boxWidth,boxHeight,btitle,loadingDiv);return;}
     
@@ -12589,15 +12645,15 @@ wojilu.ui.box = {
 		var box_y = ( $(window).height() - bHeight ) / 2 + $(document).scrollTop() -60;
 		boxWrap.css( 'left', box_x + 'px' ).css( 'top', box_y + 'px' ).show();
         
-        $('#boxContents'+bid).append( loadingDiv ).append( content );
+        showCallback(bid, loadingDiv, content);
         $('#boxTitleText'+bid).html( btitle );
 	},
     
 	hideBox : function(bid){
         if( !(top===self) ) { window.parent.wojilu.ui.box.hideBox();return;}
         if( !bid ) bid = wojilu.ui.box.id;
-        $('#boxWrap'+bid).remove(); $('#overlay'+bid).remove();
-        wojilu.ui.box.id--; return false;
+        $('#boxWrap'+bid).hide(); $('#overlay'+bid).remove();
+        return false;
 	}
 }
 
@@ -12617,6 +12673,9 @@ wojilu.ui.frmBox = function(ele) {
             var frmPath = $('#'+srcFrmId, parent.document).attr( 'frmPath' );
             actionUrl = actionUrl + '&frmPath='+frmPath;
         };
+
+        var scrolling = $(this).attr( 'data-scrolling' );
+        scrolling = scrolling? scrolling:'no';
         
         var boxWidth = $(this).attr( 'xwidth' );
         var boxHeight = $(this).attr( 'xheight' );
@@ -12630,11 +12689,51 @@ wojilu.ui.frmBox = function(ele) {
         var frmClass = 'boxFrm';
         var loadingId = frmId+'Loading';
         var loadingDiv = '<div id="'+loadingId+'" style="width:'+boxWidth+'px;height:'+contentHeight+'px;text-align:center;"><img src="'+wojilu.path.img+'/ajax/big.gif" style="margin-top:30px;"/></div>';        
-        var frmHtml = '<iframe id="'+frmId+'" class="'+frmClass+'" src="'+actionUrl+'" frameborder="0" width="'+boxWidth+'" scrolling="no" style="display:none;padding:0px;margin:0px;border:0px red solid;height:'+contentHeight+'px;"></iframe>';
+        var frmHtml = '<iframe id="'+frmId+'" class="'+frmClass+'" src="'+actionUrl+'" frameborder="0" width="'+boxWidth+'" scrolling="'+scrolling +'" style="display:none;padding:0px;margin:0px;border:0px red solid;height:'+contentHeight+'px;"></iframe>';
         wojilu.ui.box.showBoxString( frmHtml, boxWidth, boxHeight, boxTitle, loadingDiv );
        
         return false;
     };
+};
+
+wojilu.box = {
+    _title: null, _width: 500, _height: 280, _id: null, _html: null, _idp: null,
+    title: function (x) { this._title = x; return this; },
+    width: function (x) { this._width = x; return this; },
+    height: function (x) { this._height = x; return this; },
+    id: function (x) { this._id = x; this._idp = $('#' + x).parent(); return this; },
+    html: function (x) { this._html = x; return this; },
+    show: function () {
+        if (this._html) {
+            wojilu.ui.box.showBoxString(this._html, this._width, this._height, this._title);
+        }
+        else if (this._id) {
+            wojilu.ui.box.showBoxById(this._id, this._width, this._height, this._title);
+        };
+        return this;
+    },
+    close: function (closeTime) {
+        var _this = this;
+        var closeBox = function () {
+            if (_this._id) {
+                var ele = $('#' + _this._id);
+                _this._idp.append(ele);
+                wojilu.ui.box.hideBox();
+            }
+            else {
+                wojilu.ui.box.hideBox();
+            }
+        };
+
+        if (closeTime) {
+            setTimeout(function () {
+                closeBox();
+            }, closeTime);
+        } else {
+            closeBox();
+        };
+        return this;
+    }
 };
 
 wojilu.ui.frmLink = function() {
@@ -12671,11 +12770,15 @@ wojilu.ui.frmLink = function() {
         var rUrl = $(this).attr( 'href' ); 
         if( !rUrl || rUrl=='' || rUrl=='#' ) return false;
         var nolayout=$(this).attr('nolayout');
-        if( !nolayout ) alert( '请设置nolayout' );
+        if( !nolayout ) {alert( '请设置nolayout' );return false}
         var frmUrl = wojilu.tool.appendQuery( rUrl, 'nolayout='+nolayout );
-        var loadTo = $(this).attr( 'loadTo' );var scrolling = $(this).attr( 'scrolling' ); scrolling = scrolling? scrolling:'no'; var divLoad = $( '#' + loadTo ); if(divLoad.length==0){return;};divLoad.empty();var win=window; while( !(win === win.parent) ) {win = win.parent;};if(win.history.pushState&&wojilu.ctx.changeUrl){win.history.pushState('', '', rUrl)}; var frmId = 'frmLinkPage'+cno; var loadingId = frmId+'Loading'; var frmLinkLoading = '<div id="'+loadingId+'" style="padding:30px 50px;display2:none;"><img src="'+wojilu.path.img+'/ajax/big.gif"/></div>'; divLoad.append( frmLinkLoading ); 
-        var frmHtml = '<iframe id="'+frmId+'" class="frmLinkPage" frmPath="'+frmPath+'" nolayout='+nolayout+' src="'+frmUrl+'" frameborder="0" width="100%" scrolling="'+scrolling+'" style="display:none;padding:0px;margin:0px;border:0px red solid;height:300px;"></iframe>'; divLoad.append( frmHtml ); return false;    
+        var loadTo = $(this).attr( 'loadTo' );var scrolling = $(this).attr( 'scrolling' ); scrolling = scrolling? scrolling:'no'; var divLoad = $( '#' + loadTo ); if(divLoad.length==0){return;};
+        var frmId = 'frmLinkPage'+cno;var win=window; while( !(win === win.parent) ) {win = win.parent;};if(win.history.pushState&&wojilu.ctx.changeUrl){win.history.pushState('', '', rUrl)}; var loadingId = frmId+'Loading'; var frmLinkLoading = '<div style="position:relative;z-index:999999;" id="'+loadingId+'"><div style="position:absolute;top:0px;left:0px;text-align:center;width:'+divLoad.width()+'px;height:'+divLoad.height()+'px;background:#fff;opacity:.75;filter:alpha(opacity=75);"><div style="width:200px;height:50px;margin:20px auto;padding-bottom:0px;padding-top:20px;"><img src="'+wojilu.path.img+'/ajax/big.gif" /></div></div></div>';divLoad.prepend( frmLinkLoading );var frmHtml = '<iframe id="'+frmId+'" class="frmLinkPage" frmPath="'+frmPath+'" nolayout='+nolayout+' src="'+frmUrl+'" frameborder="0" width="100%" scrolling="'+scrolling+'" style="display:none;padding:0px;margin:0px;border:0px red solid;height:300px;"></iframe>'; divLoad.append('<div id="frmLinkWrap'+frmId+'"></div>').append( frmHtml ); return false;    
     });
+};
+
+wojilu.ui.__removeFrameLinkPrev = function(frmId) {
+    var line = $('#frmLinkWrap'+frmId ); line.prevAll().remove(); line.remove();
 };
 
 wojilu.ui.frmLoader = function() {
@@ -12683,22 +12786,26 @@ wojilu.ui.frmLoader = function() {
 
     function frmLoaderCallback() {
     
-		var frmUrl = $(this).attr( 'url' ).toAjaxFrame()+'&linkTarget=blank'; // 链接在新窗口中打开，而不是在当前iframe中展开页面
+        var rUrl = $(this).attr( 'url' ); 
+        if( !rUrl || rUrl=='' || rUrl=='#' ) return false;
+        var nolayout=$(this).attr('nolayout');
+        if( !nolayout ) { nolayout=999;}
+        var frmUrl = wojilu.tool.appendQuery( rUrl, 'nolayout='+nolayout )+'&linkTarget=blank';
         var scrolling = $(this).attr( 'scrolling' );
         scrolling = scrolling? scrolling:'no';
         
 		var divLoad = $(this );        
         divLoad.empty();
+
+        var thisId = this.id?this.id:wojilu.tool.getRandomInt();
         
-        var frmId = 'frmLoaderPage';
+        var frmId = 'frmLoaderPage'+thisId;
         var loadingId = frmId+'Loading';
         var frmLinkLoading = '<div id="'+loadingId+'" style="padding:30px 50px;"><img src="'+wojilu.path.img+'/ajax/loading.gif"/></div>';
         divLoad.append( frmLinkLoading );
         
         var frmHtml = '<iframe id="'+frmId+'" src="'+frmUrl+'" frameborder="0" width="100%" scrolling="'+scrolling+'" style="display:none;padding:0px;margin:0px;"></iframe>';
         divLoad.append( frmHtml );
-       
-        return false;
     };
 };
 
@@ -12720,27 +12827,26 @@ wojilu.ui.frmUpdate = function(ele) {
 		var frmUrl = $(this).attr( 'href' ).toAjaxFrame();
 		var loadTo = $(this).attr( 'loadTo' );
 		var divLoad = $( '#' + loadTo );		
-        var isHidden = ( divLoad.css( 'display' ) == 'none' );
-        
-        var txt;
-        if( isHidden ) {
-            txt = $(this).text();
-		    $(this).attr( 'txt', txt );
-        }
-        else {
-            txt = $(this).attr( 'txt' );
-        }
-        
-        var txtHidden = $(this).attr( 'txtHidden' );
-        if( !txtHidden ) txtHidden = txt;
+        var isHidden = ( divLoad.css( 'display' ) == 'none' );		
 		
-		if( isHidden==false  ) {
-		    divLoad.hide();
-		    $(this).text( txt );
-		    return;
+		if( isHidden ) {		
+			var txtHidden = $(this).attr( 'txtHidden' );
+			if( txtHidden ) {
+				var htmlInfo = $($(this).wrapInner('<span></span>').html()).hide();
+				$(this).after( htmlInfo );				
+				$(this).html( txtHidden );
+			}
 		}
-		
-		$(this).text( txtHidden );
+		else {
+			var txtHidden = $(this).attr( 'txtHidden' );
+			if( txtHidden ) {
+				var htmlInfo = $(this).next().show();
+				$(this).html( htmlInfo.html() );
+				htmlInfo.remove();
+			}
+			divLoad.hide();
+			return;
+		}
 		
 		var xwidth = divLoad.parent().width();
         
@@ -12802,25 +12908,6 @@ wojilu.ui.editFontSize = function() {
     });
 };
 
-wojilu.ui.editor = function() {
-    $('.wEditor').each( function() {
-    
-        var eName = $(this).attr( 'name' );
-        var eHeight = $(this).css( 'height' );
-        var ePath = $(this).attr( 'path' );
-        var eContent = $(this).attr( 'content' );
-        
-        var editorPanel = eName.replace( '.', '_' )+'Editor';    
-        $(this).after( '<div id=\"'+editorPanel+'\"></div>' );
-        $(this).remove();
-        
-        $.getScript( ePath+'editor.js', function() {
-            new wojilu.editor( {editorPath:ePath, height:eHeight, name:eName, content:eContent, toolbarType:'full', uploadUrl:'', mypicsUrl:'' } ).render();
-        });
-        
-    });
-};
-
 wojilu.ui.doubleClick = function() {
     $('.click2').dblclick( function() {
         window.location.href = $(this).attr( 'href');
@@ -12862,14 +12949,47 @@ wojilu.ui.slider = function() {
     });
 };
 
+wojilu.ui.select = function() {
+    var choiceList = [];
+    $('input[name=selectThis]:checked').each( function(i){
+        choiceList.push(this.id.replace('checkbox',''));
+    });
+    return choiceList;
+};
+
+wojilu.ui.resetDropMenu = function( eleId ) {
+
+    var eleDropdown = eleId ? $( '.dropdown',$(eleId) ) : $( '.dropdown' );
+
+    eleDropdown.unbind('click').hover(
+
+        function() {
+            var item = $('.dropdown-menu',this);
+            var tp = wojilu.position.getTarget(this);
+            var mWidth = item.width();var menuX = tp.x;
+            var mLeft = 0;
+            if( menuX+ mWidth > document.body.clientWidth ) mLeft = $(this).width()-mWidth;
+
+            $(this).css( 'position', 'relative' ).css("zIndex",1002);
+            item.css( 'position', 'absolute' ).css("zIndex",1003).css( 'top', ($(this).height())+'px' ).css( 'left', mLeft ).slideDown('fast');
+        },
+
+        function() {
+            $(this).css("zIndex",1);
+            var item = $('.dropdown-menu',this);
+            item.hide();
+        }    
+
+    );
+};
+
 $(document).ready( function() {
     wojilu.ui.menu();
-    wojilu.ui.clickMenu();
+    wojilu.ui.xmenu();
     wojilu.ui.tab();
     wojilu.ui.httpMethod();
     wojilu.ui.frmBox();
     wojilu.ui.boxCancel();
-    wojilu.ui.editor();
     wojilu.ui.frmLoader();
     wojilu.ui.ajaxLoader();
     wojilu.ui.autoSubmitForm();
@@ -12883,6 +13003,97 @@ wojilu.site = {
             clearInterval( userCheck );
             callback();
         }, 100 );
+    }
+};
+
+wojilu.editor = {
+    _editorId:null,
+    _toolbar:null,
+    _height:null,
+    _params:{},
+    _pluginFunc:null,
+    _pluginName:null,
+    _pluginList:[],
+    bind : function( editorId ) {
+        this._editorId = editorId; return this;
+    },
+    line : function( intToolbar ) {
+        if(intToolbar==1) this._toolbar = 'simple';
+        if(intToolbar==2) this._toolbar = 'standard';
+        if(intToolbar==3) this._toolbar = 'full';
+        return this;
+    },
+    height : function( intHeight ) {
+        this._height = intHeight; return this;
+    },
+    config : function( objParams ) {
+        if( objParams ) this._params = objParams; return this;
+    },
+    plugin : function(xName, xFunc) {
+        this._pluginList.push({pluginName:xName, pluginFunc:xFunc});
+        return this;
+    },
+    get : function(editorId) {
+        if( !editorId ) return null;
+        if( !window.ueditorList ) return null;        
+        for( x in window.ueditorList ) {
+            if( x=='editor'+editorId) return window.ueditorList[x];            
+        }
+        return null;
+    },
+    sync : function(editorId) {    
+        if( !window.ueditorList ) return;
+        if( editorId ) {
+            var ueditor = this.get( editorId );
+            if (ueditor == null ) return;
+            ueditor.sync();
+            return;
+        }
+        for( x in window.ueditorList ) {
+            window.ueditorList[x].sync();
+        }        
+    },
+    clear : function(editorId) {
+        if( !editorId ) return;
+        var ueditor = this.get( editorId );
+        if (ueditor == null ) return;
+        ueditor.execCommand('cleardoc');
+    },
+    blur : function( editorId, callback ) {
+        var myeditor = wojilu.editor.get(editorId);
+        if( myeditor==null ) return;
+        var funcSync = function() {
+            myeditor.sync();
+            if( callback ) callback();
+        };
+        myeditor.addListener('blur', funcSync);
+    },
+    show : function( callback ) {
+        var thisParams = this._params;
+        var thisToolbar = this._toolbar;
+        var thisEditor = this._editorId;
+        var thisPluginList = this._pluginList;
+        if( this._height ) thisParams.initialFrameHeight = this._height;
+        require(["lib/ueditor/ueditor.all.min"], function () {
+            require(["lib/ueditor/ueditor.config"], function () {
+                if( thisPluginList.length>0 ) {
+                    for( var i=0;i<thisPluginList.length;i++ ) {
+                        UE.plugins[thisPluginList[i].pluginName] = thisPluginList[i].pluginFunc;
+                    }
+                }
+                if( thisToolbar=='simple' ) thisParams.toolbars = _wbar.simple;
+                if( thisToolbar=='standard' ) thisParams.toolbars = _wbar.standard;
+                if( thisToolbar=='full' ) thisParams.toolbars = _wbar.full;
+                var _editor = UE.getEditor(thisEditor, thisParams);
+                 
+                if( !window.ueditorList ) window.ueditorList = {};
+                window.ueditorList['editor'+thisEditor] = _editor;
+
+                if( callback ) {
+                    callback( _editor );
+                }
+            });
+        });
     }
 };
 

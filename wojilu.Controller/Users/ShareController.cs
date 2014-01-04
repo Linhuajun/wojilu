@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2010, www.wojilu.com. All rights reserved.
  */
 
@@ -19,11 +19,11 @@ namespace wojilu.Web.Controller.Users {
 
     public class ShareController : ControllerBase {
 
-        public IFeedService feedService { get; set; }
-        public IFriendService friendService { get; set; }
-        public IFollowerService followService { get; set; }
+        public virtual IFeedService feedService { get; set; }
+        public virtual IFriendService friendService { get; set; }
+        public virtual IFollowerService followService { get; set; }
 
-        public IShareService shareService { get; set; }
+        public virtual IShareService shareService { get; set; }
 
         public ShareController() {
             feedService = new FeedService();
@@ -34,17 +34,16 @@ namespace wojilu.Web.Controller.Users {
         }
 
 
-        public void Index() {
+        public virtual void Index() {
 
             if (ctx.viewer.HasPrivacyPermission( ctx.owner.obj, UserPermission.Share.ToString() ) == false) {
                 echo( lang( "exVisitNoPermission" ) );
                 return;
             }
 
-            WebUtils.pageTitle( this, lang( "share" ) );
+            ctx.Page.Title = lang( "share" );
 
-
-            int userId = ctx.owner.Id;
+            long userId = ctx.owner.Id;
 
             DataPage<Share> list;
             if (userId > 0) {
